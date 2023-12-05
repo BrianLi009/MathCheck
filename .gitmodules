@@ -1,0 +1,4 @@
+[submodule "alpha-zero-general"]
+	path = alpha-zero-general
+	url = https://github.com/piyush-J/alpha-zero-general.git
+	branch = alphacube
