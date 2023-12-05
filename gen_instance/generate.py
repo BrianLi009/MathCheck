@@ -2,7 +2,7 @@
 import sys, getopt
 from squarefree import squarefree
 from triangle import triangle
-from mindegree import mindegree
+from neighbor import neighbor
 from noncolorable import noncolorable
 from cubic import cubic
 import subprocess
@@ -37,17 +37,11 @@ def generate(n):
     clause_count += squarefree(n, edge_dict, cnf_file)
     print ("graph is squarefree")
     clause_count += triangle(n, edge_dict, tri_dict, cnf_file)
-    print ("all vertices are part of a triangle")
+    print ("all edges are part of a triangle")
     clause_count += noncolorable(n,  edge_dict, tri_dict, cnf_file)
     print ("graph is noncolorable")
-    clause_count += mindegree(n, 3, edge_dict, cnf_file)
+    clause_count += neighbor(n, edge_dict, cnf_file)
     print ("minimum degree of each vertex is 3")
-    """
-    conway(n, edge_dict, tri_dict, 1, 3)
-    conway(n, edge_dict, tri_dict, 2, 4)
-    conway(n, edge_dict, tri_dict, 3, 4)
-    print ("conway constraint")
-    """
     var_count, c_count = cubic(n, count, cnf_file) #total number of variables
     clause_count += c_count
     print ("isomorphism blocking applied")
