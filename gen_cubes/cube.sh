@@ -80,7 +80,7 @@ then
 			command="python ams_no_mcts.py $f -d 1 -m $m -o $dir/0.cubes | tee $logdir/0.log"
 		elif [ "$z" -eq 3 ]; then
 			echo "using AlphaMapleSAT + MCTS for cubing..."
-			command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o -o $dir/0.cubes -order $n -prod | tee $logdir/0.log"
+			command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o -o $dir/0.cubes -order $n -numMCTSSims 100 -prod | tee $logdir/0.log"
 		else
 			echo "Invalid option: $z"
 			exit 1
