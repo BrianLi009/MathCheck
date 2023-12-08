@@ -101,7 +101,7 @@ then
 	elif [ "$z" -eq 2 ]; then
 		command="python ams_no_mcts.py $dir/$((i-1)).cubes$c.simp -d 1 -m $m -o $dir/$((i-1)).cubes$c.cubes | tee $logdir/$((i-1)).cubes$c.log"
 	elif [ "$z" -eq 3 ]; then
-		command="python -u alpha-zero-general/main.py $dir/$((i-1)).cubes$c.simp -d 1 -m $m -o $dir/$((i-1)).cubes$c.cubes -order $n -prod | tee $logdir/$((i-1)).cubes$c.log"
+		command="python -u alpha-zero-general/main.py $dir/$((i-1)).cubes$c.simp -d 1 -m $m -o $dir/$((i-1)).cubes$c.cubes -order $n -numMCTSSims 100 -prod | tee $logdir/$((i-1)).cubes$c.log"
 	else
 		echo "Invalid option: $z"
 		exit 1
