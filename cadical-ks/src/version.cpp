@@ -7,10 +7,10 @@
 #ifndef NBUILD
 #if __GNUC__ > 4
 #if __has_include(<build.hpp>)
-#include <build.hpp>
+#include "build.hpp"
 #endif // __has_include
 #else
-#include <build.hpp>
+#include "build.hpp"
 #endif // __GNUC > 4
 #endif // NBUILD
 
@@ -24,7 +24,7 @@
 
 #ifdef NBUILD
 #ifndef VERSION
-#define VERSION "1.9.0"
+#define VERSION "1.9.3"
 #endif // VERSION
 #endif // NBUILD
 

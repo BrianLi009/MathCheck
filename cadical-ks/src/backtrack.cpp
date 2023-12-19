@@ -134,9 +134,7 @@ void Internal::backtrack (int new_level) {
 #endif
       trail[j] = lit;
       v.trail = j++;
-#ifdef LOGGING
       reassigned++;
-#endif
     }
   }
   trail.resize (j);
@@ -255,6 +253,7 @@ void Internal::multi_backtrack (int new_level) {
       tainted_literal = 0;
     }
   }
+  assert (num_assigned >= trail.size ());
 }
 
 } // namespace CaDiCaL

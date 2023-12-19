@@ -23,6 +23,7 @@ void Internal::learn_empty_clause () {
   }
   unsat = true;
   conflict_id = id;
+  marked_failed = true;
   conclusion.push_back (id);
   lrat_chain.clear ();
 }
@@ -390,6 +391,14 @@ void Internal::clear_analyzed_literals () {
     assert (!f.removable);
   }
   analyzed.clear ();
+#ifndef NDEBUG
+  if (unit_analyzed.size ())
+    return;
+  for (auto idx : vars) {
+    Flags &f = flags (idx);
+    assert (!f.seen);
+  }
+#endif
 }
 
 void Internal::clear_analyzed_levels () {
@@ -504,7 +513,8 @@ inline int Internal::otfs_find_backtrack_level (int &forced) {
 inline int Internal::find_conflict_level (int &forced) {
 
   assert (conflict);
-  assert (opts.chrono || opts.otfs || external_prop);
+  assert (opts.chrono || opts.otfs || external_prop ||
+          (opts.reimply && multitrail_dirty != level));
 
   int res = 0, count = 0;
 
@@ -860,7 +870,7 @@ inline void Internal::otfs_subsume_clause (Clause *subsuming,
 
 /*------------------------------------------------------------------------*/
 
-// Candidate clause 'c' is strengthened by removing 'lit'.
+// Candidate clause 'c' is strengthened by removing 'lit' and units.
 //
 void Internal::otfs_strengthen_clause (Clause *c, int lit, int new_size,
                                        const std::vector<int> &old) {
@@ -915,16 +925,19 @@ void Internal::analyze () {
       change = multitrail_dirty;
       if (!conflict)
         conflict = prev;
-      else
-        explain_external_propagations ();
+      // levels can change even if conflict has not
+      explain_external_propagations ();
     }
   }
 
-  if (opts.chrono || external_prop) {
+  if ((!opts.reimply && opts.chrono) || external_prop ||
+      (opts.reimply && multitrail_dirty != level)) {
 
     int forced;
 
     const int conflict_level = find_conflict_level (forced);
+    assert (conflict_level == multitrail_dirty || !opts.reimply ||
+            external_prop);
 
     // In principle we can perform conflict analysis as in non-chronological
     // backtracking except if there is only one literal with the maximum
@@ -977,6 +990,7 @@ void Internal::analyze () {
     //
     backtrack (conflict_level);
   }
+  assert (conflicting_level (conflict) == level);
 
   // Actual conflict on root level, thus formula unsatisfiable.
   //
@@ -1041,40 +1055,43 @@ void Internal::analyze () {
       assert (conflict_size >= 2);
       if (opts.bump)
         bump_variables ();
+
       if (resolved == 1 && resolvent_size < conflict_size) {
-	// in this case both clauses are part of the CNF, so one subsumes the other
+        // in this case both clauses are part of the CNF, so one subsumes
+        // the other
         otfs_subsume_clause (reason, conflict);
         LOG (reason, "changing conflict to");
         --conflict_size;
-	conflict = reason;
-        assert (conflict_size == conflict->size);
+        assert (conflict_size == reason->size);
         ++stats.otfs.subsumed;
         ++stats.subsumed;
-	++stats.conflicts;
-
-        if (open == 1) {
-          int forced = 0;
-          const int conflict_level = otfs_find_backtrack_level (forced);
-          int new_level = determine_actual_backtrack_level (conflict_level);
-          UPDATE_AVERAGE (averages.current.level, new_level);
-          backtrack (new_level);
-
-          LOG ("forcing %d", forced);
-          search_assign_driving (forced, conflict);
-          if (opts.reimply && multitrail_dirty > var (forced).level)
-            multitrail_dirty = var (forced).level;
-
-          conflict = 0;
-          // Clean up.
-          //
-          clear_analyzed_literals ();
-          clear_analyzed_levels ();
-          clause.clear ();
-          STOP (analyze);
-          return;
-        }
+        ++stats.conflicts;
       }
+
+      LOG (reason, "changing conflict to");
       conflict = reason;
+      if (open == 1) {
+        int forced = 0;
+        const int conflict_level = otfs_find_backtrack_level (forced);
+        int new_level = determine_actual_backtrack_level (conflict_level);
+        UPDATE_AVERAGE (averages.current.level, new_level);
+        backtrack (new_level);
+
+        LOG ("forcing %d", forced);
+        search_assign_driving (forced, conflict);
+        if (opts.reimply && multitrail_dirty > var (forced).level)
+          multitrail_dirty = var (forced).level;
+
+        conflict = 0;
+        // Clean up.
+        //
+        clear_analyzed_literals ();
+        clear_analyzed_levels ();
+        clause.clear ();
+        STOP (analyze);
+        return;
+      }
+
       resolved = 0;
       clear_analyzed_literals ();
       // clear_analyzed_levels (); not needed because marking the exact same
@@ -1085,26 +1102,27 @@ void Internal::analyze () {
       open = 0;
       analyze_reason (0, reason, open, resolvent_size, antecedent_size);
       conflict_size = antecedent_size - 1;
+      assert (open > 1);
     }
 
-  ++resolved;
+    ++resolved;
 
-  uip = 0;
-  while (!uip) {
-    assert (i > 0);
-    const int lit = (*t)[--i];
-    if (!flags (lit).seen)
-      continue;
-    if (var (lit).level == level)
-      uip = lit;
-  }
-  if (!--open)
-    break;
-  reason = var (uip).reason;
-  assert (reason != external_reason);
-  LOG (reason, "analyzing %d reason", uip);
-  assert (resolvent_size);
-  --resolvent_size;
+    uip = 0;
+    while (!uip) {
+      assert (i > 0);
+      const int lit = (*t)[--i];
+      if (!flags (lit).seen)
+        continue;
+      if (var (lit).level == level)
+        uip = lit;
+    }
+    if (!--open)
+      break;
+    reason = var (uip).reason;
+    assert (reason != external_reason);
+    LOG (reason, "analyzing %d reason", uip);
+    assert (resolvent_size);
+    --resolvent_size;
   }
   LOG ("first UIP %d", uip);
   clause.push_back (-uip);

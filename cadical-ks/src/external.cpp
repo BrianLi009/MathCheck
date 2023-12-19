@@ -1,11 +1,12 @@
 #include "internal.hpp"
+#include <cstdint>
 
 namespace CaDiCaL {
 
 External::External (Internal *i)
-    : internal (i), max_var (0), vsize (0), extended (false), concluded (false),
-      terminator (0), learner (0), propagator (0), solution (0),
-      vars (max_var) {
+    : internal (i), max_var (0), vsize (0), extended (false),
+      concluded (false), terminator (0), learner (0), propagator (0),
+      solution (0), vars (max_var) {
   assert (internal);
   assert (!internal->external);
   internal->external = this;
@@ -81,7 +82,7 @@ void External::reset_assumptions () {
   internal->reset_assumptions ();
 }
 
-void External::reset_concluded () { 
+void External::reset_concluded () {
   concluded = false;
   internal->reset_concluded ();
 }
@@ -391,7 +392,14 @@ void External::reset_observed_vars () {
   // Shouldn't be called if there is no connected propagator
   assert (propagator);
   reset_extended ();
-  assert ((size_t) max_var + 1 == is_observed.size ());
+
+  internal->notified = 0;
+  LOG ("reset notified counter to 0");
+
+  if (!is_observed.size ())
+    return;
+
+  assert (!max_var || (size_t) max_var + 1 == is_observed.size ());
 
   for (auto elit : vars) {
     int eidx = abs (elit);
@@ -404,8 +412,6 @@ void External::reset_observed_vars () {
       melt (elit);
     }
   }
-  internal->notified = 0;
-  LOG ("reset notified counter to 0");
 }
 
 bool External::observed (int elit) {
@@ -775,7 +781,6 @@ bool External::traverse_all_non_frozen_units_as_witnesses (
     return true;
 
   vector<int> clause_and_witness;
-
   for (auto idx : vars) {
     if (frozen (idx))
       continue;
@@ -783,8 +788,14 @@ bool External::traverse_all_non_frozen_units_as_witnesses (
     if (!tmp)
       continue;
     int unit = tmp < 0 ? -idx : idx;
+    const int ilit = e2i[idx] * (tmp < 0 ? -1 : 1);
+    // heurstically add + max_var to the id to avoid reusing ids
+    const uint64_t id = internal->opts.lrat
+                            ? internal->unit_clauses[internal->vlit (ilit)]
+                            : 1;
+    assert (id);
     clause_and_witness.push_back (unit);
-    if (!it.witness (clause_and_witness, clause_and_witness))
+    if (!it.witness (clause_and_witness, clause_and_witness, id + max_var))
       return false;
     clause_and_witness.clear ();
   }

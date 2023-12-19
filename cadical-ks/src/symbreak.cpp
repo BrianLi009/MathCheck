@@ -5,7 +5,6 @@
 
 FILE * canonicaloutfile = NULL;
 FILE * noncanonicaloutfile = NULL;
-FILE * permoutfile = NULL;
 FILE * exhaustfile = NULL;
 FILE * musoutfile = NULL;
 
@@ -139,6 +138,7 @@ bool SymmetryBreaker::cb_check_found_model (const std::vector<int> & model) {
     std::cout << std::endl;
 #endif
     new_clauses.push_back(clause);
+    solver->add_trusted_clause(clause);
 
     return false;
 }
@@ -276,6 +276,7 @@ bool SymmetryBreaker::cb_has_external_clause () {
                 // To generate the naive blocking clause:
                 /*for(int j = 0; j < i*(i+1)/2; j++)
                     new_clauses.back().push_back((j+1) * assign[j]==l_True ? -1 : 1);*/
+                solver->add_trusted_clause(new_clauses.back());
 
                 if(noncanonicaloutfile != NULL) {
                     //fprintf(noncanonicaloutfile, "a ");
@@ -286,10 +287,10 @@ bool SymmetryBreaker::cb_has_external_clause () {
                     fflush(noncanonicaloutfile);
                 }
 
-                if(permoutfile != NULL) {
+                if(solver->permoutfile != NULL) {
                     for(int j = 0; j <= mi; j++)
-                        fprintf(permoutfile, "%s%d", j == 0 ? "" : " ", p[j]);
-                    fprintf(permoutfile, "\n");
+                        fprintf(solver->permoutfile, "%s%d", j == 0 ? "" : " ", p[j]);
+                    fprintf(solver->permoutfile, "\n");
                 }
 
                 return true;
@@ -335,6 +336,7 @@ bool SymmetryBreaker::cb_has_external_clause () {
 #ifdef VERBOSE
             std::cout << std::endl;
 #endif
+            solver->add_trusted_clause(new_clauses.back());
 
             if(musoutfile != NULL) {
                 //fprintf(musoutfile, "a ");
@@ -352,17 +354,17 @@ bool SymmetryBreaker::cb_has_external_clause () {
                 fflush(musoutfile);
             }
 
-            if(permoutfile != NULL) {
-                fprintf(permoutfile, "Minimal unembeddable subgraph %d:", g);
+            if(solver->permoutfile != NULL) {
+                fprintf(solver->permoutfile, "Minimal unembeddable subgraph %d:", g);
                 int mii = 10;
                 if(g >= 2 && g < 7)
                     mii = 11;
                 else if(g >= 7)
                     mii = 12;
                 for(int ii=0; ii<mii; ii++) {
-                    fprintf(permoutfile, "%s%d", ii == 0 ? "" : " ", p[ii]);
+                    fprintf(solver->permoutfile, "%s%d", ii == 0 ? "" : " ", p[ii]);
                 }
-                fprintf(permoutfile, "\n");
+                fprintf(solver->permoutfile, "\n");
             }
             return true;
         }

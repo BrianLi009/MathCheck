@@ -1,4 +1,5 @@
 #include "internal.hpp"
+#include "options.hpp"
 
 namespace CaDiCaL {
 
@@ -6,7 +7,9 @@ namespace CaDiCaL {
 // adds an assumption literal onto the assumption stack.
 
 void Internal::assume (int lit) {
-  if (val (lit) < 0)
+  if (level && !opts.ilbassumptions)
+    backtrack ();
+  else if (val (lit) < 0)
     backtrack (max (0, var (lit).level - 1));
   Flags &f = flags (lit);
   const unsigned char bit = bign (lit);
@@ -20,7 +23,7 @@ void Internal::assume (int lit) {
   freeze (lit);
 }
 
-// for lrat we actually need to implement recursive dfs
+// for LRAT we actually need to implement recursive dfs
 // I don't know how to do this non-recursively...
 // for non-lrat use bfs
 //
@@ -35,6 +38,13 @@ void Internal::assume_analyze_literal (int lit) {
   assert (val (lit) < 0);
   if (v.reason == external_reason) {
     v.reason = wrapped_learn_external_reason_clause (-lit);
+    assert (v.reason || !v.level);
+    if (!v.reason) {
+      if (opts.reimply) {
+        trail.push_back (-lit);
+        v.trail = trail.size ();
+      }
+    }
   }
   assert (v.reason != external_reason);
   if (!v.level) {
@@ -267,7 +277,7 @@ void Internal::failing () {
       econstraints.push_back (elit);
     }
 
-    // no lrat do bfs as it was before
+    // no LRAT do bfs as it was before
     if (!lrat) {
       size_t next = 0;
       while (next < analyzed.size ()) {
@@ -280,6 +290,10 @@ void Internal::failing () {
           v.reason = wrapped_learn_external_reason_clause (lit);
           if (!v.reason) {
             v.level = 0;
+            if (opts.reimply) {
+              trail.push_back (lit);
+              v.trail = trail.size ();
+            }
             continue;
           }
         }
@@ -306,16 +320,23 @@ void Internal::failing () {
         }
       }
       clear_analyzed_literals ();
-    } else if (!unsat_constraint) { // lrat for case (3)
+    } else if (!unsat_constraint) { // LRAT for case (3)
       assert (clause.size () == 1);
       const int lit = clause[0];
       Var &v = var (lit);
       assert (v.reason);
-      if (v.reason == external_reason) {
+      if (v.reason == external_reason) { // does this even happen?
         v.reason = wrapped_learn_external_reason_clause (lit);
       }
       assert (v.reason != external_reason);
-      assume_analyze_reason (lit, v.reason);
+      if (v.reason)
+        assume_analyze_reason (lit, v.reason);
+      else {
+        const unsigned uidx = vlit (lit);
+        uint64_t id = unit_clauses[uidx];
+        assert (id);
+        lrat_chain.push_back (id);
+      }
       for (auto &lit : clause) {
         Flags &f = flags (lit);
         const unsigned bit = bign (-lit);
@@ -323,7 +344,7 @@ void Internal::failing () {
           f.failed |= bit;
       }
       clear_analyzed_literals ();
-    } else { // lrat for unsat_constraint
+    } else { // LRAT for unsat_constraint
       assert (clause.empty ());
       clear_analyzed_literals ();
       for (auto lit : constraint) {
@@ -444,9 +465,11 @@ DONE:
 
 bool Internal::failed (int lit) {
   if (!marked_failed) {
-    failing ();
+    if (!conflict_id)
+      failing ();
     marked_failed = true;
   }
+  conclude_unsat ();
   Flags &f = flags (lit);
   const unsigned bit = bign (lit);
   return (f.failed & bit) != 0;
@@ -458,7 +481,8 @@ void Internal::conclude_unsat () {
   concluded = true;
   if (!marked_failed) {
     assert (conclusion.empty ());
-    failing ();
+    if (!conflict_id)
+      failing ();
     marked_failed = true;
   }
   ConclusionType con;
@@ -474,15 +498,15 @@ void Internal::conclude_unsat () {
 void Internal::reset_concluded () {
   if (proof)
     proof->reset_assumptions ();
+  if (concluded) {
+    LOG ("reset concluded");
+    concluded = false;
+  }
   if (conflict_id) {
     assert (conclusion.size () == 1);
     return;
   }
   conclusion.clear ();
-  if (!concluded)
-    return;
-  LOG ("reset concluded");
-  concluded = false;
 }
 
 // Add the start of each incremental phase (leaving the state
@@ -507,32 +531,63 @@ void Internal::sort_and_reuse_assumptions () {
   assert (opts.ilbassumptions);
   if (assumptions.empty ())
     return;
+  // set assumptions first, then sorted by position on the trail
+  // unset literals are sorted by literal value
   std::sort (begin (assumptions), end (assumptions),
              [this] (int litA, int litB) {
+               if (!val (litA) && val (litB))
+                 return false;
+               if (val (litA) && !val (litB))
+                 return true;
+               if (!val (litA) && !val (litB))
+                 return litA < litB;
+               assert (val (litA) && val (litB));
+               LOG ("%d -> %" PRIu64, litA,
+                    ((uint64_t) var (litA).level << 32) +
+                        (uint64_t) var (litA).trail);
                return ((uint64_t) var (litA).level << 32) +
                           (uint64_t) var (litA).trail <
                       ((uint64_t) var (litB).level << 32) +
                           (uint64_t) var (litB).trail;
              });
+  int max_level = 0;
+  for (auto lit : assumptions) {
+    if (val (lit))
+      max_level = var (lit).level;
+    else
+      break;
+  }
 
-  const int max_level = var (assumptions.back ()).level;
   const int size = min (level + 1, max_level + 1);
   assert ((size_t) level == control.size () - 1);
-  for (int i = 1; i < size; ++i) {
+  LOG (assumptions, "sorted assumptions");
+  int target = 0;
+  for (int i = 1, j = 0; i < size;) {
     const Level &l = control[i];
     const int lit = l.decision;
-    const int alit = assumptions[i - 1];
-    if (!lit || var (lit).level != i) {
-      if (val (alit) > 0 && var (alit).level < i)
+    const int alit = assumptions[j];
+    const int lev = i;
+    target = lev - 1;
+    if (val (alit) &&
+        var (alit).level < lev) { // we can ignore propagated assumptions
+      ++j;
+      continue;
+    }
+    ++i, ++j;
+    // removed literals or pseudo decision level:
+    if (!lit || var (lit).level != lev) {
+      if (val (alit) > 0 && var (alit).level < lev)
         continue;
-      backtrack (i - 1);
       break;
     }
-    if (l.decision == alit)
+    if (l.decision == alit) {
       continue;
-    backtrack (i - 1);
+    }
     break;
   }
+
+  if (target < level)
+    backtrack (target);
   LOG ("assumptions allow for reuse of trail up to level %d", level);
   if ((size_t) level > assumptions.size ())
     stats.assumptionsreused += assumptions.size ();

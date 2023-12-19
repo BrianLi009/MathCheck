@@ -35,8 +35,8 @@ File::File (Internal *i, bool w, int c, int p, FILE *f, const char *n)
 #if !defined(QUIET) || !defined(NDEBUG)
       writing (w),
 #endif
-      close_file (c), child_pid (p), file (f), _name (n), _lineno (1),
-      _bytes (0) {
+      close_file (c), child_pid (p), file (f), _name (strdup (n)),
+      _lineno (1), _bytes (0) {
   (void) w;
   assert (f), assert (n);
 }
@@ -93,6 +93,14 @@ bool File::writable (const char *path) {
     }
   }
   return !res;
+}
+
+bool File::piping () {
+  struct stat stat;
+  int fd = fileno (file);
+  if (fstat (fd, &stat))
+    return true;
+  return S_ISFIFO (stat.st_mode);
 }
 
 // These are signatures for supported compressed file types.  In 2018 the
@@ -442,6 +450,7 @@ void File::flush () {
 }
 
 File::~File () {
+  free (_name);
   if (file)
     close ();
 }

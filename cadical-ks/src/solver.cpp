@@ -37,7 +37,7 @@ namespace CaDiCaL {
          tout.normal_code ()); \
   } while (0)
 
-void Solver::transition_to_unknown_state () {
+void Solver::transition_to_steady_state () {
   if (state () == CONFIGURING) {
     LOG ("API leaves state %sCONFIGURING%s", tout.emph_code (),
          tout.normal_code ());
@@ -57,8 +57,8 @@ void Solver::transition_to_unknown_state () {
     external->reset_concluded ();
     external->reset_constraint ();
   }
-  if (state () != UNKNOWN)
-    STATE (UNKNOWN);
+  if (state () != STEADY)
+    STATE (STEADY);
 }
 
 /*------------------------------------------------------------------------*/
@@ -404,7 +404,7 @@ int Solver::vars () {
 void Solver::reserve (int min_max_var) {
   TRACE ("reserve", min_max_var);
   REQUIRE_VALID_STATE ();
-  transition_to_unknown_state ();
+  transition_to_steady_state ();
   external->reset_extended ();
   external->init (min_max_var);
   LOG_API_CALL_END ("reserve", min_max_var);
@@ -532,13 +532,13 @@ void Solver::add (int lit) {
   REQUIRE_VALID_STATE ();
   if (lit)
     REQUIRE_VALID_LIT (lit);
-  transition_to_unknown_state ();
+  transition_to_steady_state ();
   external->add (lit);
   adding_clause = lit;
   if (adding_clause)
     STATE (ADDING);
   else if (!adding_constraint)
-    STATE (UNKNOWN);
+    STATE (STEADY);
   LOG_API_CALL_END ("add", lit);
 }
 
@@ -564,7 +564,17 @@ void Solver::clause (int a, int b, int c, int d) {
   REQUIRE_VALID_LIT (a);
   REQUIRE_VALID_LIT (b);
   REQUIRE_VALID_LIT (c);
+  REQUIRE_VALID_LIT (d);
   add (a), add (b), add (c), add (d), add (0);
+}
+
+void Solver::clause (int a, int b, int c, int d, int e) {
+  REQUIRE_VALID_LIT (a);
+  REQUIRE_VALID_LIT (b);
+  REQUIRE_VALID_LIT (c);
+  REQUIRE_VALID_LIT (d);
+  REQUIRE_VALID_LIT (e);
+  add (a), add (b), add (c), add (d), add (e), add (0);
 }
 
 void Solver::clause (const int *lits, size_t size) {
@@ -594,13 +604,13 @@ void Solver::constrain (int lit) {
   REQUIRE_VALID_STATE ();
   if (lit)
     REQUIRE_VALID_LIT (lit);
-  transition_to_unknown_state ();
+  transition_to_steady_state ();
   external->constrain (lit);
   adding_constraint = lit;
   if (adding_constraint)
     STATE (ADDING);
   else if (!adding_clause)
-    STATE (UNKNOWN);
+    STATE (STEADY);
   LOG_API_CALL_END ("constrain", lit);
 }
 
@@ -608,7 +618,7 @@ void Solver::assume (int lit) {
   TRACE ("assume", lit);
   REQUIRE_VALID_STATE ();
   REQUIRE_VALID_LIT (lit);
-  transition_to_unknown_state ();
+  transition_to_steady_state ();
   external->assume (lit);
   LOG_API_CALL_END ("assume", lit);
 }
@@ -636,7 +646,7 @@ Solver::CubesWithStatus Solver::generate_cubes (int depth, int min_depth) {
 void Solver::reset_assumptions () {
   TRACE ("reset_assumptions");
   REQUIRE_VALID_STATE ();
-  transition_to_unknown_state ();
+  transition_to_steady_state ();
   external->reset_assumptions ();
   LOG_API_CALL_END ("reset_assumptions");
 }
@@ -644,7 +654,7 @@ void Solver::reset_assumptions () {
 void Solver::reset_constraint () {
   TRACE ("reset_constraint");
   REQUIRE_VALID_STATE ();
-  transition_to_unknown_state ();
+  transition_to_steady_state ();
   external->reset_constraint ();
   LOG_API_CALL_END ("reset_constraint");
 }
@@ -652,7 +662,7 @@ void Solver::reset_constraint () {
 /*------------------------------------------------------------------------*/
 
 int Solver::call_external_solve_and_check_results (bool preprocess_only) {
-  transition_to_unknown_state ();
+  transition_to_steady_state ();
   assert (state () & READY);
   STATE (SOLVING);
   const int res = external->solve (preprocess_only);
@@ -661,7 +671,7 @@ int Solver::call_external_solve_and_check_results (bool preprocess_only) {
   else if (res == 20)
     STATE (UNSATISFIED);
   else
-    STATE (UNKNOWN);
+    STATE (STEADY);
 #if 0 // EXPENSIVE ALTERNATIVE ASSUMPTION CHECKING
   // This checks that the set of failed assumptions form a core using the
   // external 'copy (...)' function to copy the solver, which can be trusted
@@ -672,8 +682,13 @@ int Solver::call_external_solve_and_check_results (bool preprocess_only) {
   //
   if (res == 20 && !external->assumptions.empty ()) {
     Solver checker;
+    // checking restored clauses does not work (because the clauses are not added)
+    checker.set("checkproof", 1);
+    checker.set("lratexternal", 0);
+    checker.set("lrat", 0);
     checker.prefix ("checker ");
     copy (checker);
+    checker.set("log", 1);
     for (const auto & lit : external->assumptions)
       if (failed (lit))
         checker.add (lit), checker.add (0);
@@ -681,8 +696,10 @@ int Solver::call_external_solve_and_check_results (bool preprocess_only) {
       FATAL ("copying assumption checker failed");
   }
 #endif
-  if (!res)
+  if (!res) {
     external->reset_assumptions ();
+    external->reset_constraint ();
+  }
   return res;
 }
 
@@ -714,6 +731,7 @@ int Solver::val (int lit) {
   REQUIRE (state () == SATISFIED, "can only get value in satisfied state");
   if (!external->extended)
     external->extend ();
+  external->conclude_sat ();
   int res = external->ival (lit);
   LOG_API_CALL_RETURNS ("val", lit, res);
   assert (state () == SATISFIED);
@@ -986,7 +1004,7 @@ bool Solver::frozen (int lit) const {
 /*------------------------------------------------------------------------*/
 
 bool Solver::trace_proof (FILE *external_file, const char *name) {
-  LOG_API_CALL_BEGIN ("trace_proof", name);
+  TRACE ("trace_proof", name);
   REQUIRE_VALID_STATE ();
   REQUIRE (
       state () == CONFIGURING,
@@ -1000,7 +1018,7 @@ bool Solver::trace_proof (FILE *external_file, const char *name) {
 }
 
 bool Solver::trace_proof (const char *path) {
-  LOG_API_CALL_BEGIN ("trace_proof", path);
+  TRACE ("trace_proof", path);
   REQUIRE_VALID_STATE ();
   REQUIRE (
       state () == CONFIGURING,
@@ -1014,7 +1032,7 @@ bool Solver::trace_proof (const char *path) {
 }
 
 void Solver::flush_proof_trace (bool print_statistics_unless_quiet) {
-  LOG_API_CALL_BEGIN ("flush_proof_trace");
+  TRACE ("flush_proof_trace");
   REQUIRE_VALID_STATE ();
   REQUIRE (!internal->file_tracers.empty (), "proof is not traced");
   REQUIRE (!internal->file_tracers.back ()->closed (),
@@ -1024,7 +1042,7 @@ void Solver::flush_proof_trace (bool print_statistics_unless_quiet) {
 }
 
 void Solver::close_proof_trace (bool print_statistics_unless_quiet) {
-  LOG_API_CALL_BEGIN ("close_proof_trace");
+  TRACE ("close_proof_trace");
   REQUIRE_VALID_STATE ();
   REQUIRE (!internal->file_tracers.empty (), "proof is not traced");
   REQUIRE (!internal->file_tracers.back ()->closed (),
@@ -1104,8 +1122,9 @@ bool Solver::disconnect_proof_tracer (FileTracer *tracer) {
 }
 
 /*------------------------------------------------------------------------*/
+
 void Solver::conclude () {
-  LOG_API_CALL_BEGIN ("conclude");
+  TRACE ("conclude");
   REQUIRE_VALID_STATE ();
   REQUIRE (state () == UNSATISFIED || state () == SATISFIED,
            "can only conclude in satisfied or unsatisfied state");
@@ -1353,7 +1372,8 @@ bool Solver::traverse_clauses (ClauseIterator &it) const {
   LOG_API_CALL_BEGIN ("traverse_clauses");
   REQUIRE_VALID_STATE ();
   bool res = external->traverse_all_frozen_units_as_clauses (it) &&
-             internal->traverse_clauses (it);
+             internal->traverse_clauses (it) &&
+             internal->traverse_constraint (it);
   LOG_API_CALL_RETURNS ("traverse_clauses", res);
   return res;
 }
@@ -1468,7 +1488,7 @@ struct WitnessWriter : public WitnessIterator {
     }
     return file->put ('0');
   }
-  bool witness (const vector<int> &c, const vector<int> &w) {
+  bool witness (const vector<int> &c, const vector<int> &w, uint64_t) {
     if (!write (c))
       return false;
     if (!file->put (' '))
@@ -1531,8 +1551,8 @@ struct WitnessCopier : public WitnessIterator {
 
 public:
   WitnessCopier (External *d) : dst (d) {}
-  bool witness (const vector<int> &c, const vector<int> &w) {
-    dst->push_external_clause_and_witness_on_extension_stack (c, w);
+  bool witness (const vector<int> &c, const vector<int> &w, uint64_t id) {
+    dst->push_external_clause_and_witness_on_extension_stack (c, w, id);
     return true;
   }
 };
@@ -1606,6 +1626,10 @@ void Solver::error (const char *fmt, ...) {
   va_start (ap, fmt);
   internal->verror (fmt, ap);
   va_end (ap);
+}
+
+void Solver::add_trusted_clause (const vector<int> &clause) {
+  internal->proof->add_trusted_clause (clause);
 }
 
 } // namespace CaDiCaL

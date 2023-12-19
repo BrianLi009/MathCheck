@@ -64,7 +64,7 @@ struct External {
   vector<int> constraint;  // External constraint. Terminated by zero.
 
   vector<uint64_t>
-      ext_units; // External units. Needed to compute lrat for eclause
+      ext_units; // External units. Needed to compute LRAT for eclause
   vector<bool> ext_flags; // to avoid duplicate units
   vector<int> eclause;    // External version of original input clause.
   // The extension stack for reconstructing complete satisfying assignments
@@ -74,7 +74,7 @@ struct External {
   // external literals on the 'extension' stack after mapping the
   // internal literals given as arguments with 'externalize'.
 
-  bool extended;         // Have been extended.
+  bool extended; // Have been extended.
   bool concluded;
   vector<int> extension; // Solution reconstruction extension stack.
 
@@ -172,7 +172,7 @@ struct External {
   //
   void extend ();
   void conclude_sat ();
-  
+
   /*----------------------------------------------------------------------*/
 
   // Marking external literals.
@@ -206,7 +206,7 @@ struct External {
   /*----------------------------------------------------------------------*/
 
   void push_external_clause_and_witness_on_extension_stack (
-      const vector<int> &clause, const vector<int> &witness);
+      const vector<int> &clause, const vector<int> &witness, uint64_t id);
 
   void push_id_on_extension_stack (uint64_t id);
 

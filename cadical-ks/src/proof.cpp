@@ -21,7 +21,7 @@ void Internal::setup_lrat_builder () {
     return;
   if (opts.externallrat) {
     lratbuilder = new LratBuilder (this);
-    LOG ("PROOF connecting lrat proof chain builder");
+    LOG ("PROOF connecting LRAT proof chain builder");
     proof->connect (lratbuilder);
   }
 }
@@ -143,7 +143,7 @@ void Internal::check () {
   new_proof_on_demand ();
   if (opts.checkproof > 1) {
     StatTracer *lratchecker = new LratChecker (this);
-    LOG ("PROOF connecting lrat proof checker");
+    LOG ("PROOF connecting LRAT proof checker");
     force_lrat ();
     proof->connect (lratchecker);
     stat_tracers.push_back (lratchecker);
@@ -517,6 +517,13 @@ void Proof::add_derived_clause () {
   clause_id = 0;
 }
 
+void Proof::add_trusted_clause (const vector<int> &clause) {
+  LOG (clause, "PROOF adding trusted clause");
+  for (auto &tracer : tracers) {
+    tracer->add_trusted_clause (clause);
+  }
+}
+
 void Proof::delete_clause () {
   LOG (clause, "PROOF deleting external clause");
   if (lratbuilder)
@@ -591,13 +598,8 @@ void Proof::reset_assumptions () {
   }
 }
 
-void Proof::report_status (int res, uint64_t id) {
-  LOG ("PROOF reporting status %d", res);
-  StatusType status = OTHER;
-  if (res == 10)
-    status = SAT;
-  else if (res == 20)
-    status = UNSAT;
+void Proof::report_status (int status, uint64_t id) {
+  LOG ("PROOF reporting status %d", status);
   for (auto &tracer : tracers) {
     tracer->report_status (status, id);
   }
@@ -607,6 +609,13 @@ void Proof::begin_proof (uint64_t id) {
   LOG (clause, "PROOF begin proof");
   for (auto &tracer : tracers) {
     tracer->begin_proof (id);
+  }
+}
+
+void Proof::solve_query () {
+  LOG (clause, "PROOF solve query");
+  for (auto &tracer : tracers) {
+    tracer->solve_query ();
   }
 }
 

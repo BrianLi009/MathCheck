@@ -518,6 +518,16 @@ int App::main (int argc, char **argv) {
         unembeddable_check = stoi(argv[i]);
         std::cout << "c unembeddable-check = " << unembeddable_check << endl;
       }
+    } else if (!strcmp (argv[i], "--perm-out")) {
+      if (++i == argc)
+        APPERR ("argument to '--perm-out' missing");
+      else if (solver->permoutfile != NULL)
+        APPERR ("multiple argument '--perm-out'");
+      else {
+        solver->permoutfile = fopen(argv[i], "w");
+        if (solver->permoutfile == NULL)
+          std::cout << "c could not open " << argv[i] << std::endl, exit(1);
+      }
     }
 #ifndef __WIN32
     else if (!strcmp (argv[i], "-t")) {
@@ -978,6 +988,8 @@ void App::init () {
 App::App () : solver (0) {} // Only partially initialize the app.
 
 App::~App () {
+  if (solver->permoutfile)
+    fclose(solver->permoutfile);
   if (!solver)
     return; // Only partially initialized.
   Signal::reset ();

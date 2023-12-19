@@ -18,6 +18,7 @@ class DratTracer : public FileTracer {
 
   // support DRAT
   void drat_add_clause (const vector<int> &);
+  void drat_add_trusted_clause (const vector<int> &);
   void drat_delete_clause (const vector<int> &);
 
 public:
@@ -34,11 +35,13 @@ public:
   void add_derived_clause (uint64_t, bool, const vector<int> &,
                            const vector<uint64_t> &) override;
 
+  void add_trusted_clause (const vector<int> &) override;
+
   void delete_clause (uint64_t, bool, const vector<int> &) override;
 
   void finalize_clause (uint64_t, const vector<int> &) override {} // skip
 
-  void report_status (StatusType, uint64_t) override {} // skip
+  void report_status (int, uint64_t) override {} // skip
 
 #ifndef QUIET
   void print_statistics ();

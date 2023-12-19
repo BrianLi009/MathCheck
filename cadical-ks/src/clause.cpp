@@ -472,9 +472,10 @@ void Internal::add_new_original_clause (uint64_t id) {
       if (!original.size ())
         VERBOSE (1, "found empty original clause");
       else
-        MSG ("found falsified original clause");
+        VERBOSE (1, "found falsified original clause");
       unsat = true;
       conflict_id = new_id;
+      marked_failed = true;
       conclusion.push_back (new_id);
     } else if (size == 1) {
       if (force_no_backtrack) {
@@ -483,9 +484,9 @@ void Internal::add_new_original_clause (uint64_t id) {
         assert (val (clause[0]) >= 0);
         assert (!flags (idx).eliminated ());
         Var &v = var (idx);
+        assert (val (clause[0]));
         v.level = 0;
         v.reason = 0;
-        v.trail = 0;
         const unsigned uidx = vlit (clause[0]);
         unit_clauses[uidx] = new_id;
         mark_fixed (clause[0]);

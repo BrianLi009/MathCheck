@@ -151,15 +151,6 @@ inline void Internal::search_assign (int lit, Clause *reason) {
   int lit_level;
   assert (!lrat || level || reason == external_reason ||
           reason == decision_reason || !lrat_chain.empty ());
-  if (reason == external_reason &&
-      ((size_t) level <= assumptions.size () + (!!constraint.size ()))) {
-    // On the pseudo-decision levels every external propagation must be
-    // explained eagerly, in order to avoid complications during conflict
-    // analysis.
-    // TODO: refine this eager explanation step.
-    LOG ("Too low decision level to store external reason of: %d", lit);
-    reason = learn_external_reason_clause (lit, 0, true);
-  }
   // The following cases are explained in the two comments above before
   // 'decision_reason' and 'assignment_level'.
   //
@@ -323,6 +314,8 @@ bool Internal::propagate () {
         continue; // blocking literal satisfied
 
       if (w.binary ()) {
+
+        // assert (w.clause->redundant || !w.clause->garbage);
 
         // In principle we can ignore garbage binary clauses too, but that
         // would require to dereference the clause pointer all the time with
@@ -861,7 +854,9 @@ inline int Internal::next_propagation_level (int last) {
 
 // returns a conflict of conflicting_level at most l
 //
-inline Clause *Internal::propagation_conflict (int l, Clause *c) {
+inline Clause *Internal::propagation_conflict (int *lp, Clause *c,
+                                               bool exact) {
+  int l = *lp;
   if (c)
     conflicts.push_back (c);
   else if (conflicts.empty ())
@@ -876,8 +871,11 @@ inline Clause *Internal::propagation_conflict (int l, Clause *c) {
       conf = ccl;
     }
   }
-  if (conf <= l || l < 0)
+  if (conf <= l || l < 0) {
+    if (exact)
+      *lp = conf;
     return c;
+  }
   return 0;
 }
 
@@ -909,8 +907,9 @@ bool Internal::propagate_multitrail () {
   int proplevel = multitrail_dirty - 1;
 
   while (!conflict) {
+    LOG ("change proplevel");
     proplevel = next_propagation_level (proplevel);
-    conflict = propagation_conflict (proplevel, 0);
+    conflict = propagation_conflict (&proplevel, 0, true);
     if (proplevel == level)
       break;
     if (proplevel < 0)
@@ -983,7 +982,7 @@ bool Internal::propagate_multitrail () {
             // fix missed implication by elevating w.blit
             elevate_lit (w.blit, w.clause);
           } else if (b < 0)
-            conflict = propagation_conflict (proplevel,
+            conflict = propagation_conflict (&proplevel,
                                              w.clause); // but continue ...
           else {
             build_chain_for_units (w.blit, w.clause, 0);
@@ -1218,7 +1217,7 @@ bool Internal::propagate_multitrail () {
               // The other watch is assigned false ('u < 0') and all other
               // literals as well (still 'v < 0'), thus we found a conflict.
 
-              conflict = propagation_conflict (proplevel, w.clause);
+              conflict = propagation_conflict (&proplevel, w.clause);
               if (conflict)
                 break;
             }
@@ -1243,7 +1242,7 @@ bool Internal::propagate_multitrail () {
   }
   if (!conflict) {
     multitrail_dirty = level;
-    conflict = propagation_conflict (level, 0);
+    conflict = propagation_conflict (&level, 0);
     assert (!conflict);
   } else {
     assert (proplevel >= 0);

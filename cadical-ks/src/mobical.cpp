@@ -3,117 +3,117 @@
 /* Copyright (C) 2020 Mathias Fleury, Johannes Kepler University Linz     */
 /* Copyright (c) 2020-2021 Nils Froleyks, Johannes Kepler University Linz */
 /* Copyright (C) 2022-2023 Katalin Fazekas, Technical University of Vienna*/
+/* Copyright (C) 2021-2023 Armin Biere, University of Freiburg            */
 /*------------------------------------------------------------------------*/
 
 // Model Based Tester for the CaDiCaL SAT Solver Library.
 
 namespace CaDiCaL {
 
+// clang-format off
+
 static const char *USAGE =
-    "usage: mobical [ <option> ... ] [ <mode> ]\n"
-    "\n"
-    "where '<option>' can be one of the following:\n"
-    "\n"
-    "  --help    | -h    print this command line option summary and exit\n"
-    "  --version         print CaDiCaL's three character version and exit\n"
-    "  --build           print build configuration\n"
-    "\n"
-    "  -v                increase verbosity\n"
-    "  --colors          force colors for both '<stdout>' and '<stderr>'\n"
-    "  --no-colors       disable colors if '<stderr>' is connected to "
-    "terminal\n"
-    "  --no-terminal     assume '<stderr>' is not connected to terminal\n"
-    "  --no-seeds        do not print seeds in random mode\n"
-    "\n"
-    "  -<n>              specify the number of solving phases explicitly\n"
-    "  --time <seconds>  set time limit per trace (none=0, default=%d)\n"
-    "  --space <MB>      set space limit (none=0, default=%d)\n"
-    "\n"
-    "  --do-not-ignore-resource-limits  consider out-of-time or memory as "
-    "error\n"
-    "\n"
-    "  --small           generate small formulas only\n"
-    "  --medium          generate medium sized formulas only\n"
-    "  --big             generate big formulas only\n"
-    "\n"
-    "Then '<mode>' is one of these\n"
-    "\n"
-    "  <seed>            generate and execute trace for given 64-bit seed\n"
-    "  <seed>  <output>  generate trace, shrink and write it to file\n"
-    "  <input> <output>  read trace, shrink and write it to output file\n"
-    "  <input>           read and replay the specified input trace\n"
-    "\n"
-    "The output trace is not shrunken if it is not failing.  However,\n"
-    "before it is written it is executed, unless '--do-not-execute'\n"
-    "is specified:\n"
-    "\n"
-    "  --do-not-execute  just write to '<output>' without execution\n"
-    "\n"
-    "In order to check memory issues or collect coverage you can force\n"
-    "execution within the main process, which however also means that\n"
-    "the model based tester aborts as soon a test fails\n"
-    "\n"
-    "  --do-not-fork     execute all tests in main process directly\n"
-    "\n"
-    "In order to replay a trace which violates an API contract use\n"
-    "\n"
-    "  --do-not-enforce-contracts\n"
-    "\n"
-    "To read from '<stdin>' use '-' as '<input>' and also '-' instead of\n"
-    "'<output>' to write to '<stdout>'.\n"
-    "\n"
+"usage: mobical [ <option> ... ] [ <mode> ]\n"
+"\n"
+"where '<option>' can be one of the following:\n"
+"\n"
+"  --help    | -h    print this command line option summary and exit\n"
+"  --version         print CaDiCaL's three character version and exit\n"
+"  --build           print build configuration\n"
+"\n"
+"  -v                increase verbosity\n"
+"  --colors          force colors for both '<stdout>' and '<stderr>'\n"
+"  --no-colors       disable colors if '<stderr>' is connected to "
+"terminal\n"
+"  --no-terminal     assume '<stderr>' is not connected to terminal\n"
+"  --no-seeds        do not print seeds in random mode\n"
+"\n"
+"  -<n>              specify the number of solving phases explicitly\n"
+"  --time <seconds>  set time limit per trace (none=0, default=%d)\n"
+"  --space <MB>      set space limit (none=0, default=%d)\n"
+"\n"
+"  --do-not-ignore-resource-limits  consider out-of-time or memory as "
+"error\n"
+"\n"
+"  --small           generate small formulas only\n"
+"  --medium          generate medium sized formulas only\n"
+"  --big             generate big formulas only\n"
+"\n"
+"Then '<mode>' is one of these\n"
+"\n"
+"  <seed>            generate and execute trace for given 64-bit seed\n"
+"  <seed>  <output>  generate trace, shrink and write it to file\n"
+"  <input> <output>  read trace, shrink and write it to output file\n"
+"  <input>           read and replay the specified input trace\n"
+"\n"
+"The output trace is not shrunken if it is not failing.  However, before\n"
+"it is written it is executed, unless '--do-not-execute' is specified:\n"
+"\n"
+"  --do-not-execute  just write to '<output>' without execution\n"
+"\n"
+"In order to check memory issues or collect coverage you can force\n"
+"execution within the main process, which however also means that the\n"
+"model based tester aborts as soon a test fails\n"
+"\n"
+"  --do-not-fork     execute all tests in main process directly\n"
+"\n"
+"In order to replay a trace which violates an API contract use\n"
+"\n"
+"  --do-not-enforce-contracts\n"
+"\n"
+"To read from '<stdin>' use '-' as '<input>' and also '-' instead of\n"
+"'<output>' to write to '<stdout>'.\n"
+"\n"
 #ifdef LOGGING
-    "As the library is compiled with logging support ('-DLOGGING')\n"
-    "one can force to add the 'set log 1' call to the trace with\n"
-    "\n"
-    "  --log | -l        force low-level logging for detailed debugging\n"
-    "\n"
+"As the library is compiled with logging support ('-DLOGGING')\n"
+"one can force to add the 'set log 1' call to the trace with\n"
+"\n"
+"  --log | -l        force low-level logging for detailed debugging\n"
+"\n"
 #endif
-    "Implicitly add 'dump' and 'stats' calls to traces:\n"
-    "\n"
-    "  --dump  | -d      force dumping the CNF before every 'solve'\n"
-    "  --stats | -s      force printing statistics after every 'solve'\n"
-    "\n"
-    "Implicitly add 'configure plain' after setting options:\n"
-    "\n"
-    "  --plain | -p\n" // TODO all configurations?
-    "\n"
-    "Otherwise if no '<mode>' is specified the default is to generate\n"
-    "random traces internally until the execution of a trace fails, which\n"
-    "means it produces a non-zero exit code.  Then the trace is rerun and\n"
-    "shrunken through delta-debugging to produce a smaller trace.  The\n"
-    "shrunken failing trace is written as 'red-<seed>.trace' to the\n"
-    "current working directory.\n"
-    "\n"
-    "The following options disable certain parts of the shrinking "
-    "algorithm:\n"
-    "\n"
-    "  --do-not-shrink[-at-all]\n"
-    "  --do-not-add-options[-before-shrinking]\n"
-    "  --do-not-shrink-phases\n"
-    "  --do-not-shrink-clauses\n"
-    "  --do-not-shrink-literals\n"
-    "  --do-not-shrink-basic[-calls]\n"
-    "  --do-not-disable[-options]\n"
-    "  --do-not-reduce[[-option]-values]\n"
-    "  --do-not-shrink-variables\n"
-    "  --do-not-shrink-options\n"
-    "\n"
-    "The standard mode of using the model based tester is to start it in\n"
-    "random testing mode without '<input>', '<seed>' nor '<output>' "
-    "option.\n"
-    "If a failing trace is found it will be shrunken and the resulting "
-    "trace\n"
-    "written to the current working directory.  Then the model based "
-    "tester\n"
-    "can be interrupted and then called again with the produced failing "
-    "trace\n"
-    "as single argument.  This invocation will execute the trace within "
-    "the\n"
-    "same process and thus can directly be investigated with a symbolic\n"
-    "debugger such as 'gdb' or maybe first checked for memory issues with\n"
-    "'valgrind' or recompilation with memory checking "
-    "'-fsanitize=address'.\n";
+"Implicitly add 'dump' and 'stats' calls to traces:\n"
+"\n"
+"  --dump  | -d      force dumping the CNF before every 'solve'\n"
+"  --stats | -s      force printing statistics after every 'solve'\n"
+"\n"
+"Implicitly add 'configure plain' after setting options:\n"
+"\n"
+"  --plain | -p\n" // TODO all configurations?
+"\n"
+"Otherwise if no '<mode>' is specified the default is to generate random\n"
+"traces internally until the execution of a trace fails, which means it\n"
+"produces a non-zero exit code.  Then the trace is rerun and shrunken\n"
+"through delta-debugging to produce a smaller trace.  The shrunken failing\n"
+"trace is written as 'red-<seed>.trace' to the current working directory.\n"
+"\n"
+"The following options disable certain parts of the shrinking "
+"algorithm:\n"
+"\n"
+"  --do-not-shrink[-at-all]\n"
+"  --do-not-add-options[-before-shrinking]\n"
+"  --do-not-shrink-phases\n"
+"  --do-not-shrink-clauses\n"
+"  --do-not-shrink-literals\n"
+"  --do-not-shrink-basic[-calls]\n"
+"  --do-not-disable[-options]\n"
+"  --do-not-reduce[[-option]-values]\n"
+"  --do-not-shrink-variables\n"
+"  --do-not-shrink-options\n"
+"\n"
+"The standard mode of using the model based tester is to start it in\n"
+"random testing mode without '<input>', '<seed>' nor '<output>' option.\n"
+"If a failing trace is found it will be shrunken and the resulting\n"
+"trace written to the current working directory.  Then the model based\n"
+"tester can be interrupted and then called again with the produced\n"
+"failing trace as single argument.\n"
+"\n"
+"This second invocation will execute the trace within the same process\n"
+"and thus can directly be investigated with a symbolic debugger such\n"
+"as 'gdb' or maybe first checked for memory issues with 'valgrind'\n"
+"or recompilation with memory checking '-fsanitize=address'.\n"
+;
+
+// clang-format on
 
 } // namespace CaDiCaL
 
@@ -130,6 +130,7 @@ static const char *USAGE =
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <vector>
 
 // MockPropagator
@@ -162,47 +163,30 @@ class Trace;
 enum Size { NOSIZE = 0, SMALL = 10, MEDIUM = 30, BIG = 50 };
 
 struct Force {
-  Size size;
-  int phases;
-  Force () : size (NOSIZE), phases (-1) {}
+  Size size = NOSIZE;
+  int phases = -1;
 };
 
 // Options to shrink traces.
 
 struct DoNot {
-  bool add; // add all options before shrinking             'a'
-  struct {
-    bool atall;    // do not shrink anything                       's'
-    bool phases;   // shrink complete incremental solving phases   'p'
-    bool clauses;  // shrink full clauses                          'c'
-    bool literals; // shrink literals which shrinks                'l'
-    bool basic;    // shrink other basic calls                     'b'
-    bool options;  // shrink option calls                          'o'
-  } shrink;
-  bool disable; // try to eagerly disable all options           'd'
-  bool map;     // do not map variable indices                  'm'
-  bool reduce;  // reduce option values                         'r'
-  bool execute; // do not execute trace
-  bool fork;    // do not fork sub-process
-  bool enforce; // do not enforce contracts on read trace
-  bool seeds;
-  bool ignore_resource_limits;
-
-  DoNot () {
-    add = false;
-    shrink.atall = false;
-    shrink.phases = false;
-    shrink.clauses = false;
-    shrink.literals = false;
-    shrink.basic = false;
-    shrink.options = false;
-    disable = false;
-    map = false;
-    reduce = false;
-    seeds = false;
-    ignore_resource_limits = false;
-    execute = false;
-  }
+  bool add = false;        // add all options before shrinking    'a'
+  struct {                 //
+    bool atall = false;    // do not shrink anything              's'
+    bool phases = false;   // shrink complete incremental solving 'p'
+    bool clauses = false;  // shrink full clauses                 'c'
+    bool literals = false; // shrink literals which shrinks       'l'
+    bool basic = false;    // shrink other basic calls            'b'
+    bool options = false;  // shrink option calls                 'o'
+  } shrink;                //
+  bool disable = false;    // try to eagerly disable all options  'd'
+  bool map = false;        // do not map variable indices         'm'
+  bool reduce = false;     // reduce option values                'r'
+  bool execute = false;    // do not execute trace
+  bool fork = false;       // do not fork sub-process
+  bool enforce = false;    // do not enforce contracts on read trace
+  bool seeds = false;
+  bool ignore_resource_limits = false;
 };
 
 /*------------------------------------------------------------------------*/
@@ -222,76 +206,146 @@ class MockPropagator : public ExternalPropagator {
 private:
   Solver *s = 0;
 
-  std::vector<int> clause;
-  std::vector<std::vector<int>> all_external_clauses;
+  // MockPropagator parameters
+  size_t lemma_per_cb = 2;
+  bool logging = false;
 
-  std::set<int> observed_variables;
-  std::vector<int> new_observed_variables;
-  std::deque<int> added_new_observed_variables;
-  std::deque<std::vector<int>> observed_trail;
-  bool new_ovars = false;
+  struct ExternalLemma {
+    size_t id;
+    size_t add_count;
+    size_t size;
+    size_t next;
 
-  size_t nof_clauses = 0;
-  size_t nof_added_clauses = 0;
-  int lemma_count = 0;
+    bool forgettable;
+    bool tainting;
+    bool propagation_reason;
 
-  std::vector<int> lemmas_per_queries;
+    // Flexible array members are a C99 feature and not in C++11!
+    // Thus pedantic compilation fails for 'int literals[]'.
+    //
+    int *literals;
 
-  // Internal bookkeeping about where are we in the sequence of all lemmas
-  size_t query_loc = 0;
-  size_t lemma_loc = 0;
-  size_t lemma_lit_loc = 0;
+    int *begin () { return literals; }
+    int *end () { return literals + size; }
+
+    int next_lit () {
+      if (next < size)
+        return literals[next++];
+      else {
+        next = 0;
+        return 0;
+      }
+    }
+  };
+
+  // The list of all external lemmas (including reason clauses)
+  std::vector<ExternalLemma *> external_lemmas;
+
+  // The reasons of present external propagations
+  std::map<int, int> reason_map;
+
+  // Next lemma to add
+  size_t add_lemma_idx = 0;
+
+  // Forced lemme addition (falsified lemma in model)
   bool must_add_clause = false;
   size_t must_add_idx;
 
+  // Next decision to make
   size_t decision_loc = 0;
 
-  unsigned verbosity = 0;
+  // Observed variables and their current assignments
+  std::set<int> observed_variables;
+  std::vector<int> new_observed_variables;
+  std::deque<std::vector<int>> observed_trail;
 
-  std::map<int, int> reason_map;
-  std::map<int, size_t> prop_reason_loc;
+  // Helpers
+  size_t added_lemma_count = 0;
+  size_t nof_clauses = 0;
+  std::vector<int> clause;
+  bool new_ovars = false;
 
-public:
-  MockPropagator (Solver *solver) {
-    observed_trail.push_back (std::vector<int> ());
-    s = solver;
-    lemmas_per_queries.push_back (0);
+  size_t add_new_lemma (bool forgettable) {
+    assert (clause.size () <= (size_t) INT_MAX);
+    assert (external_lemmas.size () <= (size_t) INT_MAX);
+
+    size_t size = clause.size ();
+    ExternalLemma *lemma = new ExternalLemma;
+    lemma->literals = new int[size];
+
+    lemma->id = external_lemmas.size ();
+    lemma->add_count = 0;
+    lemma->size = size;
+    lemma->next = 0;
+    lemma->forgettable = forgettable;
+    lemma->tainting = true;
+    lemma->propagation_reason = false;
+
+    int *q = lemma->literals;
+    for (const auto &lit : clause)
+      *q++ = lit;
+
+    external_lemmas.push_back (lemma);
+
+    return lemma->id;
   }
 
-  ~MockPropagator () {}
+  // Helper to print very verbose log during debugging
+
+#ifdef LOGGING
+#define MLOG(str) \
+  do { \
+    if (logging) \
+      std::cout << "[mock-propagator] " << str; \
+  } while (false)
+#define MLOGC(str) \
+  do { \
+    if (logging) \
+      std::cout << str; \
+  } while (false)
+#else
+#define MLOG(str) \
+  do { \
+  } while (false)
+#define MLOGC(str) \
+  do { \
+  } while (false)
+#endif
+
+public:
+  // It is public, so it can be shared easily between different propagators
+  std::vector<int> observed_fixed;
+
+  MockPropagator (Solver *solver, bool with_logging = false) {
+    observed_trail.push_back (std::vector<int> ());
+    s = solver;
+    logging = logging || with_logging;
+  }
+
+  ~MockPropagator () {
+    for (auto l : external_lemmas)
+      delete l->literals, delete l;
+  }
 
   /*-----------------functions for mobical -----------------------------*/
   void push_lemma_lit (int lit) {
 
-    clause.push_back (lit);
-    if (!lit) {
+    if (lit)
+      clause.push_back (lit);
+    else {
       nof_clauses++;
-      lemma_count++;
 
-      if (verbosity > 2) {
-        std::cout << "push lemma to position "
-                  << all_external_clauses.size () << ": ";
-        for (auto const &l : clause)
-          std::cout << l << " ";
-        std::cout << std::endl;
+      MLOG ("push lemma to position " << external_lemmas.size () << ": ");
+      for (auto const &l : clause) {
+        (void) l;
+        MLOGC (l << " ");
       }
+      MLOGC ("0" << std::endl);
 
-      all_external_clauses.push_back (clause);
+      add_new_lemma (false);
       clause.clear ();
-      lemmas_per_queries.back ()++;
-
-      if (lemma_count % 3 == 0) {
-        lemmas_per_queries.push_back (0);
-        lemma_count = 0;
-      }
     }
   }
-
-  // void push_continue () {
-  //   assert (!clause.size ());
-  //   lemmas_per_queries.push_back (lemma_count % 3);
-  //   lemma_count = 0;
-  // }
 
   void add_observed_lit (int lit) {
     // Zero lit indicates that the new observed variables start here
@@ -321,7 +375,7 @@ public:
       observed_variables.insert (lit);
 
       s->add_observed_var (lit);
-      added_new_observed_variables.push_front (lit);
+
       return lit;
     }
     return 0;
@@ -331,22 +385,47 @@ public:
     // TODO: check out red-02744449867227930989.trace
     return 0;
   }
+
+  bool is_observed_now (int lit) {
+    return (observed_variables.find (abs (lit)) !=
+            observed_variables.end ());
+  }
+
+  bool compare_trails () { return true; }
   /*-----------------functions for mobical ends ------------------------*/
 
-  bool cb_check_found_model (const std::vector<int> &model) {
-    // 'all_external_clauses' contains also the propagating (but not
-    // necessarily learnt) clauses. The final solution must satisfy only the
-    // initial input set of clauses.
-    if (verbosity > 2)
-      std::cout << "cb_check_found_model (" << model.size ()
-                << ") returns: ";
-    assert (model.size () == observed_variables.size ());
-    assert (nof_added_clauses <= nof_clauses);
+  /*-------------------------- Observer functions ----------------------*/
+  void notify_fixed_assignment (int lit) {
+    MLOG ("notify_fixed_assignment: " << lit << " (current level: "
+                                      << observed_trail.size () - 1 << ")"
+                                      << std::endl);
 
-    for (size_t i = 0; i < nof_clauses; i++) {
+    assert (std::find (observed_fixed.begin (), observed_fixed.end (),
+                       lit) == observed_fixed.end ());
+    observed_fixed.push_back (lit);
+  };
+
+  void add_prev_fixed (const std::vector<int> &fixed_assignments) {
+    for (auto const &lit : fixed_assignments)
+      notify_fixed_assignment (lit);
+  }
+
+  /* ------------------------ Observer functions end -------------------*/
+
+  /* -------------------- ExternalPropagator functions -----------------*/
+
+  bool cb_check_found_model (const std::vector<int> &model) {
+    MLOG ("cb_check_found_model (" << model.size () << ") returns: ");
+
+    // Model reconstruction can change the assignments of certain variables,
+    // but the internal trail of the solver and the propagator should be
+    // still in synchron.
+    assert (compare_trails ());
+
+    for (const auto lemma : external_lemmas) {
       bool satisfied = false;
 
-      for (const auto lit : all_external_clauses[i]) {
+      for (const auto lit : *lemma) {
         if (!lit)
           continue; // eoc
 
@@ -362,97 +441,123 @@ public:
       }
 
       if (!satisfied) {
-        // All already added clauses must be satisfied by the model.
-        assert (i >= nof_added_clauses);
-        assert (i < nof_clauses);
+        assert (lemma->add_count == 0 || lemma->forgettable);
 
-        // Ensure that next has_external_clause query returns true.
-        // But this next clause is, on purpose, not necessarily the
-        // unsatisfied one, just simply the next clause.
         must_add_clause = true;
-        must_add_idx = i;
-        if (verbosity > 2) {
-          std::cout << "false (external clause  " << i << "/";
-          std::cout << all_external_clauses.size ()
-                    << " is not satisfied: ";
-          for (auto const &l : all_external_clauses[i])
-            std::cout << l << " ";
-          std::cout << ")" << std::endl;
+        must_add_idx = lemma->id;
+
+        MLOGC ("false (external clause  "
+               << lemma->id << "/" << external_lemmas.size ()
+               << " is not satisfied: (forgettable: " << lemma->forgettable
+               << ", size: " << lemma->size << "): ");
+        for (auto const &l : *lemma) {
+          MLOGC (l << " ");
+          (void) l;
         }
+        MLOGC (std::endl);
+
         return false;
       }
     }
-    if (verbosity > 2)
-      std::cout << "true" << std::endl;
+
+    MLOGC ("true" << std::endl);
+
     return true;
   }
 
+  // Before finalizing the new ipasir-up
   bool cb_has_external_clause () {
-    if (verbosity > 2)
-      std::cout << "cb_has_external_clause returns: ";
+    unsigned red = 0;
+    return cb_has_external_clause (red);
+  }
+
+  bool cb_has_external_clause (unsigned &clause_redundancy) {
+    MLOG ("cb_has_external_clause returns: ");
+
+    assert (compare_trails ());
+
+    clause_redundancy = 0;
+
+    if (external_lemmas.empty ()) {
+      MLOGC ("false (there are no external lemmas)." << std::endl);
+      return false;
+    }
+
     add_new_observed_var ();
+
     if (must_add_clause) {
-      assert (nof_added_clauses < nof_clauses);
-      if (!lemmas_per_queries[query_loc]) // TODO: bug with ext_prop or
-                                          // reimply?
-        query_loc++;
-      assert (query_loc < lemmas_per_queries.size ());
-      assert (lemmas_per_queries[query_loc] > 0);
-      lemmas_per_queries[query_loc]--;
       must_add_clause = false;
-      if (verbosity > 2)
-        std::cout << "true (must add clause case)." << std::endl;
+      add_lemma_idx = must_add_idx;
+
+      if (external_lemmas[must_add_idx]->forgettable)
+        clause_redundancy = 1;
+
+      MLOGC ("true (forced clause addition, "
+             << "forgettable: " << clause_redundancy
+             << " id: " << add_lemma_idx << ")." << std::endl);
+
+      added_lemma_count++;
       return true;
     }
-    if (query_loc >= lemmas_per_queries.size ()) {
-      if (verbosity > 2)
-        std::cout << "false (all lemmas are added already)." << std::endl;
+
+    if (added_lemma_count > lemma_per_cb) {
+      added_lemma_count = 0;
+      MLOGC ("false (lemma per CB treshold reached)." << std::endl);
       return false;
     }
-    if (lemmas_per_queries[query_loc] > 0) {
-      add_new_observed_var ();
-      lemmas_per_queries[query_loc]--;
-      if (verbosity > 2)
-        std::cout << "true (there is a lemma for this query)." << std::endl;
-      return true;
-    } else {
-      if (query_loc < lemmas_per_queries.size () - 1)
-        query_loc++;
-      if (verbosity > 2)
-        std::cout << "false (all lemmas per this query are added already)."
-                  << std::endl;
-      return false;
+
+    // Final model check will force to jump over some lemmas without
+    // adding them. But if any of them is unsatisfied, it will force also
+    // to set back the add_lemma_idx to them. So we do not need to start
+    // the search here from 0.
+
+    while (add_lemma_idx < external_lemmas.size ()) {
+
+      if (!external_lemmas[add_lemma_idx]->add_count &&
+          !external_lemmas[add_lemma_idx]->propagation_reason) {
+
+        if (external_lemmas[add_lemma_idx]->forgettable)
+          clause_redundancy = 1;
+
+        MLOGC ("true (new lemma was found, "
+               << "forgettable: " << clause_redundancy
+               << " id: " << add_lemma_idx << ")." << std::endl);
+
+        added_lemma_count++;
+        return true;
+      }
+
+      // Forgettable lemmas are added repeatedly to the solver only when
+      // the final model falsifies it (recognized in cb_check_final_model).
+
+      add_lemma_idx++;
     }
+
+    MLOGC ("false." << std::endl);
+
+    return false;
   }
 
   int cb_add_external_clause_lit () {
+    int lit = external_lemmas[add_lemma_idx]->next_lit ();
 
-    assert (lemma_loc < all_external_clauses.size ());
-    assert (lemma_lit_loc < all_external_clauses[lemma_loc].size ());
-    if (verbosity > 2 && !lemma_lit_loc) {
-      std::cout << "add external clause " << lemma_loc;
-      std::cout << "/" << all_external_clauses.size () << ": ";
-    }
-    int lit = all_external_clauses[lemma_loc][lemma_lit_loc++];
-    if (verbosity > 2)
-      std::cout << lit << " ";
-    if (!lit) {
-      lemma_loc++;
-      lemma_lit_loc = 0;
-      nof_added_clauses++;
-      if (verbosity > 2)
-        std::cout << std::endl;
-    }
+    MLOG ("cb_add_external_clause_lit "
+          << lit << " (lemma " << add_lemma_idx << "/"
+          << external_lemmas.size () << ")" << std::endl);
+
+    if (!lit)
+      external_lemmas[add_lemma_idx++]->add_count++;
 
     return lit;
   }
 
   int cb_decide () {
-    if (verbosity > 2)
-      std::cout << "cb_decide returns ";
+    MLOG ("cb_decide starts." << std::endl);
+
+    assert (compare_trails ());
+
     if (observed_variables.empty () || observed_variables.size () <= 4) {
-      if (verbosity > 2)
-        std::cout << "0" << std::endl;
+      MLOG ("cb_decide returns 0" << std::endl);
       return 0;
     }
 
@@ -460,8 +565,7 @@ public:
         new_observed_variables.size ()) {
       int new_var = add_new_observed_var ();
       if (new_var) {
-        if (verbosity > 2)
-          std::cout << -1 * new_var << std::endl;
+        MLOG ("cb_decide returns " << -1 * new_var << std::endl);
         return -1 * new_var;
       }
     }
@@ -471,46 +575,45 @@ public:
       size_t n = decision_loc / observed_variables.size ();
       if (n < observed_variables.size ()) {
         int lit = *std::next (observed_variables.begin (), n);
-        if (verbosity > 2)
-          std::cout << -1 * lit << std::endl;
+        MLOG ("cb_decide returns " << -1 * lit << std::endl);
         return -1 * lit;
       } else {
-        if (verbosity > 2)
-          std::cout << "0" << std::endl;
+        MLOG ("cb_decide returns 0" << std::endl);
         return 0;
       }
     }
-    if (verbosity > 2)
-      std::cout << "0" << std::endl;
+    MLOG ("cb_decide returns 0" << std::endl);
     return 0;
   }
 
   int cb_propagate () {
-    if (verbosity > 2)
-      std::cout << "cb_propagate " << std::endl;
-    if (observed_trail.size () < 2)
-      return 0;
-    std::set<int> satisfied_literals;
-    std::vector<int> satisfied_literals_ends;
-    size_t lit_sum = 0;
-    int last_lit = 0;
+    MLOGC ("cb_propagate starts" << std::endl);
+    assert (compare_trails ());
+    if (observed_trail.size () < 2) {
+      MLOG ("cb_propagate returns 0"
+            << " (less than two observed variables are assigned)."
+            << std::endl);
 
-    for (auto level_lits : observed_trail) {
-      for (auto lit : level_lits) {
-        if (!s->observed (lit))
-          continue;
-        satisfied_literals.insert (lit);
-        lit_sum += abs (lit);
-        last_lit = lit;
-        if (!satisfied_literals_ends.size ())
-          satisfied_literals_ends.push_back (lit);
-      }
+      return 0;
     }
 
-    if (last_lit)
-      satisfied_literals_ends.push_back (last_lit);
-    else
+    size_t lit_sum = 0;  // sum of variables of satisfied observed literals
+    int lowest_lit = 0;  // the lowest satisfied observed literal
+    int highest_lit = 0; // the highest satisfied observed literal
+
+    std::set<int> satisfied_literals =
+        current_observed_satisfied_set (lit_sum, lowest_lit, highest_lit);
+
+    if (satisfied_literals.empty ()) {
+      MLOGC ("cb_propagate returns 0"
+             << " (there are no observed satisfied literals)."
+             << std::endl);
       return 0;
+    }
+
+    MLOGC (std::endl);
+    assert (lowest_lit);
+    assert (highest_lit);
 
     int unassigned_var = 0;
     for (auto v : observed_variables) {
@@ -523,60 +626,64 @@ public:
         }
       }
     }
-    if (!unassigned_var)
+
+    if (!unassigned_var) {
+      MLOG ("cb_propagate returns 0"
+            << " (there are no unassigned observed variables)."
+            << std::endl);
       return 0;
-
-    bool propagated = false;
-    if (lit_sum % 5 == 0 && satisfied_literals.size () > 1) {
-      all_external_clauses.emplace_back (std::initializer_list<int>{
-          unassigned_var, -1 * satisfied_literals_ends.back (),
-          -1 * satisfied_literals_ends.front (), 0});
-      propagated = true;
-    } else if (lit_sum % 7 == 0 && satisfied_literals.size () > 0) {
-      all_external_clauses.emplace_back (std::initializer_list<int>{
-          unassigned_var, -1 * satisfied_literals_ends.back (), 0});
-      propagated = true;
-    } else if (lit_sum % 11 == 0) {
-      all_external_clauses.emplace_back (
-          std::initializer_list<int>{unassigned_var, 0});
-      propagated = true;
-    } else if (lit_sum > 15 && satisfied_literals_ends.size ()) {
-      // test case where a falsified literal is propagated
-      int l1 = -1 * satisfied_literals_ends.back ();
-      int l2 = -1 * satisfied_literals_ends.front ();
-      // It is ok if l1 == l2
-      all_external_clauses.emplace_back (
-          std::initializer_list<int>{l1, l2, 0});
-      reason_map[l1] = all_external_clauses.size () - 1;
-      prop_reason_loc[l1] = 0;
-
-      return l1;
     }
 
-    if (propagated) {
-      reason_map[unassigned_var] = all_external_clauses.size () - 1;
-      prop_reason_loc[unassigned_var] = 0;
-      return unassigned_var;
-    } else
-      return 0;
+    assert (clause.empty ());
+    int propagated_lit = 0;
+
+    if (lit_sum % 5 == 0 && satisfied_literals.size () > 1) {
+      clause = {unassigned_var, -1 * lowest_lit, -1 * highest_lit};
+    } else if (lit_sum % 7 == 0 && satisfied_literals.size () > 0) {
+      clause = {unassigned_var, -1 * highest_lit};
+    } else if (lit_sum % 11 == 0) {
+      clause = {unassigned_var};
+    } else if (lit_sum > 15 && lowest_lit) {
+      // Propagate a falsified literal, ok if lowest == highest
+      clause = {-1 * lowest_lit, -1 * highest_lit};
+    }
+
+    if (!clause.empty ()) {
+      propagated_lit = clause[0];
+      size_t id = add_new_lemma (true);
+      external_lemmas[id]->propagation_reason = true;
+      reason_map[propagated_lit] = id;
+      clause.clear ();
+    }
+
+    MLOG ("cb_propagate returns " << propagated_lit << std::endl);
+
+    return propagated_lit;
   }
 
   int cb_add_reason_clause_lit (int plit) {
+
+    // At that point there is no need to assume that the trails are in
+    // synchron.
     assert (reason_map.find (plit) != reason_map.end ());
-    assert (prop_reason_loc[plit] <
-            all_external_clauses[reason_map[plit]].size ());
-    int lit =
-        all_external_clauses[reason_map[plit]][prop_reason_loc[plit]++];
+
+    size_t reason_id = reason_map[plit];
+
+    int lit = external_lemmas[reason_id]->next_lit ();
+
     if (!lit) {
-      prop_reason_loc[plit] = 0; // in case it is needed again
+      external_lemmas[reason_id]->add_count++;
+      MLOG ("reason clause (id: " << reason_id << ") is added."
+                                  << std::endl);
     }
+
     return lit;
   }
 
   void notify_assignment (int lit, bool is_fixed) {
-    if (verbosity > 2)
-      std::cout << "notify assignment: " << lit << " (" << is_fixed << ")"
-                << std::endl;
+    MLOG ("notify assignment: "
+          << lit << " (current level: " << observed_trail.size () - 1
+          << ", is_fixed: " << is_fixed << ")" << std::endl);
     if (is_fixed) {
       observed_trail.front ().push_back (lit);
     } else {
@@ -585,21 +692,62 @@ public:
   }
 
   void notify_new_decision_level () {
-    if (verbosity > 2)
-      std::cout << "notify new decision level " << std::endl;
+    MLOG ("notify new decision level " << observed_trail.size () - 1
+                                       << " -> " << observed_trail.size ()
+                                       << std::endl);
     observed_trail.push_back (std::vector<int> ());
   }
 
   void notify_backtrack (size_t new_level) {
-    if (verbosity > 2)
-      std::cout << "notify backtrack: " << observed_trail.size () - 1
-                << "->" << new_level << std::endl;
+    MLOG ("notify backtrack: " << observed_trail.size () - 1 << " -> "
+                               << new_level << std::endl);
     assert (observed_trail.size () == 1 ||
             observed_trail.size () >= new_level + 1);
     while (observed_trail.size () > new_level + 1) {
+      // Remove reason clause of backtracked assignments (keep it as lemma)
+      for (auto lit : observed_trail.back ()) {
+        if (reason_map.find (lit) != reason_map.end ()) {
+          size_t reason_id = reason_map[lit];
+          assert (reason_id < external_lemmas.size ());
+          external_lemmas[reason_id]->propagation_reason = false;
+          external_lemmas[reason_id]->forgettable = true;
+          reason_map.erase (lit);
+        }
+      }
       observed_trail.pop_back ();
     }
   }
+
+  /* ----------------- ExternalPropagator functions end ------------------*/
+
+  /* -------------------------- Helper functions ---------------------- */
+  std::set<int> current_observed_satisfied_set (size_t &lit_sum,
+                                                int &lowest_lit,
+                                                int &highest_lit) {
+
+    lit_sum = 0;
+    lowest_lit = 0;
+    highest_lit = 0;
+    std::set<int> satisfied_literals;
+
+    for (auto level_lits : observed_trail) {
+      for (auto lit : level_lits) {
+        if (!s->observed (lit))
+          continue;
+
+        satisfied_literals.insert (lit);
+        lit_sum += abs (lit);
+
+        if (!lowest_lit)
+          lowest_lit = lit;
+        highest_lit = lit;
+      }
+    }
+
+    return satisfied_literals;
+  }
+
+  /* ------------------------ Helper functions end -------------------- */
 };
 
 // This is the class for the Mobical application.
@@ -608,6 +756,7 @@ class Mobical : public Handler {
 
   /*----------------------------------------------------------------------*/
 
+  friend struct InitCall;
   friend struct FailedCall;
   friend struct ConcludeCall;
   friend class Reader;
@@ -628,7 +777,7 @@ class Mobical : public Handler {
 
   enum { RANDOM = 1, SEED = 2, INPUT = 4, OUTPUT = 8 };
 
-  int mode; // No 'Mode mode' due to 'mode |= ...' below.
+  int mode = 0; // No 'Mode mode' due to 'mode |= ...' below.
 
   void check_mode_valid ();
 
@@ -638,23 +787,23 @@ class Mobical : public Handler {
 
   DoNot donot;
   Force force;
-  bool verbose;
+  bool verbose = false;
 #ifdef LOGGING
-  bool add_set_log_to_true;
+  bool add_set_log_to_true = false;
 #endif
-  bool add_dump_before_solve;
-  bool add_stats_after_solve;
-  bool add_plain_after_options;
+  bool add_dump_before_solve = false;
+  bool add_stats_after_solve = false;
+  bool add_plain_after_options = false;
 
   /*----------------------------------------------------------------------*/
 
-  bool shrinking; // In the middle of shrinking.
-  bool running;   // In the middle of running.
+  bool shrinking = false; // In the middle of shrinking.
+  bool running = false;   // In the middle of running.
 
-  int64_t time_limit;  // in seconds, none if zero
-  int64_t space_limit; // in MB, none if zero
+  int64_t time_limit = DEFAULT_TIME_LIMIT;   // in seconds, none if zero
+  int64_t space_limit = DEFAULT_SPACE_LIMIT; // in MB, none if zero
 
-  Terminal &terminal;
+  Terminal &terminal = terr;
 
   void header (); // Print right part of header.
 
@@ -693,8 +842,8 @@ class Mobical : public Handler {
   string notified;
 
 #ifndef QUIET
-  int progress_counter;
-  double last_progress_time;
+  int progress_counter = 0;
+  double last_progress_time = 0;
 #endif
 
   void notify (Trace &trace, signed char ch = 0);
@@ -703,8 +852,8 @@ class Mobical : public Handler {
 
   Shared *shared; // shared among parent and child processes
 
-  int64_t traces;
-  int64_t spurious;
+  int64_t traces = 0;
+  int64_t spurious = 0;
 
   void print_statistics ();
 
@@ -805,10 +954,14 @@ void Mobical::warning (const char *fmt, ...) {
 // have the following structure
 //
 //   INIT
-//   (SET|ALWAYS)*
-//   (   (ADD|ASSUME|ALWAYS)*
-//       [ (SOLVE|SIMPLIFY|LOOKAHEAD) (LEMMA|CONTINUE)*
-//       (VAL|FLIP|FAILED|ALWAYS)* ]
+//   (SET|TRACEPROOF|ALWAYS)*
+//   (
+//     (ADD|ASSUME|ALWAYS)*
+//     [
+//       (SOLVE|SIMPLIFY|LOOKAHEAD)
+//       (LEMMA|CONTINUE)*
+//       (VAL|FLIP|FAILED|ALWAYS|CONCLUDE|FLUSHPROOFTRACE|CLOSEPROOFTRACE)*
+//     ]
 //   )*
 //   [ RESET ]
 //
@@ -835,6 +988,8 @@ void Mobical::warning (const char *fmt, ...) {
 // produce all these possible call sequences.  For instance it first adds
 // all clauses before making assumptions and also does not mix in these
 // 'ALWAYS' calls in all possible ways.
+
+constexpr uint64_t shift (uint64_t bit) { return (uint64_t) 1 << bit; }
 
 struct Call {
 
@@ -884,17 +1039,22 @@ struct Call {
 
     // CONTINUE = (1 << 31),
     CONCLUDE = (1u << 31),
-    DISCONNECT = ((uint64_t) 1 << 32),
+    DISCONNECT = shift (32),
+
+    TRACEPROOF = shift (33),
+    FLUSHPROOFTRACE = shift (34),
+    CLOSEPROOFTRACE = shift (35),
 
     ALWAYS = VARS | ACTIVE | REDUNDANT | IRREDUNDANT | FREEZE | FROZEN |
              MELT | LIMIT | OPTIMIZE | DUMP | STATS | RESERVE | FIXED,
 
-    CONFIG = INIT | SET | CONFIGURE | ALWAYS,
+    CONFIG = INIT | SET | CONFIGURE | ALWAYS | TRACEPROOF,
     BEFORE =
         ADD | CONSTRAIN | ASSUME | ALWAYS | DISCONNECT | CONNECT | OBSERVE,
     PROCESS = SOLVE | SIMPLIFY | LOOKAHEAD | CUBING,
     DURING = LEMMA, // | CONTINUE,
-    AFTER = VAL | FLIP | FAILED | CONCLUDE | ALWAYS,
+    AFTER = VAL | FLIP | FAILED | CONCLUDE | ALWAYS | FLUSHPROOFTRACE |
+            CLOSEPROOFTRACE,
   };
 
   Type type; // Explicit typing.
@@ -1300,6 +1460,31 @@ struct StatsCall : public Call {
   void print (ostream &o) { o << "stats" << endl; }
   Call *copy () { return new StatsCall (); }
   const char *keyword () { return "stats"; }
+};
+
+struct TraceProofCall : public Call {
+  std::string path;
+  TraceProofCall (const string &p) : Call (TRACEPROOF), path (p) {}
+  void execute (Solver *&s) { s->trace_proof (path.c_str ()); }
+  void print (ostream &o) { o << "trace_proof" << ' ' << path << endl; }
+  Call *copy () { return new TraceProofCall (path); }
+  const char *keyword () { return "trace_proof"; }
+};
+
+struct FlushProofTraceCall : public Call {
+  FlushProofTraceCall () : Call (FLUSHPROOFTRACE) {}
+  void execute (Solver *&s) { s->flush_proof_trace (); }
+  void print (ostream &o) { o << "flush_proof_trace" << endl; }
+  Call *copy () { return new FlushProofTraceCall (); }
+  const char *keyword () { return "flush_proof_trace"; }
+};
+
+struct CloseProofTraceCall : public Call {
+  CloseProofTraceCall () : Call (CLOSEPROOFTRACE) {}
+  void execute (Solver *&s) { s->close_proof_trace (); }
+  void print (ostream &o) { o << "close_proof_trace" << endl; }
+  Call *copy () { return new CloseProofTraceCall (); }
+  const char *keyword () { return "close_proof_trace"; }
 };
 
 /*------------------------------------------------------------------------*/
@@ -1849,6 +2034,8 @@ void Trace::generate_clause (Random &random, int minvars, int maxvars,
 
 void Trace::generate_constraint (Random &random, int minvars, int maxvars,
                                  int uniform) {
+  if (random.generate_double () < 0.95)
+    return;
   assert (minvars <= maxvars);
   int maxsize = maxvars - minvars + 1;
   int size = uniform ? uniform : pick_size (random, maxsize);
@@ -1864,7 +2051,7 @@ void Trace::generate_constraint (Random &random, int minvars, int maxvars,
 /*------------------------------------------------------------------------*/
 
 void Trace::generate_propagator (Random &random, int minvars, int maxvars) {
-  if (random.generate_double () < 0.15)
+  if (random.generate_double () < 0.9)
     return;
 
   assert (minvars <= maxvars);
@@ -1875,6 +2062,10 @@ void Trace::generate_propagator (Random &random, int minvars, int maxvars) {
   in_connection = true;
 
   observed_vars.clear ();
+
+  // Give a chance to add no observed variables at all
+  if (random.generate_double () < 0.05)
+    return;
 
   for (int idx = minvars; idx <= maxvars; idx++) {
     if (random.generate_double () < 0.6)
@@ -3169,6 +3360,13 @@ static bool is_valid_char (int ch) {
     return true;
   if ('0' <= ch && ch <= '9')
     return true;
+
+  // For now proof file paths can only have these additional characters.
+  // We should probably have an escape mechamism (quotes) for paths.
+
+  if (ch == '_' || ch == '/' || ch == '.' || ('A' <= ch && ch <= 'Z'))
+    return true;
+
   return false;
 }
 
@@ -3209,7 +3407,8 @@ void Reader::parse () {
     const char *keyword = p;
     if ((ch = *p) < 'a' || 'z' < ch)
       error ("expected keyword to start with lower case letter");
-    while (p < line + n && (ch = *++p) && 'a' <= ch && ch <= 'z')
+    while (p < line + n && (ch = *++p) &&
+           (('a' <= ch && ch <= 'z') || ch == '_'))
       ;
     const char *first = 0, *second = 0;
     if ((ch = *p) == ' ') {
@@ -3530,6 +3729,20 @@ void Reader::parse () {
       if (first)
         error ("additional argument '%s' to 'reset'", first);
       c = new ResetCall ();
+    } else if (!strcmp (keyword, "trace_proof")) {
+      if (!first)
+        error ("first argument to 'trace_proof' missing");
+      if (second)
+        error ("additional argument '%s' to 'trace_proof'", second);
+      c = new TraceProofCall (first);
+    } else if (!strcmp (keyword, "flush_proof_trace")) {
+      if (first)
+        error ("additional argument '%s' to 'flush_proof_trace'", first);
+      c = new FlushProofTraceCall ();
+    } else if (!strcmp (keyword, "close_proof_trace")) {
+      if (first)
+        error ("additional argument '%s' to 'close_proof_trace'", first);
+      c = new CloseProofTraceCall ();
     } else
       error ("invalid keyword '%s'", keyword);
 
@@ -3691,19 +3904,7 @@ extern "C" {
 #include <sys/mman.h>
 }
 
-Mobical::Mobical ()
-    : mode (0), verbose (false),
-#ifdef LOGGING
-      add_set_log_to_true (false),
-#endif
-      add_dump_before_solve (false), add_stats_after_solve (false),
-      add_plain_after_options (false), shrinking (false), running (false),
-      time_limit (DEFAULT_TIME_LIMIT), space_limit (DEFAULT_SPACE_LIMIT),
-      terminal (terr),
-#ifndef QUIET
-      progress_counter (0), last_progress_time (0),
-#endif
-      traces (0), spurious (0) {
+Mobical::Mobical () {
   const int prot = PROT_READ | PROT_WRITE;
   const int flags = MAP_ANONYMOUS | MAP_SHARED;
   shared = (Shared *) mmap (0, sizeof *shared, prot, flags, -1, 0);
