@@ -44,13 +44,16 @@ SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int uc) : solve
     colsuntouched = new int[n];
     solver->connect_external_propagator(this);
     for (int i = 0; i < num_edge_vars; i++) {
-        solver->add_observed_var(i+1);
         assign[i] = l_Undef;
         fixed[i] = false;
     }
     std::cout << "c Running orderly generation on order " << n << " (" << num_edge_vars << " edge variables)" << std::endl;
     // The root-level of the trail is always there
     current_trail.push_back(std::vector<int>());
+    // Observe the edge variables for orderly generation
+    for (int i = 0; i < num_edge_vars; i++) {
+        solver->add_observed_var(i+1);
+    }
 }
 
 SymmetryBreaker::~SymmetryBreaker () {
