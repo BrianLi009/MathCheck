@@ -42,12 +42,8 @@ then
 fi
 
 n=$1 #order
-t=${2:-10000} #conflicts for which to simplify each time CaDiCal is called, or % of variables to eliminate
-s=${3:-2} #by default we only simplify the instance using CaDiCaL after adding noncanonical blocking clauses
-b=${4:-2} #by default we generate noncanonical blocking clauses in real time
 r=${5:-0} #num of var to eliminate during first cubing stage
-a=${6:-10} #amount of additional variables to remove for each cubing call
-z=${7:-1} #cubing strategy 1: march 2: ams with no mcts 3: ams with mcts
+a=${6:-0} #amount of additional variables to remove for each cubing call
 
 #step 2: setp up dependencies
 ./dependency-setup.sh
@@ -56,13 +52,13 @@ z=${7:-1} #cubing strategy 1: march 2: ams with no mcts 3: ams with mcts
 
 dir="."
 
-if [ -f constraints_${n}_${t}_${s}_${b}_${r}_${a}_final.simp.log ]
+if [ -f constraints_${n}_${r}_${a}_final.simp.log ]
 then
     echo "Instance with these parameters has already been solved."
     exit 0
 fi
 
-./generate-simp-instance.sh $n $t $s $b $r $a
+./1-instance-generation.sh $n
 
 if [ -f "$n.exhaust" ]
 then
@@ -78,9 +74,8 @@ fi
 #step 5: cube and conquer if necessary, then solve
 if [ "$r" != "0" ] 
 then
-    dir="${n}_${t}_${s}_${b}_${r}_${a}"
-    #./3-cube-merge-solve-ams.sh constraints_${n}_${t}_${s}_${b}_${r}_${a}_final.simp $n $r $dir
-    ./3-cube-merge-solve-iterative-learnt.sh $p $n constraints_${n}_${t}_${s}_${b}_${r}_${a}_final.simp $dir $r $t $a $z
+    dir="${n}_${r}_${a}"
+    ./3-cube-merge-solve-iterative.sh $p $n constraints_${n} $dir $r $a
     command="./summary-iterative.sh $dir $r $a $n"
     echo $command
     eval $command
@@ -89,7 +84,7 @@ then
     ./verify.sh $dir/$n.exhaust $n
     ./4-check-embedability.sh $n $dir/$n.exhaust
 else
-    ./maplesat-solve-verify.sh $n constraints_${n}_${t}_${s}_${b}_${r}_${a}_final.simp $n.exhaust
+    ./solve-verify.sh $n constraints_${n} $n.exhaust
     #step 5.5: verify all constraints are satisfied
     ./verify.sh $n.exhaust $n
 

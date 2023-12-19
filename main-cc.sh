@@ -47,7 +47,7 @@ then
     ./verify.sh $dir/$n.exhaust $n
     ./4-check-embedability.sh $n $dir/$n.exhaust
 else
-    ./maplesat-solve-verify.sh $n constraints_${n}_${t}_${s}_${b}_${r}_${a}_final.simp $n.exhaust
+    ./solve-verify.sh $n constraints_${n}_${t}_${s}_${b}_${r}_${a}_final.simp $n.exhaust
     #step 5.5: verify all constraints are satisfied
     ./verify.sh $n.exhaust $n
 
