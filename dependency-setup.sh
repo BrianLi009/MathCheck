@@ -11,27 +11,6 @@ Usage:
 
 echo "prerequisite: pip and make installed"
 
-#install maplesat-ks
-if [ -d maplesat-ks ] && [ -f maplesat-ks/simp/maplesat_static ]
-then
-    echo "maplesat-ks installed and binary file compiled"
-else
-    cd maplesat-ks
-    make
-    cd -
-fi 
-
-#install cadical
-if [ -d cadical ] && [ -f cadical/build/cadical ]
-then
-    echo "cadical installed and binary file compiled"
-else
-    git clone https://github.com/arminbiere/cadical.git cadical
-    cd cadical
-    ./configure
-    make
-    cd ..
-fi
 
 required_version="2.5"
 installed_version=$(pip3 show networkx | grep Version | awk '{print $2}')

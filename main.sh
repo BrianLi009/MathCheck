@@ -84,15 +84,5 @@ then
     ./verify.sh $dir/$n.exhaust $n
     ./4-check-embedability.sh $n $dir/$n.exhaust
 else
-    ./solve-verify.sh $n constraints_${n} $n.exhaust
-    #step 5.5: verify all constraints are satisfied
-    ./verify.sh $n.exhaust $n
-
-    #step 6: checking if there exist embeddable solution
-    echo "checking embeddability of KS candidates using Z3..."
-    ./4-check-embedability.sh $n $n.exhaust
-
-    #output the number of KS system if there is any
-    echo "$(wc -l < $n.exhaust) Kochen-Specker candidates were found."
-    echo "$(wc -l < $n.exhaust-embeddable.txt) Kochen-Specker solutions were found."
+    ./solve-verify.sh $n constraints_${n}
 fi
