@@ -13,54 +13,34 @@ f=$2 #instance file name
 d=$3 #directory to store into
 v=$4 #num of var to eliminate during first cubing stage
 a=$5 #amount of additional variables to remove for each cubing call
+m=$((n*(n-1)/2)) # Number of edge variables in instance
 
-mkdir -p $d/$v/$n-solve
-mkdir -p $d/$v/simp
-mkdir -p $d/$v/log
-mkdir -p $d/$v/$n-cubes
+mkdir -p $d/$v
 
+dir="$d/$v"
 
-di="$d/$v"
+command="python -u alpha-zero-general/main.py $f -n $v -m $m -o $dir/$v.cubes -order $n -numMCTSSims 30 -prod | tee $dir/$v.log"
+echo $command
+eval $command
 
-if [ "$p" == "-p" ]
-then
-    echo "cubing in parallel..."
-    ./gen_cubes/cube.sh -p -a $n $f $v $di 
-fi
+cube_file=$dir/$v.cubes
 
-if [ "$p" != "-p" ]
-then
-    echo "cubing sequentially..."
-    ./gen_cubes/cube.sh -a $n $f $v $di
-    echo "cubing complete"
-fi
-
-files=$(ls $d/$v/$n-cubes/*.cubes)
-highest_num=$(echo "$files" | awk -F '[./]' '{print $(NF-1)}' | sort -nr | head -n 1)
-echo "currently the cubing depth is $highest_num"
-cube_file=$d/$v/$n-cubes/$highest_num.cubes
-cp $(echo $cube_file) .
-cube_file=$(echo $cube_file | sed 's:.*/::')
-new_cube=$((highest_num + 1))
-
-numline=$(< $cube_file wc -l)
-new_index=$((numline))
+new_index=$(< $cube_file wc -l)
 
 for i in $(seq 1 $new_index) #1-based indexing for cubes
     do 
-        command1="./gen_cubes/apply.sh $f $cube_file $i > $d/$v/simp/$cube_file$i.adj"
-        command2="./simplification/simplify-by-conflicts.sh $d/$v/simp/$cube_file$i.adj $n $t >> $d/$v/$n-solve/$i-solve.log"
-        command3="./solve-verify.sh -l $n $d/$v/simp/$cube_file$i.adj.simp $d/$v/$n-solve/$i-solve.exhaust >> $d/$v/$n-solve/$i-solve.log"
-        command="$command1 && $command2 && $command3"
-        echo $command >> $d/$v/$n-solve/solve.commands
+        command1="./gen_cubes/apply.sh $f $cube_file $i > $cube_file$i.adj"
+        command2="./solve-verify.sh $n $cube_file$i.adj"
+        command="$command1 && $command2"
+        echo $command >> $d/$v/solve.commands
+        echo $command
         eval $command1
         eval $command2
-        eval $command3
     done
 
 for i in $(seq 1 $new_index)
     do
-        file="$d/$v/$n-solve/$i-solve.log"
+        file="$cube_file$i.adj.log"
         if grep -q "UNSATISFIABLE" $file 
         then
                 #do something
@@ -71,7 +51,7 @@ for i in $(seq 1 $new_index)
                 continue
         else
                 echo $file is not solved
-                child_instance="$d/$v/simp/${highest_num}.cubes${i}.adj.simp"
+                child_instance="$cube_file$i.adj"
                 echo "further cube instance $child_instance"
 
                 command="./3-cube-merge-solve-iterative.sh $n $child_instance "$d/$v-$i" $(($v + $a)) $a"

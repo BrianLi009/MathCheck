@@ -4,21 +4,16 @@
 
 [ "$1" = "-h" -o "$1" = "--help" ] && echo "
 Description:
-    Updated on 2023-01-25
-    This is a driver script that handles generating the SAT encoding, generating non-canonical subgraph blocking clauses,
-    simplify instance using CaDiCaL, solve the instance using maplesat-ks, then finally determine if a KS system exists for a certain order.
+    Updated on 2023-12-19
+    This is a driver script that handles generating the SAT encoding, solve the instance using CaDiCaL, then finally determine if a KS system exists for a certain order.
 
 Usage:
-    ./main.sh [-p] [-m] n t s b r
-    If only parameter n is provided, default run ./main.sh n 10000 2 2 0 10
+    ./main.sh [-p] n r a
+    If only parameter n is provided, default run ./main.sh n 0 0
 
 Options:
     [-p]: cubing/solving in parallel
-    [-m]: using -m parameter for cubing, calling solver on each cube for a small amount of time
     <n>: the order of the instance/number of vertices in the graph
-    <t>: conflicts for which to simplify each time CaDiCal is called
-    <s>: option for simplification, takes in argument 1 (before adding noncanonical clauses), 2 (after), 3(both)
-    <b>: option for noncanonical blocking clauses, takes in argument 1 (pre-generated), 2 (real-time-generation), 3 (no blocking clauses)
     <r>: number of variable to remove in cubing, if not passed in, assuming no cubing needed
     <a>: amount of additional variables to remove for each cubing call
 " && exit
@@ -37,13 +32,13 @@ shift $((OPTIND-1))
 #step 1: input parameters
 if [ -z "$1" ]
 then
-    echo "Need instance order (number of vertices) and number of simplification, use -h or --help for further instruction"
+    echo "Need instance order (number of vertices), use -h or --help for further instruction"
     exit
 fi
 
 n=$1 #order
-r=${5:-0} #num of var to eliminate during first cubing stage
-a=${6:-0} #amount of additional variables to remove for each cubing call
+r=${2:-0} #num of var to eliminate during first cubing stage
+a=${3:-0} #amount of additional variables to remove for each cubing call
 
 #step 2: setp up dependencies
 ./dependency-setup.sh
@@ -76,13 +71,6 @@ if [ "$r" != "0" ]
 then
     dir="${n}_${r}_${a}"
     ./3-cube-merge-solve-iterative.sh $p $n constraints_${n} $dir $r $a
-    command="./summary-iterative.sh $dir $r $a $n"
-    echo $command
-    eval $command
-    #join all exhaust file together and check embeddability
-    find "$dir" -type f -name "*.exhaust" -exec cat {} + > "$dir/$n.exhaust"
-    ./verify.sh $dir/$n.exhaust $n
-    ./4-check-embedability.sh $n $dir/$n.exhaust
 else
     ./solve-verify.sh $n constraints_${n}
 fi

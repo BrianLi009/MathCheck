@@ -35,7 +35,6 @@ n=$1 # Order
 f=$2 # Instance filename
 r=$3 # Number of free edge variables to remove
 t=$4 #directory to work in
-z=$5 #cubing strategy 1: march 2: ams with no mcts 3: ams with mcts
 m=$((n*(n-1)/2)) # Number of edge variables in instance
 dir=$t/$n-cubes # Directory to store cubes
 logdir=$t/$n-log # Directory to store logs
@@ -72,19 +71,8 @@ if [ "$d" == "0" ]
 then
 	if [ ! -s $dir/0.cubes ]
 	then
-		if [ "$z" -eq 1 ]; then
-			echo "using march for cubing..."
-    		command="./gen_cubes/march_cu/march_cu $f -o $dir/0.cubes -d 1 -m $m | tee $logdir/0.log"
-		elif [ "$z" -eq 2 ]; then
-			echo "using AlphaMapleSAT without MCTS for cubing..."
-			command="python ams_no_mcts.py $f -d 1 -m $m -o $dir/0.cubes | tee $logdir/0.log"
-		elif [ "$z" -eq 3 ]; then
-			echo "using AlphaMapleSAT + MCTS for cubing..."
-			command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o -o $dir/0.cubes -order $n -numMCTSSims 100 -prod | tee $logdir/0.log"
-		else
-			echo "Invalid option: $z"
-			exit 1
-		fi
+		echo "using AlphaMapleSAT + MCTS for cubing..."
+		command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o $dir/0.cubes -order $n -numMCTSSims 30 -prod | tee $logdir/0.log"
 	echo $command
 	eval $command
 	fi

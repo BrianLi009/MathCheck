@@ -25,13 +25,11 @@ Options:
     <e>: file name to output exhaustive SAT solutions
 " && exit
 
-if [ "$l" == "-l" ]
-then
-    echo "CaDiCaL will output short learnt clauses"
-    ./cadical-ks/build/cadical-ks $f $f.drat --order $n --unembeddable-check 17 --perm-out $f.perm --no-binary | tee $f.log
-else
-    ./cadical-ks/build/cadical-ks $f $f.drat --order $n --unembeddable-check 17 --perm-out $f.perm --no-binary | tee $f.log
-fi
+
+command="./cadical-ks/build/cadical-ks $f $f.drat --order $n --unembeddable-check 17 --perm-out $f.perm --no-binary | tee $f.log"
+
+echo $command
+eval $command
 
 if ! grep -q "UNSAT" "$f.log"; then
         ./proof-module.sh $n $f $f.verify f
