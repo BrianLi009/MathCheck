@@ -25,6 +25,7 @@ public:
   // own and delete 'file'
   DratTracer (Internal *, File *file, bool binary);
   ~DratTracer ();
+  long int bytes() override;
 
   void connect_internal (Internal *i) override;
   void begin_proof (uint64_t) override {} // skip

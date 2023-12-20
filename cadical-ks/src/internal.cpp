@@ -491,6 +491,13 @@ void Internal::init_search_limits () {
          inc.decisions, lim.decisions);
   }
 
+  if (inc.proofsize < 0) {
+    lim.proofsize = -1;
+    LOG ("no limit on proofsize");
+  } else {
+    lim.proofsize = inc.proofsize;
+  }
+
   /*----------------------------------------------------------------------*/
 
   // Initial preprocessing rounds.

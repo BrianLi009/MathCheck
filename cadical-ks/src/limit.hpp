@@ -9,6 +9,7 @@ struct Limit {
 
   int64_t conflicts;     // conflict limit if non-negative
   int64_t decisions;     // decision limit if non-negative
+  int64_t proofsize;     // proofsize limit if non-negative
   int64_t preprocessing; // limit on preprocessing rounds
   int64_t localsearch;   // limit on local search rounds
 
@@ -70,6 +71,7 @@ struct Inc {
   int64_t stabilize;     // stabilization interval increment
   int64_t conflicts;     // next conflict limit if non-negative
   int64_t decisions;     // next decision limit if non-negative
+  int64_t proofsize;     // next proofsize limit if non-negative
   int64_t preprocessing; // next preprocessing limit if non-negative
   int64_t localsearch;   // next local search limit if non-negative
   Inc ();

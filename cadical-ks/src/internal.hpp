@@ -1189,6 +1189,7 @@ struct Internal {
   //
   void limit_terminate (int);
   void limit_decisions (int);     // Force decision limit.
+  void limit_proofsize (int);     // Force proofsize limit.
   void limit_conflicts (int);     // Force conflict limit.
   void limit_preprocessing (int); // Enable 'n' preprocessing rounds.
   void limit_local_search (int);  // Enable 'n' local search rounds.
@@ -1586,6 +1587,16 @@ inline bool Internal::search_limits_hit () {
 
   if (lim.decisions >= 0 && stats.decisions >= lim.decisions) {
     LOG ("decision limit %" PRId64 " reached", lim.decisions);
+    return true;
+  }
+
+  long int bytes = 0;
+  for(auto & tracer : file_tracers) {
+    bytes = std::max(tracer->bytes(), bytes);
+  }
+
+  if (lim.proofsize >= 0 && bytes >= lim.proofsize) {
+    LOG ("proofsize limit %" PRId64 " reached", lim.proofsize);
     return true;
   }
 

@@ -175,4 +175,6 @@ void DratTracer::flush (bool print) {
 #endif
 }
 
+long int DratTracer::bytes() { return file->bytes(); }
+
 } // namespace CaDiCaL

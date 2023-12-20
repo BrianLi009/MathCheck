@@ -23,7 +23,7 @@ Last::Last () { memset (this, 0, sizeof *this); }
 
 Inc::Inc () {
   memset (this, 0, sizeof *this);
-  decisions = conflicts = -1; // unlimited
+  decisions = conflicts = proofsize = -1; // unlimited
 }
 
 void Internal::limit_terminate (int l) {
@@ -62,6 +62,18 @@ void Internal::limit_decisions (int l) {
   }
 }
 
+void Internal::limit_proofsize (int l) {
+  if (l < 0 && inc.proofsize < 0) {
+    LOG ("keeping unbounded proofsize limit");
+  } else if (l < 0) {
+    LOG ("reset proofsize limit to be unbounded");
+    inc.proofsize = -1;
+  } else {
+    inc.proofsize = l;
+    LOG ("new proofsize limit of %d bytes", l);
+  }
+}
+
 void Internal::limit_preprocessing (int l) {
   if (l < 0) {
     LOG ("ignoring invalid preprocessing limit %d", l);
@@ -93,6 +105,8 @@ bool Internal::is_valid_limit (const char *name) {
     return true;
   if (!strcmp (name, "decisions"))
     return true;
+  if (!strcmp (name, "proofsize"))
+    return true;
   if (!strcmp (name, "preprocessing"))
     return true;
   if (!strcmp (name, "localsearch"))
@@ -108,6 +122,8 @@ bool Internal::limit (const char *name, int l) {
     limit_conflicts (l);
   else if (!strcmp (name, "decisions"))
     limit_decisions (l);
+  else if (!strcmp (name, "proofsize"))
+    limit_proofsize (l);
   else if (!strcmp (name, "preprocessing"))
     limit_preprocessing (l);
   else if (!strcmp (name, "localsearch"))
@@ -122,6 +138,7 @@ void Internal::reset_limits () {
   limit_terminate (0);
   limit_conflicts (-1);
   limit_decisions (-1);
+  limit_proofsize (-1);
   limit_preprocessing (0);
   limit_local_search (0);
 }

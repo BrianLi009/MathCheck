@@ -383,8 +383,9 @@ int App::main (int argc, char **argv) {
   bool proof_specified = false, dimacs_specified = false;
   int optimize = 0, preprocessing = 0, localsearch = 0;
   const char *output_path = 0, *extension_path = 0;
-  int conflict_limit = -1, decision_limit = -1;
+  int conflict_limit = -1, decision_limit = -1, proofsize_limit = -1;
   const char *conflict_limit_specified = 0;
+  const char *proofsize_limit_specified = 0;
   const char *decision_limit_specified = 0;
   const char *localsearch_specified = 0;
 #ifndef __MINGW32__
@@ -480,6 +481,18 @@ int App::main (int argc, char **argv) {
         APPERR ("invalid conflict limit");
       else
         conflict_limit_specified = argv[i];
+    } else if (!strcmp (argv[i], "--proofsize")) {
+      if (++i == argc)
+        APPERR ("argument to '--proofsize' missing");
+      else if (proofsize_limit_specified)
+        APPERR ("multiple proofsize limits '--proofsize %s' and '--proofsize %s'",
+                proofsize_limit_specified, argv[i]);
+      else if (!parse_int_str (argv[i], proofsize_limit))
+        APPERR ("invalid argument in '--proofsize %s'", argv[i]);
+      else if (proofsize_limit < 0)
+        APPERR ("invalid proofsize limit");
+      else
+        proofsize_limit_specified = argv[i];
     } else if (!strcmp (argv[i], "-d")) {
       if (++i == argc)
         APPERR ("argument to '-d' missing");
@@ -661,7 +674,7 @@ int App::main (int argc, char **argv) {
 #ifndef __WIN32
       time_limit >= 0 ||
 #endif
-      conflict_limit >= 0 || decision_limit >= 0) {
+      conflict_limit >= 0 || decision_limit >= 0 || proofsize_limit >= 0) {
     solver->section ("limit");
     if (preprocessing > 0) {
       solver->message (
@@ -696,6 +709,13 @@ int App::main (int argc, char **argv) {
           "setting decision limit to %d decisions (due to '%s')",
           decision_limit, decision_limit_specified);
       bool succeeded = solver->limit ("decisions", decision_limit);
+      assert (succeeded), (void) succeeded;
+    }
+    if (proofsize_limit >= 0) {
+     solver->message (
+          "setting proofsize limit to %d bytes (due to '%s')",
+          proofsize_limit, proofsize_limit_specified);
+      bool succeeded = solver->limit ("proofsize", proofsize_limit);
       assert (succeeded), (void) succeeded;
     }
   }

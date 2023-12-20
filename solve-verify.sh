@@ -26,7 +26,7 @@ Options:
 " && exit
 
 
-command="./cadical-ks/build/cadical-ks $f $f.drat --order $n --unembeddable-check 17 --perm-out $f.perm --no-binary | tee $f.log"
+command="./cadical-ks/build/cadical-ks $f $f.drat --order $n --unembeddable-check 17 --perm-out $f.perm --no-binary --proofsize 7000 | tee $f.log"
 
 echo $command
 eval $command

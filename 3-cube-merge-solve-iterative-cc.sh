@@ -5,10 +5,13 @@ f=$2 #instance file name
 d=$3 #directory to store into
 v=$4 #num of var to eliminate during first cubing stage
 a=$5 #amount of additional variables to remove for each cubing call
+m=$((n*(n-1)/2)) # Number of edge variables in instance
 
 #we want the script to: cube, for each cube, submit sbatch to solve, if not solved, call the script again
 
 mkdir -p $d/$v
+
+dir="$d/$v"
 
 command="python -u alpha-zero-general/main.py $f -n $v -m $m -o $dir/$v.cubes -order $n -numMCTSSims 30 -prod | tee $dir/$v.log"
 echo $command

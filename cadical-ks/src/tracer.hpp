@@ -163,6 +163,7 @@ public:
   virtual bool closed () = 0;
   virtual void close (bool print = false) = 0;
   virtual void flush (bool print = false) = 0;
+  virtual long int bytes () { return 0; }
 };
 
 } // namespace CaDiCaL
