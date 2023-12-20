@@ -3,10 +3,11 @@
 n=$1 #order
 f=$2 #input file
 o=$3 #output .verify file
-m=$f #verification mode
+m=$4 #verification mode
 
 # Verify DRAT proof
 if [ "$m" = "f" ]; then
+	echo "forward verification enabled"
     ./drat-trim/drat-trim $f $f.drat -f -b | tee $o
 else
     ./drat-trim/drat-trim $f $f.drat -b | tee $o
