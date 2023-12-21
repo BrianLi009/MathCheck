@@ -225,6 +225,7 @@ public:
 
   Solver ();
   ~Solver ();
+  bool proof_specified = false;
 
   void add_trusted_clause(const std::vector<int> & clause);
   FILE * permoutfile = NULL;

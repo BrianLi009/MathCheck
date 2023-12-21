@@ -70,7 +70,7 @@ void Internal::limit_proofsize (int l) {
     inc.proofsize = -1;
   } else {
     inc.proofsize = l;
-    LOG ("new proofsize limit of %d bytes", l);
+    LOG ("new proofsize limit of %d MiB", l);
   }
 }
 

@@ -380,7 +380,7 @@ int App::main (int argc, char **argv) {
   const char *preprocessing_specified = 0, *optimization_specified = 0;
   const char *read_solution_path = 0, *write_result_path = 0;
   const char *dimacs_path = 0, *proof_path = 0;
-  bool proof_specified = false, dimacs_specified = false;
+  bool dimacs_specified = false;
   int optimize = 0, preprocessing = 0, localsearch = 0;
   const char *output_path = 0, *extension_path = 0;
   int conflict_limit = -1, decision_limit = -1, proofsize_limit = -1;
@@ -400,12 +400,12 @@ int App::main (int argc, char **argv) {
         !strcmp (argv[i], "--copyright")) {
       APPERR ("can only use '%s' as single first option", argv[i]);
     } else if (!strcmp (argv[i], "-")) {
-      if (proof_specified)
+      if (solver->proof_specified)
         APPERR ("too many arguments");
       else if (!dimacs_specified)
         dimacs_specified = true;
       else
-        proof_specified = true;
+        solver->proof_specified = true;
     } else if (!strcmp (argv[i], "-r")) {
       if (++i == argc)
         APPERR ("argument to '-r' missing");
@@ -611,11 +611,11 @@ int App::main (int argc, char **argv) {
       /* nothing do be done */
     } else if (argv[i][0] == '-')
       APPERR ("invalid option '%s'", argv[i]);
-    else if (proof_specified)
+    else if (solver->proof_specified)
       APPERR ("too many arguments");
     else if (dimacs_specified) {
       proof_path = argv[i];
-      proof_specified = true;
+      solver->proof_specified = true;
       if (!force_writing && most_likely_existing_cnf_file (proof_path))
         APPERR ("DRAT proof file '%s' most likely existing CNF (use '-f')",
                 proof_path);
@@ -631,7 +631,7 @@ int App::main (int argc, char **argv) {
     APPERR ("DIMACS input file '%s' does not exist", dimacs_path);
   if (read_solution_path && !File::exists (read_solution_path))
     APPERR ("solution file '%s' does not exist", read_solution_path);
-  if (dimacs_specified && dimacs_path && proof_specified && proof_path &&
+  if (dimacs_specified && dimacs_path && solver->proof_specified && proof_path &&
       !strcmp (dimacs_path, proof_path) && strcmp (dimacs_path, "-"))
     APPERR ("DIMACS input file '%s' also specified as DRAT proof file",
             dimacs_path);
@@ -713,15 +713,15 @@ int App::main (int argc, char **argv) {
     }
     if (proofsize_limit >= 0) {
      solver->message (
-          "setting proofsize limit to %d bytes (due to '%s')",
+          "setting proofsize limit to %d MiB (due to '%s')",
           proofsize_limit, proofsize_limit_specified);
       bool succeeded = solver->limit ("proofsize", proofsize_limit);
       assert (succeeded), (void) succeeded;
     }
   }
-  if (verbose () || proof_specified)
+  if (verbose () || solver->proof_specified)
     solver->section ("proof tracing");
-  if (proof_specified) {
+  if (solver->proof_specified) {
     if (!proof_path) {
       const bool force_binary = (isatty (1) && get ("binary"));
       if (force_binary)
@@ -914,7 +914,7 @@ int App::main (int argc, char **argv) {
     res = solver->solve ();
   }
 
-  if (proof_specified) {
+  if (solver->proof_specified) {
     solver->section ("closing proof");
     solver->close_proof_trace (!get ("quiet"));
   }

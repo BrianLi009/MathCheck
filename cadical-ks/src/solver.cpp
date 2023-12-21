@@ -1629,7 +1629,7 @@ void Solver::error (const char *fmt, ...) {
 }
 
 void Solver::add_trusted_clause (const vector<int> &clause) {
-  internal->proof->add_trusted_clause (clause);
+  if(proof_specified) internal->proof->add_trusted_clause (clause);
 }
 
 } // namespace CaDiCaL

@@ -1595,8 +1595,8 @@ inline bool Internal::search_limits_hit () {
     bytes = std::max(tracer->bytes(), bytes);
   }
 
-  if (lim.proofsize >= 0 && bytes >= lim.proofsize) {
-    LOG ("proofsize limit %" PRId64 " reached", lim.proofsize);
+  if (lim.proofsize >= 0 && bytes >= 1048576l * lim.proofsize) {
+    LOG ("proofsize limit %" PRId64 " MiB reached", lim.proofsize);
     return true;
   }
 
