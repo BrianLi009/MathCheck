@@ -40,6 +40,7 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
         echo "#SBATCH --account=rrg-cbright" >> $child_instance-cube.sh
         echo "#SBATCH --time=2-00:00" >> $child_instance-cube.sh
         echo "#SBATCH --mem-per-cpu=4G" >> $child_instance-cube.sh
+	echo "module load python/3.10" >> $child_instance-cube.sh
         echo $command >> $child_instance-solve.sh
         echo $command3 >> $child_instance-solve.sh
         echo $command4 >> $child_instance-cube.sh
