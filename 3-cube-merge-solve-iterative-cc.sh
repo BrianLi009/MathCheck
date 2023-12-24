@@ -5,6 +5,7 @@ f=$2 #instance file name
 d=$3 #directory to store into
 v=$4 #num of var to eliminate during first cubing stage
 a=$5 #amount of additional variables to remove for each cubing call
+ins=${6:-$f} #instance to cube on, by default it's the same as $f
 m=$((n*(n-1)/2)) # Number of edge variables in instance
 
 #we want the script to: cube, for each cube, submit sbatch to solve, if not solved, call the script again
@@ -13,7 +14,7 @@ mkdir -p $d/$v
 
 dir="$d/$v"
 
-command="python -u alpha-zero-general/main.py $f -n $v -m $m -o $dir/$v.cubes -order $n -numMCTSSims 30 -prod | tee $dir/$v.log"
+command="python -u alpha-zero-general/main.py $ins -n $v -m $m -o $dir/$v.cubes -order $n -numMCTSSims 30 -prod | tee $dir/$v.log"
 echo $command
 eval $command
 
@@ -29,7 +30,7 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
         file="$cube_file$i.adj.log"
         command3="if ! grep -q 'UNSATISFIABLE' '$file'; then sbatch $child_instance-cube.sh; fi"
         #sbatch this line
-        command4="./3-cube-merge-solve-iterative-cc.sh $n $child_instance '$d/$v-$i' $(($v + $a)) $a"
+        command4="./3-cube-merge-solve-iterative-cc.sh $n $child_instance '$d/$v-$i' $(($v + $a)) $a $ins"
         command="$command1 && $command2"
         echo "#!/bin/bash" > $child_instance-solve.sh
         echo "#SBATCH --account=rrg-cbright" >> $child_instance-solve.sh
