@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ "$1" = "-h" -o "$1" = "--help" -o "$#" -ne 2 ] && echo "
+[ "$1" = "-h" -o "$1" = "--help" ] && echo "
 Description:
     Updated on 2023-01-11
     This script generate non-canonical blocking clauses of order o using maplesat-ks, then concanate the clauses into the instance.
