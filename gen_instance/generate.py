@@ -17,7 +17,7 @@ def generate(n, block):
     triangles - n choose 3 variables
     extra variables from cubic
     """
-    cnf_file = "constraints_" + str(n) + "_" + str(c)
+    cnf_file = "constraints_" + str(n) + "_" + str(block)
     if os.path.exists(cnf_file):
         print(f"File '{cnf_file}' already exists. Terminating...")
         sys.exit()
