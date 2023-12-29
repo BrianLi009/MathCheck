@@ -21,7 +21,7 @@ Options:
 n=$1 #order
 c=${2:-0.5} #ratio of color-1 vertices to block
 
-if [ -f constraints_$n ]
+if [ -f constraints_$n_$c ]
 then
     echo "instance already generated"
 else
