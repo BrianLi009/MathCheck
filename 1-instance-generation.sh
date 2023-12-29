@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ "$1" = "-h" -o "$1" = "--help" -o "$#" -ne 1 ] && echo "
+[ "$1" = "-h" -o "$1" = "--help" -o "$#" -lt 1 -o "$#" -gt 2 ] && echo "
 Description:
     Updated on 2023-01-11
     This script call the python file generate.py in gen_instance to generate the SAT encoding for a Kochen Specker candidates. Such candidate satisfies the following condition:
