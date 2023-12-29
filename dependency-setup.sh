@@ -48,4 +48,8 @@ else
     cd -
 fi
 
+cd cadical-ks
+./configure
+make
+
 echo "all dependency properly installed"
