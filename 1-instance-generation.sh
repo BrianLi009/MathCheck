@@ -24,5 +24,5 @@ if [ -f constraints_$n ]
 then
     echo "instance already generated"
 else
-    python3 gen_instance/generate-conway.py $n #generate the instance of order n
+    python3 gen_instance/generate.py $n #generate the instance of order n
 fi
