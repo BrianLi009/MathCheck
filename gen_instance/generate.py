@@ -8,7 +8,7 @@ from cubic import cubic
 import subprocess
 import os
 
-def generate(n):
+def generate(n, c):
     """
     n: size of the graph
     Given n, the function calls each individual constraint-generating function, then write them into a DIMACS file as output
@@ -17,7 +17,7 @@ def generate(n):
     triangles - n choose 3 variables
     extra variables from cubic
     """
-    cnf_file = "constraints_" + str(n)
+    cnf_file = "constraints_" + str(n) + "_" + str(c)
     if os.path.exists(cnf_file):
         print(f"File '{cnf_file}' already exists. Terminating...")
         sys.exit()
@@ -38,7 +38,7 @@ def generate(n):
     print ("graph is squarefree")
     clause_count += triangle(n, edge_dict, tri_dict, cnf_file)
     print ("all vertices are part of a triangle")
-    clause_count += noncolorable(n,  edge_dict, tri_dict, cnf_file)
+    clause_count += noncolorable(n,  edge_dict, tri_dict, cnf_file, c)
     print ("graph is noncolorable")
     clause_count += mindegree(n, 3, edge_dict, cnf_file)
     print ("minimum degree of each vertex is 3")
@@ -55,4 +55,4 @@ def generate(n):
     subprocess.call(["./gen_instance/append.sh", cnf_file, cnf_file+"_new", firstline])
 
 if __name__ == "__main__":
-   generate(int(sys.argv[1]))
+   generate(int(sys.argv[1]), sys.argv[2])

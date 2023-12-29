@@ -19,10 +19,11 @@ Options:
 " && exit
 
 n=$1 #order
+c=${2:-0.5} #ratio of color-1 vertices to block
 
 if [ -f constraints_$n ]
 then
     echo "instance already generated"
 else
-    python3 gen_instance/generate.py $n #generate the instance of order n
+    python3 gen_instance/generate.py $n $c #generate the instance of order n
 fi
