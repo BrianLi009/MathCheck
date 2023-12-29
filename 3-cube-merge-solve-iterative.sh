@@ -19,7 +19,7 @@ mkdir -p $d/$v
 
 dir="$d/$v"
 
-command="python -u alpha-zero-general/main.py $f -n $v -m $m -o $dir/$v.cubes -order $n -numMCTSSims 30 -prod | tee $dir/$v.log"
+command="python -u alpha-zero-general/main.py $f -n $v -m $m -o $dir/$v.cubes -order $n -numMCTSSims 10 -prod | tee $dir/$v.log"
 echo $command
 eval $command
 

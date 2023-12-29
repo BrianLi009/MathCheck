@@ -65,6 +65,7 @@ then
     rm embedability/$n.exhaust
 fi
 
+./2-add-blocking-clauses.sh $n constraints_${n} 
 #need to fix the cubing part for directory pointer
 #step 5: cube and conquer if necessary, then solve
 if [ "$r" != "0" ] 
