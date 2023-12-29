@@ -5,7 +5,7 @@ def noncolorable(n, edge_dict, tri_dict, cnf, blocked=0.5):
     cnf_file = open(cnf, 'a+')
     clause_count = 0
     vertices_lst = list(range(1, n+1))
-    for i in range(1, math.ceil(n*blocked+1)):
+    for i in range(1, math.ceil(n*float(blocked)+1)):
         #block all labelings with i label-1s
         possible_comb = list(itertools.combinations(vertices_lst, i))
         #possible_comb contains all possible ways to label the graph with i label-1's
