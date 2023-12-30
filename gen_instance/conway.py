@@ -43,7 +43,6 @@ def generate_adder_clauses(X, s, total_vars, force = False):
             if S[i][j] == 0:
                 total_vars += 1
                 S[i][j] = total_vars
-    
     # Generate clauses encoding cardinality constraint
     for i in range(1, n+1):
         for j in range(1, k+1):
@@ -53,16 +52,14 @@ def generate_adder_clauses(X, s, total_vars, force = False):
             clauses.append(generate_implication_clause({S[i][j]}, {S[i-1][j], S[i-1][j-1]}))
     return clauses, S, total_vars
                         
-def conway(n, edge_dict, tri_dict, tri_count_lst, cnf, var_count):
+def conway(n, edge_dict, tri_dict, count_dict, tri_count_dict, cnf, var_count):
     #at least vs vertices are connected to at least t triangles
     clause_count = 0
     cnf_file = open(cnf, 'a+')
     vertices_lst = list(range(1, n+1))
     all_tri = list(itertools.combinations(vertices_lst, 3))
-    t = 4 #we don't need to generate the entire counting matrix
+    t = max(count_dict.values())
     extra_var_dict_master = {}
-
-    #Encoding triangles, need to be uncommented when noncolorable.py is not called
 
     """for triangle in list(itertools.combinations(vertices_lst, 3)):
         # the following encoding are applied in every possible triangle in the graph
@@ -81,73 +78,54 @@ def conway(n, edge_dict, tri_dict, tri_count_lst, cnf, var_count):
         cnf_file.write('{} {} {} {} 0\n'.format(str(-edge_dict[edge_1]), str(-edge_dict[edge_2]), str(-edge_dict[edge_3]), str(tri_dict[triangle])))
         clause_count += 4"""
 
-    #Encoding bowtie, such that triangle 1 and triangle 2 iff bowtie 12
-    bowtie_dict = {}
-    for tri_pair in itertools.combinations(all_tri, 2):
-        tri_1 = tri_pair[0]
-        tri_2 = tri_pair[1]
-        unique_elements = sorted(set(tri_1 + tri_2))
-        if len(unique_elements) == 5:
-            #tri_1 and tri_2 iff bowtie_12
-            bowtie = var_count + 1
-            bowtie_dict[frozenset(unique_elements)] = bowtie
-            tri_1_var = tri_dict[tri_1]
-            tri_2_var = tri_dict[tri_2]
-            var_count += 1
-            clause_1 = str(bowtie) + " -" + str(tri_1_var) + " -" + str(tri_2_var)
-            clause_2 = "-" + str(bowtie) + " " + str(tri_1_var)
-            clause_3 = "-" + str(bowtie) + " " + str(tri_2_var)
-            cnf_file.write(clause_1 + " 0\n")
-            cnf_file.write(clause_2 + " 0\n")
-            cnf_file.write(clause_3 + " 0\n")
-            clause_count += 3
-
-    #Encoding cardinality variables on the triangles adjacent to each vertex
     for v in range(1, n+1):
         v_tri_lst = [tri for tri in all_tri if v in tri] #triangles containing v
         small_tri_lst = [tri_dict[tri] for tri in v_tri_lst]
-        clauses, extra_var_matrix, var_count = generate_adder_clauses(small_tri_lst, t, var_count)
+        clauses, extra_var_matrix, var_count = generate_adder_clauses(small_tri_lst, 3, var_count)
         for clause in clauses:
             if clause is not None:
                 converted_clause = ' '.join(clause) + ' 0'
                 cnf_file.write(converted_clause + "\n")
                 clause_count += 1
+        #want to include that at least t of the vars are True
         extra_var_dict_master[v] = extra_var_matrix
-
-    ind_dict = {}
-    #have a ind_var for each bowtie, such that ind_var <-> bowtie and ind_1 and ind_2 and ind_3 and ind_4 and ind_5
-    clause = ""
-    for bowtie in bowtie_dict:
-        ind_var = var_count + 1
-        ind_dict[bowtie] = ind_var
-        bowtie_lst = list(bowtie)
-        v1, v2, v3, v4, v5 = bowtie_lst[0], bowtie_lst[1], bowtie_lst[2], bowtie_lst[3], bowtie_lst[4]
-        deg1, deg2, deg3, deg4, deg5 = tri_count_lst[0], tri_count_lst[1], tri_count_lst[2], tri_count_lst[3], tri_count_lst[4]
-        #vi can be accessed at extra_var_dict_master[vi][len(extra_var_dict_master[vi])-1][deg1]
-        v1_ind = extra_var_dict_master[v1][len(extra_var_dict_master[v1])-1][deg1]
-        v2_ind = extra_var_dict_master[v2][len(extra_var_dict_master[v2])-1][deg2]
-        v3_ind = extra_var_dict_master[v3][len(extra_var_dict_master[v3])-1][deg3]
-        v4_ind = extra_var_dict_master[v4][len(extra_var_dict_master[v3])-1][deg4]
-        v5_ind = extra_var_dict_master[v5][len(extra_var_dict_master[v3])-1][deg5]
-        #ind_var <-> bowtie and ind_1 and ind_2 and ind_3 and ind_4 and ind_5
-        clause_1 = str(ind_var) + " -" + str(bowtie_dict[bowtie]) + " -" + str(v1_ind) + " -" + str(v2_ind) + " -" + str(v3_ind) + " -" + str(v4_ind) + " -" + str(v5_ind)
-        clause_2 = "-" + str(ind_var) + " " + str(bowtie_dict[bowtie])
-        clause_3 = "-" + str(ind_var) + " " + str(v1_ind)
-        clause_4 = "-" + str(ind_var) + " " + str(v2_ind)
-        clause_5 = "-" + str(ind_var) + " " + str(v3_ind)
-        clause_6 = "-" + str(ind_var) + " " + str(v4_ind)
-        clause_7 = "-" + str(ind_var) + " " + str(v5_ind)
-        cnf_file.write(clause_1 + " 0\n")
-        cnf_file.write(clause_2 + " 0\n")
-        cnf_file.write(clause_3 + " 0\n")
-        cnf_file.write(clause_4 + " 0\n")
-        cnf_file.write(clause_5 + " 0\n")
-        cnf_file.write(clause_6 + " 0\n")
-        cnf_file.write(clause_7 + " 0\n")
-        clause = clause + str(ind_var) + " "
-        clause_count += 7
-        var_count += 1
-    cnf_file.write(clause + "0\n")
-    clause_count += 1
-
+    for vs in count_dict:
+        t = count_dict[vs]
+        #out of all counting variables for each counting matrix at position S[len(S)][t], vs of them must be True
+        count_lst = []
+        for i in range(1, n+1):
+            count_lst.append(extra_var_dict_master[i][len(extra_var_dict_master[i])-1][t])
+        clauses, ind_matrix, var_count = generate_adder_clauses(count_lst, vs, var_count, True)
+        for clause in clauses:
+            if clause is not None:
+                converted_clause = ' '.join(clause) + ' 0'
+                cnf_file.write(converted_clause + "\n")
+                clause_count += 1
+    for structure in tri_count_dict:
+        #have a ind_var for each triangle, such that ind_var <-> tri and ind_1 and ind_2 and ind_3 (need to find ind_1, ind_2, ind_3 correspondingly)
+        clause = ""
+        for tri in all_tri:
+            ind_var = var_count + 1
+            v1, v2, v3 = tri[0], tri[1], tri[2]
+            deg1, deg2, deg3 = structure[0], structure[1], structure[2]
+            #vi can be accessed at extra_var_dict_master[vi][len(extra_var_dict_master[vi])-1][deg1]
+            v1_ind = extra_var_dict_master[v1][len(extra_var_dict_master[v1])-1][deg1]
+            v2_ind = extra_var_dict_master[v2][len(extra_var_dict_master[v2])-1][deg2]
+            v3_ind = extra_var_dict_master[v3][len(extra_var_dict_master[v3])-1][deg3]
+            #ind_var <-> tri and ind_1 and ind_2 and ind_3
+            clause_1 = str(ind_var) + " -" + str(tri_dict[tri]) + " -" + str(v1_ind) + " -" + str(v2_ind) + " -" + str(v3_ind)
+            clause_2 = "-" + str(ind_var) + " " + str(tri_dict[tri])
+            clause_3 = "-" + str(ind_var) + " " + str(v1_ind)
+            clause_4 = "-" + str(ind_var) + " " + str(v2_ind)
+            clause_5 = "-" + str(ind_var) + " " + str(v3_ind)
+            cnf_file.write(clause_1 + " 0\n")
+            cnf_file.write(clause_2 + " 0\n")
+            cnf_file.write(clause_3 + " 0\n")
+            cnf_file.write(clause_4 + " 0\n")
+            cnf_file.write(clause_5 + " 0\n")
+            clause = clause + str(ind_var) + " "
+            clause_count += 5
+            var_count += 1
+        cnf_file.write(clause + "0\n")
+        clause_count += 1
     return var_count, clause_count
