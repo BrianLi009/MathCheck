@@ -18,7 +18,7 @@ def generate(n):
     triangles - n choose 3 variables
     extra variables from cubic
     """
-    cnf_file = "constraints_" + str(n)
+    cnf_file = "constraints_conway_" + str(n)
     edge_dict = {}
     tri_dict = {}
     count = 0
