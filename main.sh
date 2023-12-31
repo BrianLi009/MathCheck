@@ -37,7 +37,7 @@ then
 fi
 
 n=$1 #order
-c=${2:0.5}
+c=${2:-0.5}
 r=${3:-0} #num of var to eliminate during first cubing stage
 a=${4:-0} #amount of additional variables to remove for each cubing call
 
