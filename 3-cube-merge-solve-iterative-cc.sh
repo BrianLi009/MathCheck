@@ -28,14 +28,14 @@ new_index=$((numline))
 
 for i in $(seq 1 $new_index) #1-based indexing for cubes
     do
-        child_instance="$d/$v/simp/${highest_num}.cubes${i}.adj.simp"
-        command1="./gen_cubes/apply.sh $f $cube_file $i > $d/$v/simp/$cube_file_name$i.adj"
-        command2="./simplification/simplify-by-conflicts.sh $d/$v/simp/$cube_file_name$i.adj $n $t >> $d/$v/$n-solve/$i-solve.log"
-        command3="./maplesat-solve-verify.sh -l $n $d/$v/simp/$cube_file_name$i.adj.simp $d/$v/$n-solve/$i-solve.exhaust >> $d/$v/$n-solve/$i-solve.log"
-        command4="if ! grep -q 'UNSATISFIABLE' '$d/$v/$n-solve/$i-solve.log'; then sbatch $child_instance-cube.sh; fi"
+        command1="./gen_cubes/apply.sh $f $cube_file $i > $cube_file$i.adj"
+        command2="./solve-verify.sh $n $cube_file$i.adj"
+        child_instance="$cube_file$i.adj"
+        file="$cube_file$i.adj.log"
+        command3="if ! grep -q 'UNSATISFIABLE' '$file'; then sbatch $child_instance-cube.sh; fi"
         #sbatch this line
-        command5="./gen_cubes/concat.sh $child_instance $child_instance.noncanonical > $child_instance.temp; ./gen_cubes/concat.sh $child_instance.temp $child_instance.unit > $child_instance.learnt; rm $child_instance.noncanonical; rm $child_instance.temp; rm $child_instance.unit; ./3-cube-merge-solve-iterative-learnt-cc.sh $n $child_instance.learnt '$d/$v-$i' $(($v + $a)) $t $a $z"
-        command="$command1 && $command2 && $command3"
+        command4="./3-cube-merge-solve-iterative-cc.sh $n $child_instance '$d/$v-$i' $(($v + $a)) $a $ins"
+        command="$command1 && $command2"
         echo "#!/bin/bash" > $child_instance-solve.sh
         echo "#SBATCH --account=rrg-cbright" >> $child_instance-solve.sh
         echo "#SBATCH --time=2-00:00" >> $child_instance-solve.sh
@@ -44,8 +44,9 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
         echo "#SBATCH --account=rrg-cbright" >> $child_instance-cube.sh
         echo "#SBATCH --time=2-00:00" >> $child_instance-cube.sh
         echo "#SBATCH --mem-per-cpu=4G" >> $child_instance-cube.sh
+	echo "module load python/3.10" >> $child_instance-cube.sh
         echo $command >> $child_instance-solve.sh
-        echo $command4 >> $child_instance-solve.sh
-        echo $command5 >> $child_instance-cube.sh
+        echo $command3 >> $child_instance-solve.sh
+        echo $command4 >> $child_instance-cube.sh
         sbatch $child_instance-solve.sh
     done
