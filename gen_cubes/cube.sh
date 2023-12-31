@@ -71,8 +71,7 @@ if [ "$d" == "0" ]
 then
 	if [ ! -s $dir/0.cubes ]
 	then
-		echo "using AlphaMapleSAT + MCTS for cubing..."
-		command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o $dir/0.cubes -order $n -numMCTSSims 10 -prod | tee $logdir/0.log"
+		command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o $dir/0.cubes -order $n -prod -numMCTSSims 10 | tee $logdir/0.log"
 	echo $command
 	eval $command
 	fi
@@ -124,7 +123,8 @@ do
 			head $dir/$((i-1)).cubes -n $c | tail -n 1 > $dir/$i-$c.cubes
 			continue
 		fi
-
+		echo "PASSING IN Z AS $z"
+		echo "$n $f $r $i $c $t $s $z"
 		command="./gen_cubes/cube-instance.sh $n $f $r $i $c $t $z $s"
 		echo $command >> $dir/$i.commands
 		if [ "$p" != "-p" ]

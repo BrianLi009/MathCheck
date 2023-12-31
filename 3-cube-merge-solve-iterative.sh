@@ -1,31 +1,33 @@
 #!/bin/bash
 
-while getopts "p" opt
-do
-	case $opt in
-        p) p="-p" ;;
-	esac
-done
-shift $((OPTIND-1))
-
 n=$1 #order
 f=$2 #instance file name
 d=$3 #directory to store into
 v=$4 #num of var to eliminate during first cubing stage
 a=$5 #amount of additional variables to remove for each cubing call
-m=$((n*(n-1)/2)) # Number of edge variables in instance
+b=${6:-0} #starting cubing depth, default is 0
+c=${7:-} #cube file to build on if exist
 
-mkdir -p $d/$v
+mkdir -p $d/$v/$n-solve
+mkdir -p $d/$v/simp
+mkdir -p $d/$v/log
+mkdir -p $d/$v/$n-cubes
 
-dir="$d/$v"
+echo "Cubing starting at depth $b"
+di="$d/$v"
+./gen_cubes/cube.sh -a $n $f $v $di $b
 
-command="python -u alpha-zero-general/main.py $f -n $v -m $m -o $dir/$v.cubes -order $n -numMCTSSims 10 -prod | tee $dir/$v.log"
-echo $command
-eval $command
+files=$(ls $d/$v/$n-cubes/*.cubes)
+highest_num=$(echo "$files" | awk -F '[./]' '{print $(NF-1)}' | sort -nr | head -n 1)
+echo "currently the cubing depth is $highest_num"
+cube_file=$d/$v/$n-cubes/$highest_num.cubes
+cp $(echo $cube_file) .
+cube_file=$(echo $cube_file | sed 's:.*/::')
+new_cube=$((highest_num + 1))
+new_cube_file=$d/$v/$n-cubes/$new_cube.cubes
 
-cube_file=$dir/$v.cubes
-
-new_index=$(< $cube_file wc -l)
+numline=$(< $cube_file wc -l)
+new_index=$((numline))
 
 for i in $(seq 1 $new_index) #1-based indexing for cubes
     do 
@@ -37,6 +39,25 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
         eval $command1
         eval $command2
     done
+
+all_solved="T"
+for i in $(seq 1 $new_index)
+    do
+        file="$d/$v/$n-solve/$i-solve.log"
+        if grep -q "UNSATISFIABLE" $file 
+        then
+                #do something
+                continue
+        elif grep -q "SATISFIABLE" $file
+        then
+                #do something
+                continue
+        else
+                all_solved="F"
+                echo $file is not solved
+                sed -n "${i}p" $cube_file >> $new_cube_file
+        fi
+done
 
 for i in $(seq 1 $new_index)
     do
