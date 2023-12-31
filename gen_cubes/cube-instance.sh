@@ -30,7 +30,7 @@ if [ -z $s ] || [ "$s" == "-m" ] || (( i == 1 ))
 then
 	# Adjoin the literals in the current cube to the instance and simplify the resulting instance with CaDiCaL
 	./gen_cubes/apply.sh $f $dir/$((i-1)).cubes $c > $dir/$((i-1)).cubes$c
-	command="./cadical-ks/build/cadical $dir/$((i-1)).cubes$c $dir/$((i-1)).cubes$c.drat -o $dir/$((i-1)).cubes$c.simp -e $dir/$((i-1)).cubes$c.ext -n -c 1000 > $logdir/$((i-1)).cubes$c.simp"
+	command="./cadical-ks/build/cadical $dir/$((i-1)).cubes$c -o $dir/$((i-1)).cubes$c.simp -e $dir/$((i-1)).cubes$c.ext -n -c 1000 > $logdir/$((i-1)).cubes$c.simp"
 	echo $command
 	eval $command
 	
