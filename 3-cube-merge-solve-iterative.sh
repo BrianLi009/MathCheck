@@ -8,9 +8,6 @@ a=$5 #amount of additional variables to remove for each cubing call
 b=${6:-0} #starting cubing depth, default is 0
 c=${7:-} #cube file to build on if exist
 
-mkdir -p $d/$v/$n-solve
-mkdir -p $d/$v/simp
-mkdir -p $d/$v/log
 mkdir -p $d/$v/$n-cubes
 
 echo "Cubing starting at depth $b"

@@ -8,9 +8,6 @@ a=$5 #amount of additional variables to remove for each cubing call
 
 #we want the script to: cube, for each cube, submit sbatch to solve, if not solved, call the script again
 
-mkdir -p $d/$v/$n-solve
-mkdir -p $d/$v/simp
-mkdir -p $d/$v/log
 mkdir -p $d/$v/$n-cubes
 
 di="$d/$v"
