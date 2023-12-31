@@ -37,8 +37,9 @@ then
 fi
 
 n=$1 #order
-r=${2:-0} #num of var to eliminate during first cubing stage
-a=${3:-0} #amount of additional variables to remove for each cubing call
+c=${2:-0.5}
+r=${3:-0} #num of var to eliminate during first cubing stage
+a=${4:-0} #amount of additional variables to remove for each cubing call
 
 #step 2: setp up dependencies
 ./dependency-setup.sh
@@ -70,7 +71,7 @@ fi
 if [ "$r" != "0" ] 
 then
     dir="${n}_${r}_${a}"
-    ./3-cube-merge-solve-iterative-cc.sh $p $n constraints_${n} $dir $r $a
+    ./3-cube-merge-solve-iterative-cc.sh $p $n constraints_${n}_${c} $dir $r $a
 else
     ./solve-verify.sh $n constraints_${n}
 fi
