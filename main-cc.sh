@@ -54,7 +54,7 @@ then
     exit 0
 fi
 
-./1-instance-generation.sh $n 
+./1-instance-generation.sh $n $c
 
 if [ -f "$n.exhaust" ]
 then
