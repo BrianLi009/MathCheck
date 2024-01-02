@@ -1,31 +1,27 @@
 #!/bin/bash
 
-while getopts "p" opt
-do
-	case $opt in
-        p) p="-p" ;;
-	esac
-done
-shift $((OPTIND-1))
-
 n=$1 #order
 f=$2 #instance file name
 d=$3 #directory to store into
 v=$4 #num of var to eliminate during first cubing stage
 a=$5 #amount of additional variables to remove for each cubing call
-m=$((n*(n-1)/2)) # Number of edge variables in instance
 
-mkdir -p $d/$v
+#we want the script to: cube, for each cube, submit sbatch to solve, if not solved, call the script again
 
-dir="$d/$v"
+mkdir -p $d/$v/$n-cubes
 
-command="python ams_no_mcts.py $f -n $v -m $m -o $dir/$v.cubes | tee $dir/$v.log"
-echo $command
-eval $command
+di="$d/$v"
+./gen_cubes/cube.sh -a $n $f $v $di $z
 
-cube_file=$dir/$v.cubes
+files=$(ls $d/$v/$n-cubes/*.cubes)
+highest_num=$(echo "$files" | awk -F '[./]' '{print $(NF-1)}' | sort -nr | head -n 1)
+echo "currently the cubing depth is $highest_num"
+cube_file=$d/$v/$n-cubes/$highest_num.cubes
+cube_file_name=$(echo $cube_file | sed 's:.*/::')
+new_cube=$((highest_num + 1))
 
-new_index=$(< $cube_file wc -l)
+numline=$(< $cube_file wc -l)
+new_index=$((numline))
 
 for i in $(seq 1 $new_index) #1-based indexing for cubes
     do 

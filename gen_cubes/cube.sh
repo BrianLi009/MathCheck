@@ -33,7 +33,7 @@ fi
 
 n=$1 # Order
 f=$2 # Instance filename
-r=$3 # Number of free edge variables to remove
+r=$3 # Number of cubes cutoff
 t=$4 #directory to work in
 m=$((n*(n-1)/2)) # Number of edge variables in instance
 dir=$t/$n-cubes # Directory to store cubes
@@ -95,37 +95,23 @@ do
 	numcubes=`wc -l < $dir/$((i-1)).cubes`
 	echo "$numcubes cubes in $dir/$((i-1)).cubes"
 
+	# Stop cubing when number of cubes exceed cutoff
+	if (( $numcubes > $r ))
+	then
+		echo "reached number of cubes cutoff"
+		# Remove cubes marked as unsatisfiable from last cube file
+		sed -i '/^u/d' $dir/$((i-1)).cubes
+		break
+	fi
+
 	# Generate a new instance for every cube generated from the previous depth
 	for c in `seq 1 $numcubes`
 	do
 		# Get the c-th cube
 		cubeline=`head $dir/$((i-1)).cubes -n $c | tail -n 1`
 
-		# Skip processing this cube entirely if it was marked as UNSAT
-		if [[ ${cubeline::1} == "u" ]]
-		then
-			echo "  Depth $i instance $c was determined to be UNSAT; skipping"
-			head $dir/$((i-1)).cubes -n $c | tail -n 1 > $dir/$i-$c.cubes
-			continue
-		fi
-		# Skip processing this cube entirely if it was not split on the previous depth (can be turned off with -a; ignore option when i > d)
-		if ([ "$a" != "-a" ] || (( i > d ))) && grep -q "$cubeline" $dir/$((i-2)).cubes 2> /dev/null
-		then
-			if [ "$s" == "-s" ]
-			then
-				# Line number of parent cube
-				l=$(grep -n "$cubeline" $dir/$((i-2)).cubes | cut -d':' -f1)
-				# Update location of simplified instance
-				cp $dir/$((i-2)).cubes$l.ext $dir/$((i-1)).cubes$c.ext
-				cp $dir/$((i-2)).cubes$l.simp $dir/$((i-1)).cubes$c.simp
-			fi
-			echo "  Depth $i instance $c was not split at previous depth; skipping"
-			head $dir/$((i-1)).cubes -n $c | tail -n 1 > $dir/$i-$c.cubes
-			continue
-		fi
-		echo "PASSING IN Z AS $z"
-		echo "$n $f $r $i $c $t $s $z"
-		command="./gen_cubes/cube-instance.sh $n $f $r $i $c $t $z $s"
+		echo "$n $f $r $i $c $t"
+		command="./gen_cubes/cube-instance.sh $n $f $i $c $t"
 		echo $command >> $dir/$i.commands
 		if [ "$p" != "-p" ]
 		then
@@ -146,8 +132,7 @@ do
 	rm $dir/$i.commands 2> /dev/null
 	rm $dir/$i-*.cubes 2> /dev/null
 	rm $dir/$((i-1)).cubes*.cubes 2> /dev/null
-	rm $dir/$((i-2)).cubes*.ext 2> /dev/null
-	rm $dir/$((i-2)).cubes*.simp 2> /dev/null
+	rm $dir/$((i-1)).cubes* 2> /dev/null
 
 	# Stop cubing when no additional cubes have been generated
 	if [ "$(wc -l < $dir/$((i-1)).cubes)" == "$(wc -l < $dir/$i.cubes)" ]

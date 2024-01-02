@@ -48,8 +48,15 @@ else
     cd -
 fi
 
-cd cadical-ks
-./configure
-make
+if [ -f cadical-ks/build/cadical-ks ]
+then
+    echo "cadical-ks installed and binary file compiled"
+else
+    cd cadical-ks
+    ./configure
+    make
+    cd -
+fi
+
 
 echo "all dependency properly installed"
