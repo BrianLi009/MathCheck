@@ -48,7 +48,7 @@ for i in $(seq 1 $new_index)
                 child_instance="$cube_file$i.adj"
                 echo "further cube instance $child_instance"
 
-                command="./3-cube-merge-solve-iterative.sh $n $child_instance "$d/$v-$i" $(($v + $a)) $a"
+                command="./3-cube-merge-solve-iterative.sh $n $child_instance "$d/$v-$i" $a $a"
                 #for parallization, simply submit the command below using sbatch
                 echo $command >> ${n}-iterative.commands
                 eval $command
