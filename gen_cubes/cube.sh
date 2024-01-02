@@ -71,7 +71,8 @@ if [ "$d" == "0" ]
 then
 	if [ ! -s $dir/0.cubes ]
 	then
-		command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o $dir/0.cubes -order $n -prod -numMCTSSims 10 | tee $logdir/0.log"
+		#command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o $dir/0.cubes -order $n -prod -numMCTSSims 10 | tee $logdir/0.log"
+		command="python ams_no_mcts.py $f -d 1 -m $m -o $dir/0.cubes"
 	echo $command
 	eval $command
 	fi
