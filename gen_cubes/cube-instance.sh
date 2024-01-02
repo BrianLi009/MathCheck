@@ -31,3 +31,4 @@ eval $command
 # Adjoin the newly generated cubes to the literals in the current cube
 cubeprefix=`head $dir/$((i-1)).cubes -n $c | tail -n 1 | sed -E 's/(.*) 0/\1/'`
 sed -E "s/^a (.*)/$cubeprefix \1/" $dir/$((i-1)).cubes$c.cubes > $dir/$i-$c.cubes
+rm $dir/$((i-1)).cubes$c

@@ -126,13 +126,11 @@ do
 	do
 		cat $dir/$i-$c.cubes >> $dir/$i.cubes
 	done
-	rm $dir/$i-*.cubes
 
 	# Remove unnecessary files
 	rm $dir/$i.commands 2> /dev/null
 	rm $dir/$i-*.cubes 2> /dev/null
 	rm $dir/$((i-1)).cubes*.cubes 2> /dev/null
-	rm $dir/$((i-1)).cubes* 2> /dev/null
 
 	# Stop cubing when no additional cubes have been generated
 	if [ "$(wc -l < $dir/$((i-1)).cubes)" == "$(wc -l < $dir/$i.cubes)" ]
