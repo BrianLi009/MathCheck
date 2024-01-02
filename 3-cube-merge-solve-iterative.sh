@@ -3,10 +3,8 @@
 n=$1 #order
 f=$2 #instance file name
 d=$3 #directory to store into
-v=$4 #num of var to eliminate during first cubing stage
-a=$5 #amount of additional variables to remove for each cubing call
-
-#we want the script to: cube, for each cube, submit sbatch to solve, if not solved, call the script again
+v=$4 #num of cubes to cutoff at initial depth
+a=$5 #num of cubes to cutoff at initial depth for each proceeding cubing call
 
 mkdir -p $d/$v/$n-cubes
 
