@@ -31,8 +31,9 @@ command="./cadical-ks/build/cadical-ks $f $f.drat --order $n --unembeddable-chec
 echo $command
 eval $command
 
-if ! grep -q "UNSAT" "$f.log"; then
-        ./proof-module.sh $n $f $f.verify f
+if ! grep -q "UNSAT" "$f.log"; then 
+        echo "skipping verification as instance is not solved
+        #./proof-module.sh $n $f $f.verify f
 else
         ./proof-module.sh $n $f $f.verify
 fi
