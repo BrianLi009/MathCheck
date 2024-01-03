@@ -39,7 +39,7 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
         file="$cube_file$i.adj.log"
         command3="if ! grep -q 'UNSATISFIABLE' '$file'; then sbatch $child_instance-cube.sh; fi"
         #sbatch this line
-        command4="./3-cube-merge-solve-iterative-cc.sh $n $child_instance '$d/$v-$i' $a $a $d/$v/$n-cubes/$ins$i.adj"
+        command4="./3-cube-merge-solve-iterative-cc.sh $n $child_instance '$d/$v-$i' $a $a $cube_file$i.tocube"
         command="$command1 && $command2"
         echo "#!/bin/bash" > $child_instance-solve.sh
         echo "#SBATCH --account=rrg-cbright" >> $child_instance-solve.sh
@@ -52,7 +52,7 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
 	    echo "module load python/3.10" >> $child_instance-cube.sh
         echo $command >> $child_instance-solve.sh
         if [ "$ins" != "$f" ]; then
-            ./gen_cubes/apply.sh $ins $cube_file $i > $d/$v/$n-cubes/$ins$i.adj
+            ./gen_cubes/apply.sh $ins $cube_file $i > $cube_file$i.tocube
         fi
         echo $command3 >> $child_instance-solve.sh
         echo $command4 >> $child_instance-cube.sh
