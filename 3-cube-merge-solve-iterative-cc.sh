@@ -39,7 +39,7 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
         file="$cube_file$i.adj.log"
         command3="if ! grep -q 'UNSATISFIABLE' '$file'; then sbatch $child_instance-cube.sh; fi"
         #sbatch this line
-        command4="./3-cube-merge-solve-iterative-cc.sh $n $child_instance '$d/$v-$i' $a $a"
+        command4="./3-cube-merge-solve-iterative-cc.sh $n $child_instance '$d/$v-$i' $a $a $ins"
         command="$command1 && $command2"
         echo "#!/bin/bash" > $child_instance-solve.sh
         echo "#SBATCH --account=rrg-cbright" >> $child_instance-solve.sh
