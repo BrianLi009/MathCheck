@@ -26,7 +26,7 @@ cubeline=`head $dir/$((i-1)).cubes -n $c | tail -n 1`
 echo "Processing $cubeline..."
 ./gen_cubes/apply.sh $f $dir/$((i-1)).cubes $c > $dir/$((i-1)).cubes$c
 #command="python -u alpha-zero-general/main.py $dir/$((i-1)).cubes$c -d 1 -m $m -o $dir/$((i-1)).cubes$c.cubes -order $n -numMCTSSims 10 -prod | tee $logdir/$((i-1)).cubes$c.log"
-command="python ams_no_mcts.py $dir/$((i-1)).cubes$c -d 1 -m $m -o $dir/$((i-1)).cubes$c.cubes"
+command="python ams_no_mcts.py $dir/$((i-1)).cubes$c -d 1 -m $m -o $dir/$((i-1)).cubes$c.cubes | tee $logdir/$((i-1)).cubes$c.log"
 echo $command
 eval $command
 # Adjoin the newly generated cubes to the literals in the current cube
