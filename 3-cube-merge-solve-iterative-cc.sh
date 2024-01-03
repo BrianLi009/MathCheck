@@ -52,8 +52,7 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
 	    echo "module load python/3.10" >> $child_instance-cube.sh
         echo $command >> $child_instance-solve.sh
         if [ "$ins" != "$f" ]; then
-            command0="./gen_cubes/apply.sh $f $ins $i > $ins$i.adj"
-            $command0 >> $child_instance-solve.sh
+            ./gen_cubes/apply.sh $ins $cube_file $i > $ins$i.adj
         fi
         echo $command3 >> $child_instance-solve.sh
         echo $command4 >> $child_instance-cube.sh
