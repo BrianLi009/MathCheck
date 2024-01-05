@@ -35,7 +35,7 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
     do
         command1="./gen_cubes/apply.sh $f $cube_file $i > $cube_file$i.adj"
         command11="./simplification/simplify-by-conflicts.sh $cube_file$i.adj $n 10000"
-        command2="./maplesat-solve-verify.sh $n $cube_file$i.adj.simp"
+        command2="./maplesat-solve-verify.sh $n $cube_file$i.adj.simp $cube_file$i.adj.simp.exhaust"
         child_instance="$cube_file$i.adj.simp"
         file="$cube_file$i.adj.simp.log"
         command3="if ! grep -q 'UNSATISFIABLE' '$file'; then sbatch $child_instance-cube.sh; fi"
