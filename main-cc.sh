@@ -66,12 +66,12 @@ then
     rm embedability/$n.exhaust
 fi
 
-#need to fix the cubing part for directory pointer
-#step 5: cube and conquer if necessary, then solve
+./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
+
 if [ "$r" != "0" ] 
 then
     dir="${n}_${r}_${a}"
-    ./3-cube-merge-solve-iterative-cc.sh $p $n constraints_${n}_${c} $dir $r $a
+    ./3-cube-merge-solve-iterative-cc.sh $p $n constraints_${n}_${c}.simp $dir $r $a
 else
-    ./solve-verify.sh $n constraints_${n}
+    ./solve-verify.sh $n constraints_${n}_${c}.simp
 fi

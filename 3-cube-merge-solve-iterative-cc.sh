@@ -34,13 +34,14 @@ new_index=$((numline))
 for i in $(seq 1 $new_index) #1-based indexing for cubes
     do
         command1="./gen_cubes/apply.sh $f $cube_file $i > $cube_file$i.adj"
-        command2="./solve-verify.sh $n $cube_file$i.adj"
-        child_instance="$cube_file$i.adj"
-        file="$cube_file$i.adj.log"
+        command11="./simplification/simplify-by-conflicts.sh $cube_file$i.adj $n 10000"
+        command2="./maplesat-solve-verify.sh $n $cube_file$i.adj.simp"
+        child_instance="$cube_file$i.adj.simp"
+        file="$cube_file$i.adj.simp.log"
         command3="if ! grep -q 'UNSATISFIABLE' '$file'; then sbatch $child_instance-cube.sh; fi"
         #sbatch this line
         command4="./3-cube-merge-solve-iterative-cc.sh $n $child_instance '$d/$v-$i' $a $a $cube_file$i.tocube"
-        command="$command1 && $command2"
+        command="$command1 && $command11 && $command2"
         echo "#!/bin/bash" > $child_instance-solve.sh
         echo "#SBATCH --account=rrg-cbright" >> $child_instance-solve.sh
         echo "#SBATCH --time=2-00:00" >> $child_instance-solve.sh
