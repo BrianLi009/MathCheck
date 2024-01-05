@@ -56,6 +56,10 @@ fi
 
 ./1-instance-generation.sh $n $c
 
+echo "here"
+
+./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
+
 if [ -f "$n.exhaust" ]
 then
     rm $n.exhaust
@@ -69,7 +73,7 @@ fi
 if [ "$r" != "0" ] 
 then
     dir="${n}_${r}_${a}"
-    ./3-cube-merge-solve-iterative.sh $p $n constraints_${n}_${c} $dir $r $a
+    ./3-cube-merge-solve-iterative.sh $p $n constraints_${n}_${c}.simp $dir $r $a
 else
-    ./solve-verify.sh $n constraints_${n}
+    ./maplesat-solve-verify.sh $n constraints_${n}_${c}.simp $n.exhaust
 fi
