@@ -24,7 +24,7 @@ f=$(basename "$f")
 # Simplify m seconds
 echo "simplifying for $m conflicts"
 i=1
-./cadical/build/cadical "$f_dir" "$f_dir.drat" -o simp/"$f".simp1 -e simp/"$f".ext1 -n -c $m | tee log/"$f".simp1
+./cadical-ks/build/cadical-ks "$f_dir" "$f_dir.drat" --order $o --unembeddable-check 17 -o simp/"$f".simp1 -e simp/"$f".ext1 -n -c $m | tee log/"$f".simp1
 ./drat-trim/drat-trim "$f_dir" "$f_dir.drat" -f | tee log/"$f".simp1.verify
 if ! grep -E "s DERIVATION|s VERIFIED" -q log/"$f".simp1.verify
 then
@@ -45,7 +45,7 @@ fi
 while [ $(echo "$conf_used < $m" | bc) -ne 0 ] && [ "$conf_left" != 0 ]
 do
 	conf_left=$(echo $m-$conf_used | bc)
-	./gen_cubes/concat-edge.sh $o simp/"$f".simp"$i" simp/"$f".ext"$i" | ./cadical/build/cadical /dev/stdin simp/"$f".simp"$i".drat -o simp/"$f".simp$((i+1)) -e simp/"$f".ext$((i+1)) -n -c $conf_left | tee log/"$f".simp$((i+1))
+	./gen_cubes/concat-edge.sh $o simp/"$f".simp"$i" simp/"$f".ext"$i" | ./cadical-ks/build/cadical-ks /dev/stdin simp/"$f".simp"$i".drat --order $o --unembeddable-check 17 -o simp/"$f".simp$((i+1)) -e simp/"$f".ext$((i+1)) -n -c $conf_left | tee log/"$f".simp$((i+1))
 	./gen_cubes/concat-edge.sh $o simp/"$f".simp"$i" simp/"$f".ext"$i" | ./drat-trim/drat-trim /dev/stdin simp/"$f".simp"$i".drat -f | tee log/"$f".simp$((i+1)).verify
 	if ! grep -E "s DERIVATION|s VERIFIED" -q log/"$f".simp1.verify
 	then
