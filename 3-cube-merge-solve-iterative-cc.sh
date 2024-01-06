@@ -19,8 +19,8 @@ if [ -e "$f.drat" ]; then
     sed -i -E "s/p cnf ([0-9]*) ([0-9]*)/p cnf \1 $((lines-1))/" "$ins"
 fi
 
-#./gen_cubes/cube.sh -a -p $n $ins $v $di
-./gen_cubes/cube.sh -a $n $ins $v $di
+./gen_cubes/cube.sh -a -p $n $ins $v $di
+#./gen_cubes/cube.sh -a $n $ins $v $di
 
 files=$(ls $d/$v/$n-cubes/*.cubes)
 highest_num=$(echo "$files" | awk -F '[./]' '{print $(NF-1)}' | sort -nr | head -n 1)
