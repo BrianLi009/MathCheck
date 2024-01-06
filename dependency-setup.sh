@@ -58,5 +58,15 @@ else
     cd -
 fi
 
+#install maplesat-ks
+if [ -d maplesat-ks ] && [ -f maplesat-ks/simp/maplesat_static ]
+then
+    echo "maplesat-ks installed and binary file compiled"
+else
+    cd maplesat-ks
+    make
+    cd -
+fi 
+
 
 echo "all dependency properly installed"

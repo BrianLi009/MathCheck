@@ -56,10 +56,6 @@ fi
 
 ./1-instance-generation.sh $n $c
 
-echo "here"
-
-./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
-
 if [ -f "$n.exhaust" ]
 then
     rm $n.exhaust
