@@ -47,4 +47,4 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
         echo $command >> $solvefile
     done
 
-parallel --will-cite < $solvefile
+srun $solvefile
