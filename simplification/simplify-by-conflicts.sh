@@ -25,7 +25,7 @@ f=$(basename "$f")
 echo "simplifying for $m conflicts"
 i=1
 ./cadical-ks/build/cadical-ks "$f_dir" "$f_dir.drat" --order $o --unembeddable-check 17 -o simp/"$f".simp1 -e simp/"$f".ext1 -n -c $m | tee log/"$f".simp1
-#./drat-trim/drat-trim "$f_dir" "$f_dir.drat" -f | tee log/"$f".simp1.verify
+./drat-trim/drat-trim "$f_dir" "$f_dir.drat" -f | tee log/"$f".simp1.verify
 if ! grep -E "s DERIVATION|s VERIFIED" -q log/"$f".simp1.verify
 then
 	echo "ERROR: Proof not verified"
