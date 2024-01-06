@@ -61,7 +61,9 @@ fi
 if [ "$r" != "0" ] 
 then
     dir="${n}_${r}_${a}"
-    ./3-cube-merge-solve-iterative-cc.sh $p $n constraints_${n}_${c}.simp $dir $r $a
+    ./1-instance-generation.sh $n 0
+    ./simplification/simplify-by-conflicts.sh constraints_${n}_0 $n 10000
+    ./3-cube-merge-solve-iterative-cc.sh $p $n constraints_${n}_${c}.simp $dir $r $a constraints_${n}_0.simp
 else
     ./solve-verify.sh $n constraints_${n}_${c}.simp
 fi
