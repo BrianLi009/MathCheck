@@ -18,17 +18,6 @@ Options:
     <a>: amount of additional variables to remove for each cubing call
 " && exit
 
-while getopts "pm" opt
-do
-    case $opt in
-        p) p="-p" ;;
-        m) m="-m" ;;
-        *) echo "Invalid option: -$OPTARG. Only -p and -m are supported. Use -h or --help for help" >&2
-           exit 1 ;;
-    esac
-done
-shift $((OPTIND-1))
-
 #step 1: input parameters
 if [ -z "$1" ]
 then
@@ -40,6 +29,7 @@ n=$1 #order
 c=${2:-0.5}
 r=${3:-0} #num of var to eliminate during first cubing stage
 a=${4:-0} #amount of additional variables to remove for each cubing call
+nodes=${5:-1} #number of nodes to use
 
 #step 2: setp up dependencies
 ./dependency-setup.sh
@@ -56,12 +46,10 @@ fi
 
 ./1-instance-generation.sh $n $c
 
-./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
-
 if [ "$r" != "0" ] 
 then
     dir="${n}_${r}_${a}"
-    ./3-cube-merge-solve-iterative-cc.sh $p $n constraints_${n}_${c}.simp $dir $r $a
+    ./3-cube-merge-solve-iterative-cc.sh -c $n constraints_${n}_${c}.simp $dir $r $a constraints_${n}_${c}.simp $nodes
 else
     ./solve-verify.sh $n constraints_${n}_${c}.simp
 fi
