@@ -107,7 +107,7 @@ do
         cp \$local_dir}/*.log /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/${dir}
         cp \$local_dir}/*.verify /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/${dir}
   i=$((i+1))
-EOC
+EOM
 done
   
 fi
