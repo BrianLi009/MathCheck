@@ -87,13 +87,7 @@ i=1
 for file in "$dir/${base}_"*
 do
   mv "$file" "$dir/${base}-$i.commands"
-  i=$((i+1))
-done
-  #now write the slurm file
-# Loop to create p files
-for ((i=0; i<=p; i++))
-do
-    echo "creating slurm files"
+  echo "creating slurm files"
     cat > "$dir/script_$i.sh" <<- EOM
         #!/bin/bash
         #SBATCH --account=rrg-cbright
@@ -112,7 +106,8 @@ do
 
         cp \$local_dir}/*.log /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/${dir}
         cp \$local_dir}/*.verify /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/${dir}
-EOM
+  i=$((i+1))
+EOC
 done
   
 fi
