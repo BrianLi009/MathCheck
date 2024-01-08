@@ -50,7 +50,7 @@ if [ "$r" != "0" ]
 then
     dir="${n}_${r}_${a}"
     ./1-instance-generation.sh $n 0
-    ./3-cube-merge-solve-iterative-cc.sh -c $n constraints_${n}_${c} $dir $r $a constraints_${n}_0 $nodes
+    ./3-cube-merge-solve-iterative-cc.sh $n constraints_${n}_${c} $dir $r $a constraints_${n}_0 $nodes
 else
     ./solve-verify.sh $n constraints_${n}_${c}.simp
 fi
