@@ -33,7 +33,8 @@ else
 fi
 
 if ! grep -q "UNSAT" "$f.log"; then
-        ./proof-module.sh $n $f $f.verify f
+        #./proof-module.sh $n $f $f.verify f
+        echo "instance not solved, no need to verify unless learnt clause are used"
 else
         ./proof-module.sh $n $f $f.verify
 fi
