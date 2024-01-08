@@ -114,7 +114,7 @@ else
 #SBATCH --time=06:00:00
 
 local_dir=\$SLURM_TMPDIR
-cp /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/constraints_${n}_0.5.simp \$local_dir/
+cp /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/constraints_${n}_0.5 \$local_dir/
 cp /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/${dir}/*.cubes \$local_dir/
 
 module load python/3.10
