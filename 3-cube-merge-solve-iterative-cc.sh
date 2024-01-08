@@ -37,7 +37,7 @@ if [ "$c_flag" -eq 1 ]; then
     echo "not the first layer, cubing sequentially..."
     ./gen_cubes/cube.sh -a $n $ins $v $di
 else
-    ./gen_cubes/cube.sh -a -p $n $ins $v $di
+    ./gen_cubes/cube.sh -a $n $ins $v $di
 fi
 
 files=$(ls $d/$v/$n-cubes/*.cubes)
@@ -82,21 +82,7 @@ shuf "$solvefile" | split -l "$lines_per_file" - "$dir/${base}_"
 if [ "$c_flag" -eq 1 ]; then
     # Code to execute when -c flag is used
     echo "run command in parallel without submitting slurm file"
-    cat $solvefile >> ${dir}/all.commands
-    total_cpus=32
-
-    # Check the number of busy CPUs. 
-    busy_cpus=$(uptime | awk '{print $10}' | cut -d ',' -f 1 | awk '{print int($1+0.5)}')
-
-    # Calculate the number of free CPUs
-    free_cpus=$((total_cpus - busy_cpus))
-
-    if [ "$free_cpus" -eq "$total_cpus" ]; then
-        # All CPUs are available, run parallel
-        parallel ${dir}/all.commands
-    else
-        echo "Not all CPUs are available. Only $free_cpus out of $total_cpus CPUs are free."
-    fi
+    parallel --will-cite $solvefile
 else
     echo "submit slurm files"
     # Rename output files to the desired format
