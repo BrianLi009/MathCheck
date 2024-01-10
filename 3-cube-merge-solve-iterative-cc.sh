@@ -82,7 +82,7 @@ shuf "$solvefile" | split -l "$lines_per_file" - "$dir/${base}_"
 if [ "$c_flag" -eq 1 ]; then
     # Code to execute when -c flag is used
     echo "run command in parallel without submitting slurm file"
-    parallel --will-cite $solvefile
+    parallel --will-cite < $solvefile
 else
     echo "submit slurm files"
     # Rename output files to the desired format
