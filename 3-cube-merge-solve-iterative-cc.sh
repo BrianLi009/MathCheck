@@ -37,7 +37,7 @@ if [ "$c_flag" -eq 1 ]; then
     echo "not the first layer, cubing sequentially..."
     ./gen_cubes/cube.sh -a $n $ins $v $di
 else
-    ./gen_cubes/cube.sh -a $n $ins $v $di
+    ./gen_cubes/cube.sh -a -p $n $ins $v $di
 fi
 
 files=$(ls $d/$v/$n-cubes/*.cubes)
