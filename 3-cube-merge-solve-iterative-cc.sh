@@ -54,7 +54,7 @@ solvefile=$cube_file-solve.sh
 
 for i in $(seq 1 $new_index); do
     command1="./gen_cubes/apply.sh $f $cube_file $i > $cube_file$i.adj"
-    command2="./simplification/simplify-by-conflicts.sh $cube_file$i.adj $n 10000"
+    command2="./simplification/simplify-by-conflicts.sh $cube_file$i.adj $n 10000 | tee $cube_file$i.adj.simplog"
     command3="./maplesat-solve-verify.sh $n $cube_file$i.adj.simp"
     child_instance="$cube_file$i.adj.simp"
     file="$cube_file$i.adj.simp.log"
