@@ -8,7 +8,7 @@ Description:
     in gen_instance/generate.py. We require the file n.exhaust to be generated
 
 Usage:
-    ./4-check-embedability.sh n f
+    ./check-embed.sh n f
 
 Options:
     <n>: the order of the instance/number of vertices in the graph

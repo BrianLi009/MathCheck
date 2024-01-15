@@ -4,26 +4,26 @@
 
 [ "$1" = "-h" -o "$1" = "--help" ] && echo "
 Description:
-    Updated on 2023-12-19
-    This is a driver script that handles generating the SAT encoding, solve the instance using CaDiCaL, then finally determine if a KS system exists for a certain order.
+    This is a driver script that handles generating the SAT encoding, simplifying the instance with CaDiCaL+CAS,
+    solving the instance with MapleSAT+CAS, then finally determine if a KS system exists for a certain order through embeddability checking.
 
 Usage:
-    ./main.sh [-p] n r a
-    If only parameter n is provided, default run ./main.sh n 0 0
+    ./main.sh n
+    If only parameter n is provided, default run ./main.sh n 0.5 0 0
 
 Options:
     [-p]: cubing/solving in parallel
     <n>: the order of the instance/number of vertices in the graph
+    <c>: the percentage of vertices that are color 1, emperically the default 0.5 should block all valid 010-coloring
     <r>: number of variable to remove in cubing, if not passed in, assuming no cubing needed
     <a>: amount of additional variables to remove for each cubing call
 " && exit
 
-while getopts "pm" opt
+while getopts "p" opt
 do
     case $opt in
         p) p="-p" ;;
-        m) m="-m" ;;
-        *) echo "Invalid option: -$OPTARG. Only -p and -m are supported. Use -h or --help for help" >&2
+        *) echo "Invalid option: -$OPTARG. Only -p is supported. Use -h or --help for help" >&2
            exit 1 ;;
     esac
 done
@@ -48,13 +48,13 @@ a=${4:-0} #amount of additional variables to remove for each cubing call
 
 dir="."
 
-if [ -f constraints_${n}_${r}_${a}_final.simp.log ]
+if [ -f constraints_${n}_${c}.simp.log ]
 then
     echo "Instance with these parameters has already been solved."
     exit 0
 fi
 
-./1-instance-generation.sh $n $c
+./generate-instance.sh $n $c
 
 if [ -f "$n.exhaust" ]
 then
@@ -69,7 +69,10 @@ fi
 if [ "$r" != "0" ] 
 then
     dir="${n}_${r}_${a}"
-    ./3-cube-merge-solve-iterative.sh $p $n constraints_${n}_${c}.simp $dir $r $a
+    ./cube-solve-iterative.sh $p $n constraints_${n}_${c}.simp $dir $r $a
 else
+    echo "Simplifying constraints_${n}_${c} for 10000 conflicts using CaDiCaL+CAS"
+    ./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
+    echo "Solving constraints_${n}_${c}.simp using MapleSAT+CAS"
     ./maplesat-solve-verify.sh $n constraints_${n}_${c}.simp $n.exhaust
 fi

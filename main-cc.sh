@@ -44,13 +44,13 @@ then
     exit 0
 fi
 
-./1-instance-generation.sh $n $c
+./generate-instance.sh $n $c
 
 if [ "$r" != "0" ] 
 then
     dir="${n}_${r}_${a}"
-    ./1-instance-generation.sh $n 0
-    ./3-cube-merge-solve-iterative-cc.sh $n constraints_${n}_${c} $dir $r $a constraints_${n}_0 $nodes
+    ./generate-instance.sh $n 0
+    ./cube-solve-iterative-cc.sh $n constraints_${n}_${c} $dir $r $a constraints_${n}_0 $nodes
 else
     ./solve-verify.sh $n constraints_${n}_${c}.simp
 fi

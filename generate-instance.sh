@@ -11,7 +11,7 @@ Description:
     5. We also applied the cubic isomorphism blocking clauses
 
 Usage:
-    ./1-instance-generation.sh n
+    ./generate-instance.sh n
 
 Options:
     <n>: the order of the instance/number of vertices in the graph
