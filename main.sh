@@ -66,13 +66,14 @@ then
     rm embedability/$n.exhaust
 fi
 
+echo "Simplifying constraints_${n}_${c} for 10000 conflicts using CaDiCaL+CAS"
+./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
+
 if [ "$r" != "0" ] 
 then
     dir="${n}_${r}_${a}"
     ./cube-solve.sh $p $n constraints_${n}_${c}.simp $dir $r $a
 else
-    echo "Simplifying constraints_${n}_${c} for 10000 conflicts using CaDiCaL+CAS"
-    ./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
     echo "Solving constraints_${n}_${c}.simp using MapleSAT+CAS"
-    ./maplesat-solve-verify.sh $n constraints_${n}_${c}.simp $n.exhaust
+    ./maplesat-solve-verify.sh $n constraints_${n}_${c}.simp
 fi
