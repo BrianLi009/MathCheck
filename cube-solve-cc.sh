@@ -59,7 +59,7 @@ for i in $(seq 1 $new_index); do
     child_instance="$cube_file$i.adj.simp"
     file="$cube_file$i.adj.simp.log"
     vfile="$cube_file$i.adj.simp.verify"
-    command4="if ! grep -q 'UNSATISFIABLE' '$file'; then ./cube-solve-iterative-cc.sh -c $n $child_instance '$d/$v-$i' $a $a; elif grep -q 'VERIFIED' '$vfile'; then find $cube_file$i.* | grep -v '$cube_file$i.adj.simp.verify\|$cube_file$i.adj.simp.log\|$cube_file$i.adj.simplog' | xargs rm; fi"
+    command4="if ! grep -q 'UNSATISFIABLE' '$file'; then ./cube-solve-cc.sh -c $n $child_instance '$d/$v-$i' $a $a; elif grep -q 'VERIFIED' '$vfile'; then find $cube_file$i.* | grep -v '$cube_file$i.adj.simp.verify\|$cube_file$i.adj.simp.log\|$cube_file$i.adj.simplog' | xargs rm; fi"
     command="$command1 && $command2 && $command3 && $command4"
     echo $command >> $solvefile
 done

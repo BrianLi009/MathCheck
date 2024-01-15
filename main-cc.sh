@@ -50,7 +50,7 @@ if [ "$r" != "0" ]
 then
     dir="${n}_${r}_${a}"
     ./generate-instance.sh $n 0
-    ./cube-solve-iterative-cc.sh $n constraints_${n}_${c} $dir $r $a constraints_${n}_0 $nodes
+    ./cube-solve-cc.sh $n constraints_${n}_${c} $dir $r $a constraints_${n}_0 $nodes
 else
     ./solve-verify.sh $n constraints_${n}_${c}.simp
 fi

@@ -69,7 +69,7 @@ fi
 if [ "$r" != "0" ] 
 then
     dir="${n}_${r}_${a}"
-    ./cube-solve-iterative.sh $p $n constraints_${n}_${c}.simp $dir $r $a
+    ./cube-solve.sh $p $n constraints_${n}_${c}.simp $dir $r $a
 else
     echo "Simplifying constraints_${n}_${c} for 10000 conflicts using CaDiCaL+CAS"
     ./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
