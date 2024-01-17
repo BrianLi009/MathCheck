@@ -92,23 +92,14 @@ else
         echo "creating slurm files"
         cat > "$dir/script_$i.sh" <<- EOM
 #!/bin/bash
-#SBATCH --account=rrg-cbright
+#SBATCH --account=username
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=0
 #SBATCH --time=06:00:00
-
-local_dir=\$SLURM_TMPDIR
-cp /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/constraints_${n}_0.5 \$local_dir/
-cp /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/${dir}/*.cubes \$local_dir/
-
 module load python/3.10
 parallel --will-cite < ${dir}/${base}-$i.commands
-
-cp \$local_dir}/*.log /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/${dir}
-cp \$local_dir}/*.verify /project/rrg-cbright/zhengyu/IJCAI/PhysicsCheckp/${dir}
-EOM
         i=$((i+1))
     done
   
