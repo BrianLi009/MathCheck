@@ -27,8 +27,8 @@ fi
 
 n=$1 #order
 c=${2:-0.5}
-r=${3:-0} #num of var to eliminate during first cubing stage
-a=${4:-0} #amount of additional variables to remove for each cubing call
+r=${3:-0} #num of cubes to generate first cubing stage
+a=${4:-0} #amount of cubes to generate in each proceeding cubing stage
 nodes=${5:-1} #number of nodes to use
 
 #step 2: setp up dependencies
