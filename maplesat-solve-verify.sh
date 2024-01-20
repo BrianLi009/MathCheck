@@ -1,9 +1,9 @@
 #!/bin/bash
 
-while getopts "l" opt
+while getopts "s" opt
 do
 	case $opt in
-        l) l="-l" ;;
+        s) s="-s" ;;
 	esac
 done
 shift $((OPTIND-1))
@@ -24,17 +24,10 @@ Options:
     <f>: file name of the CNF instance to be solved
 " && exit
 
-if [ "$l" == "-l" ]
-then
-    echo "MapleSAT will output short learnt clauses"
-    ./maplesat-ks/simp/maplesat_static $f $f.drat -perm-out=$f.perm -exhaustive=$f.exhaust -order=$n -no-pre -minclause -short-out=$f.unit -noncanonical-out=$f.noncanonical -max-proof-size=7168 -unembeddable-check=17 -unembeddable-out="$f.nonembed" | tee $f.log
-else
-    ./maplesat-ks/simp/maplesat_static $f $f.drat -perm-out=$f.perm -exhaustive=$f.exhaust -order=$n -no-pre -minclause -max-proof-size=7168 -unembeddable-check=17 -unembeddable-out="$f.nonembed" | tee $f.log
-fi
+./maplesat-ks/simp/maplesat_static $f $f.drat -perm-out=$f.perm -exhaustive=$f.exhaust -order=$n -no-pre -minclause -max-proof-size=7168 -unembeddable-check=17 -unembeddable-out="$f.nonembed" | tee $f.log
 
-if ! grep -q "UNSAT" "$f.log"; then
-        #./proof-module.sh $n $f $f.verify f
-        echo "instance not solved, no need to verify unless learnt clause are used"
+if ! grep -q "UNSAT" "$f.log" || [ "$s" == "-s" ]; then
+    echo "instance not solved, no need to verify unless learnt clause or skipping verification"
 else
-        ./proof-module.sh $n $f $f.verify
+    ./proof-module.sh $n $f $f.verify
 fi

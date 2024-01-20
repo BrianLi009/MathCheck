@@ -10,7 +10,6 @@ d=$3   # directory to store into
 v=$4   # num of cubes to cutoff at initial depth
 a=$5   # num of cubes to cutoff at initial depth for each proceeding cubing call
 ins=${6:-$f}
-nodes=${7:-1}   # number of nodes to use
 
 mkdir -p $d/$v/$n-cubes
 
@@ -32,8 +31,8 @@ solvefile=$cube_file-solve.sh
 
 for i in $(seq 1 $new_index); do
     command1="./gen_cubes/apply.sh $f $cube_file $i > $cube_file$i.adj"
-    command2="./simplification/simplify-by-conflicts.sh $cube_file$i.adj $n 10000 | tee $cube_file$i.adj.simplog"
-    command3="./maplesat-solve-verify.sh $n $cube_file$i.adj.simp"
+    command2="./simplification/simplify-by-conflicts.sh -s $cube_file$i.adj $n 10000 | tee $cube_file$i.adj.simplog"
+    command3="./maplesat-solve-verify.sh -s $n $cube_file$i.adj.simp"
     child_instance="$cube_file$i.adj.simp"
     file="$cube_file$i.adj.simp.log"
     vfile="$cube_file$i.adj.simp.verify"
