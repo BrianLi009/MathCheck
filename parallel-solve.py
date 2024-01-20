@@ -19,7 +19,7 @@ def run_command(command, q, order, directory, cube_initial, cube_next):
         if "UNSAT" not in stdout.decode():
             print("continue cubing this subproblem...")
             print(command)
-            process_file(order, newfile, directory, cube_initial, cube_next, newfile)
+            process_file(order, newfile, directory, cube_next, cube_next, newfile)
         else:
             remove_related_files(newfile)
     else:
