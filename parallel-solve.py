@@ -13,10 +13,15 @@ def run_command(args):
 
     if nextfile_pos != -1:
         newfile = command[nextfile_pos + len("nextfile="):]
+        
+        print (newfile)
         if "UNSAT" not in stdout.decode():
             print("continue cubing this subproblem...")
-            print(command)
-            process_file((order, newfile, directory, cube_next, cube_next, newfile))
+            index = newfile.find(order + "-cubes")
+            # Extract the string up to, but not including, "19-cubes"
+            new_di = newfile.replace("19-cubes/", "")
+            print (order, newfile, new_di, cube_next, cube_next, newfile)
+            process_file((order, newfile, new_di, cube_next, cube_next, newfile))
         else:
             remove_related_files(newfile)
     else:
