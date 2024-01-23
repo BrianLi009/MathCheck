@@ -22,15 +22,22 @@ def run_command(args):
             print("continue cubing this subproblem...")
             # Extract the string up to, but not including, "19-cubes"
             new_di = newfile.replace(order + "-cubes/", "")
-            print (order, newfile, new_di, cube_next, cube_next, newfile)
-            process_file((order, newfile, new_di, cube_next, cube_next, newfile))
+            print (order, newfile, new_di, cube_next, cube_next)
+            process_file((order, newfile, new_di, cube_next, cube_next))
     else:
         print("next cubing file not found")
 
 def process_file(args):
-    order, file_name_solve, directory, cube_initial, cube_next, file_name_cube = args
-    subprocess.run(f"./cube-solve-cc.sh {order} {file_name_solve} {directory} {cube_initial} {cube_next} {file_name_cube}", shell=True)
+    order, file_name_solve, directory, cube_initial, cube_next = args
+    subprocess.run(f"./cube-solve-cc.sh {order} {file_name_solve} {directory} {cube_initial} {cube_next}", shell=True)
     with open(f"{file_name_solve}.commands", "r") as file:
+        for line in file:
+            print(line)
+            queue.put((line.strip(), order, directory, cube_initial, cube_next))
+
+def process_initial(args):
+    order, file_name_solve, directory, cube_initial, cube_next, commands = args
+    with open(commands, "r") as file:
         for line in file:
             print(line)
             queue.put((line.strip(), order, directory, cube_initial, cube_next))
@@ -40,7 +47,7 @@ def remove_related_files(new_file):
     files_to_remove = [
         base_file,
         new_file,
-        f"{new_file}.permcheck",
+        #f"{new_file}.permcheck",
         f"{new_file}.nonembed",
         f"{new_file}.drat"
         f"{base_file}.drat"
@@ -61,7 +68,7 @@ def worker(queue):
         run_command(args)
         queue.task_done()
 
-def main(order, file_name_solve, directory, cube_initial, cube_next, file_name_cube):
+def main(order, file_name_solve, directory, cube_initial, cube_next, commands):
     global queue
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
@@ -71,7 +78,7 @@ def main(order, file_name_solve, directory, cube_initial, cube_next, file_name_c
     for p in processes:
         p.start()
 
-    process_file((order, file_name_solve, directory, cube_initial, cube_next, file_name_cube))
+    process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands))
 
     # Wait for all tasks to be completed
     queue.join()
@@ -87,4 +94,4 @@ if __name__ == "__main__":
     if len(sys.argv) >= 7:
         main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
     else:
-        print("Usage: python script.py <order> <file_name_solve> <directory> <cube_initial> <cube_next> <file_name_cube>")
+        print("Usage: python script.py <order> <file_name_solve> <directory> <cube_initial> <cube_next> <commands>")
