@@ -4,8 +4,8 @@ n=$1 #order
 s=$2 #time to simplify
 d=$3 #directory
 c1=$4 #number of cubes initially
-c2=$4 #number of cubes for deeper layers
-nodes=$5 #number of nodes to submit to in total
+c2=$5 #number of cubes for deeper layers
+nodes=$6 #number of nodes to submit to in total
 
 ./generate-instance.sh $n
 ./generate-instance.sh $n 0
