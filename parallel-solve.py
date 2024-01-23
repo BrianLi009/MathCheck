@@ -15,14 +15,15 @@ def run_command(args):
         newfile = command[nextfile_pos + len("nextfile="):]
         
         print (newfile)
-        if "UNSAT" not in stdout.decode():
+        if "UNSAT" in stdout.decode():
+            print ("removing files no longer needed for" + newfile)
+            remove_related_files(newfile)
+        else:
             print("continue cubing this subproblem...")
             # Extract the string up to, but not including, "19-cubes"
             new_di = newfile.replace(order + "-cubes/", "")
             print (order, newfile, new_di, cube_next, cube_next, newfile)
             process_file((order, newfile, new_di, cube_next, cube_next, newfile))
-        else:
-            remove_related_files(newfile)
     else:
         print("next cubing file not found")
 
