@@ -19,7 +19,7 @@ def run_command(args):
             print("continue cubing this subproblem...")
             index = newfile.find(order + "-cubes")
             # Extract the string up to, but not including, "19-cubes"
-            new_di = newfile.replace("19-cubes/", "")
+            new_di = newfile.replace(order + "-cubes/", "")
             print (order, newfile, new_di, cube_next, cube_next, newfile)
             process_file((order, newfile, new_di, cube_next, cube_next, newfile))
         else:
