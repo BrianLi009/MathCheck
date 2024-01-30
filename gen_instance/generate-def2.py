@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys, getopt
 from squarefree import squarefree
-from triangle-e import triangle
+from triangle_e import triangle
 from neighbor import neighbor
 from noncolorable import noncolorable
 from cubic import cubic
@@ -36,7 +36,7 @@ def generate(n):
                 tri_dict[(a,b,c)] = count
     clause_count += squarefree(n, edge_dict, cnf_file)
     print ("graph is squarefree")
-    clause_count += triangle-e(n, edge_dict, tri_dict, cnf_file)
+    clause_count += triangle_e(n, edge_dict, tri_dict, cnf_file)
     print ("all edges are part of a triangle")
     clause_count += noncolorable(n,  edge_dict, tri_dict, cnf_file)
     print ("graph is noncolorable")
