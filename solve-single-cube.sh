@@ -48,7 +48,7 @@ if [ "$o" == "c" ]
         ./simplification/simplify-by-var-removal.sh $n '$d/simp/$c$i.adj' $t
     fi
 
-command="./solve-verify.sh $n $d/simp/$c$i.adj.simp $d/$n-solve/$i-solve.exhaust"
+command="./maplesat-solve-verify.sh $n $d/simp/$c$i.adj.simp $d/$n-solve/$i-solve.exhaust"
 
 echo $command
 eval $command
