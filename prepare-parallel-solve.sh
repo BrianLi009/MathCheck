@@ -1,28 +1,23 @@
 #!/bin/bash
 
 n=$1 #order
-s=$2 #time to simplify
-d=$3 #directory
-c1=$4 #number of cubes initially
-c2=$5 #number of cubes for deeper layers
-nodes=$6 #number of nodes to submit to in total
+f=$2 #filename
+c1=$3 #number of cubes initially
+c2=$4 #number of cubes for deeper layers
+nodes=$5 #number of nodes to submit to in total
 
-./generate-instance.sh $n
-./generate-instance.sh $n 0
-./simplification/simplify.sh constraints_${n}_0 $n $s
-./simplification/simplify.sh constraints_${n}_0.5 $n $s
 
-./cube-solve-cc.sh $n constraints_${n}_0.5.simp $d $c1 $c2 constraints_${n}_0.simp
+./cube-solve-cc.sh $n $f $d $c1 $c2
 
-total_lines=$(wc -l < "constraints_${n}_0.5.simp.commands")
+total_lines=$(wc -l < "${f}.commands")
 ((lines_per_file = (total_lines + $nodes - 1) / $nodes))
 
 # Shuffle and split the file
-shuf "constraints_${n}_0.5.simp.commands" | split -l "$lines_per_file" - shuffled_
+shuf "${f}.commands" | split -l "$lines_per_file" - shuffled_
 
 counter=1
 for file in shuffled_*; do
-    mv "$file" "constraints_${n}_0.5.simp.commands${counter}"
+    mv "$file" "${f}.commands${counter}"
     cat <<EOF > "script_${counter}.sh"
 #!/bin/bash
 #SBATCH --account=rrg-cbright
@@ -33,7 +28,7 @@ for file in shuffled_*; do
 #SBATCH --time=1-00:00
 
 module load python/3.10
-python parallel-solve.py $n constraints_${n}_0.5.simp $d $c1 $c2 constraints_${n}_0.5.simp.commands${counter}
+python parallel-solve.py $n $f $d $c1 $c2 ${f}.commands${counter}
 EOF
 
     ((counter++))

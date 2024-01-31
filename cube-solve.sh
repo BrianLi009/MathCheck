@@ -2,9 +2,10 @@
 
 n=$1 #order
 f=$2 #instance file name
-d=$3 #directory to store into
-v=$4 #num of cubes to cutoff at initial depth
-a=$5 #num of cubes to cutoff at initial depth for each proceeding cubing call
+v=$3 #num of cubes to cutoff at initial depth
+a=$4 #num of cubes to cutoff at initial depth for each proceeding cubing call
+
+d=${f}-d
 
 mkdir -p $d/$v/$n-cubes
 

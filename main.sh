@@ -1,79 +1,78 @@
 #!/bin/bash
 
-# Ensure parameters are specified on the command-line
-
+# Description and Usage
 [ "$1" = "-h" -o "$1" = "--help" ] && echo "
 Description:
     This is a driver script that handles generating the SAT encoding, simplifying the instance with CaDiCaL+CAS,
     solving the instance with MapleSAT+CAS, then finally determine if a KS system exists for a certain order through embeddability checking.
 
 Usage:
-    ./main.sh n
-    If only parameter n is provided, default run ./main.sh n 0.5 0 0
+    ./main.sh <option> n [c] [r] [a]
 
 Options:
-    [-p]: cubing/solving in parallel
-    <n>: the order of the instance/number of vertices in the graph
-    <c>: the percentage of vertices that are color 1, emperically the default 0.5 should block all valid 010-coloring
-    <r>: number of variable to remove in cubing, if not passed in, assuming no cubing needed
-    <a>: amount of additional variables to remove for each cubing call
+    -n: No cubing, just solve
+    -s: Cubing with sequential solving
+    -l: Cubing with parallel solving
+    <n>: Order of the instance/number of vertices in the graph
+    <c>: Percentage of vertices that are color 1 (default: 0.5)
+    <r>: Number of variables to remove in cubing (default: 0, assuming no cubing needed)
+    <a>: Amount of additional variables to remove for each cubing call (default: 0)
 " && exit
 
-while getopts "p" opt
+# Option Handling
+solve_mode=""
+while getopts "nsl" opt
 do
     case $opt in
-        p) p="-p" ;;
-        *) echo "Invalid option: -$OPTARG. Only -p is supported. Use -h or --help for help" >&2
+        n) solve_mode="no_cubing" ;;
+        s) solve_mode="seq_cubing" ;;
+        l) solve_mode="par_cubing" ;;
+        *) echo "Invalid option: -$OPTARG. Use -n, -s, or -l. Use -h or --help for help" >&2
            exit 1 ;;
     esac
 done
 shift $((OPTIND-1))
 
-#step 1: input parameters
+# Input Parameters
 if [ -z "$1" ]
 then
     echo "Need instance order (number of vertices), use -h or --help for further instruction"
     exit
 fi
 
-n=$1 #order
-c=${2:-0.5}
-r=${3:-0} #num of var to eliminate during first cubing stage
-a=${4:-0} #amount of additional variables to remove for each cubing call
+n=$1 # Order
+c=${2:-0.5} # Color percentage
+r=${3:-0} # Number of variables to eliminate during first cubing stage
+a=${4:-0} # Amount of additional variables to remove for each cubing call
 
-#step 2: setp up dependencies
+# Dependency Setup
 ./dependency-setup.sh
- 
-#step 3 and 4: generate pre-processed instance
 
+# Check if Instance Already Solved
 dir="."
 
-if [ -f constraints_${n}_${c}.simp.log ]
-then
-    echo "Instance with these parameters has already been solved."
-    exit 0
-fi
-
+# Generate Instance
 ./generate-instance.sh $n $c
 
-if [ -f "$n.exhaust" ]
-then
-    rm $n.exhaust
-fi
+# Solve Based on Mode
+case $solve_mode in
+    "no_cubing")
+        echo "No cubing, just solve"
+        ./simp-solve-no-cubing.sh $n constraints_${n}_${c}
+        ;;
+    "seq_cubing")
+        echo "Cubing with sequential solving"
+        ./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
+        ./cube-solve.sh $n constraints_${n}_${c}.simp $r $a
+        ;;
+    "par_cubing")
+        echo "Cubing with parallel solving"
+        ./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
+        ./prepare-parallel-solve.sh $n constraints_${n}_${c}.simp $r $a 50
+        ;;
+    *)
+        echo "No solving mode selected, use -n by default"
+        ./simp-solve-no-cubing.sh $n constraints_${n}_${c}
+        ;;
+esac
 
-if [ -f "embedability/$n.exhaust" ]
-then
-    rm embedability/$n.exhaust
-fi
-
-echo "Simplifying constraints_${n}_${c} for 10000 conflicts using CaDiCaL+CAS"
-./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
-
-if [ "$r" != "0" ] 
-then
-    dir="${n}_${r}_${a}"
-    ./cube-solve.sh $p $n constraints_${n}_${c}.simp $dir $r $a
-else
-    echo "Solving constraints_${n}_${c}.simp using MapleSAT+CAS"
-    ./maplesat-solve-verify.sh $n constraints_${n}_${c}.simp
-fi
