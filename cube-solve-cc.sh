@@ -1,7 +1,25 @@
 #!/bin/bash
 
-# Shift processed options away
-shift $((OPTIND -1))
+# Check for the -m flag and its associated value
+s=2 # Default value for s
+use_m_flag=false
+while getopts ":m:" opt; do
+  case $opt in
+    m)
+      s=$OPTARG
+      use_m_flag=true
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND-1))
 
 # Now handle the positional arguments
 n=$1   # order
@@ -15,7 +33,13 @@ mkdir -p $d/$v/$n-cubes
 
 di="$d/$v"
 
-./gen_cubes/cube.sh $n $ins $v $di
+if $use_m_flag
+then
+    ./gen_cubes/cube.sh -m $s $n $ins $v $di
+else
+    ./gen_cubes/cube.sh $n $ins $v $di
+fi
+
 
 files=$(ls $d/$v/$n-cubes/*.cubes)
 highest_num=$(echo "$files" | awk -F '[./]' '{print $(NF-1)}' | sort -nr | head -n 1)

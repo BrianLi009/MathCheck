@@ -25,6 +25,12 @@ n=$1 # Order
 f=$2 # Instance filename
 r=$3 # Number of cubes cutoff
 t=$4 #directory to work in
+
+echo $n
+echo $f 
+echo $r 
+echo $t 
+
 m=$((n*(n-1)/2)) # Number of edge variables in instance
 dir=$t/$n-cubes # Directory to store cubes
 logdir=$t/$n-log # Directory to store logs

@@ -7,4 +7,4 @@
 #SBATCH --time=1-00:00
 
 module load python/3.10
-python parallel-solve.py -m 2  17 constraints_17_0.5 2.commands1
+python parallel-solve.py 17 constraints_17_0.5 constraints_17_0.5-d 20 10 constraints_17_0.5.commands1
