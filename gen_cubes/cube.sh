@@ -1,35 +1,25 @@
 #!/bin/bash
 
-# Process options
-while getopts "apsm" opt
-do
-	case $opt in
-		a) a="-a" ;;
-		p) p="-p" ;;
-		s) s="-s" ;;
-		m) s="-m" ;;
-	esac
+# Check for the -m flag and its associated value
+s=2 # Default value for s
+use_m_flag=false
+while getopts ":m:" opt; do
+  case $opt in
+    m)
+      s=$OPTARG
+      use_m_flag=true
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
 done
 shift $((OPTIND-1))
-
-# Ensure necessary parameters are provided on the command-line
-if [ -z $3 ]
-then
-	echo "Need order, filename, and number of variables to be removed in every cube (and optionally the depth to start and end at)"
-	echo "Usage: $0 [-a] [-p] [-s] [-m] n f r t [d] [e]"
-	echo "  n is the instance order"
-	echo "  f is the instance filename"
-	echo "  r is the number of edge variables to remove from each cube before splitting stops"
-	echo "  t is the directory to store files in"
-	echo "  d is the starting depth (generate d.cubes assuming (d-1).cubes is already generated)"
-	echo "  e is the ending depth"
-	echo "Options:"
-	echo "  -a always check # of free edge variables at the starting depth (instead of skipping instances not split at the previous depth)"
-	echo "  -p run cubing in parallel"
-	echo "  -s apply CaDiCaL on the instances simplified on the previous depth"
-	echo "  -m remove instances shown to be unsatisfiable by MapleSAT"
-	exit
-fi
 
 n=$1 # Order
 f=$2 # Instance filename
@@ -44,35 +34,41 @@ mkdir -p $logdir
 # Check that instance exists
 if [ ! -s $f ]
 then
-	echo "File $f must exist and be nonempty"
-	exit
+    echo "File $f must exist and be nonempty"
+    exit
 fi
 
 # Get starting depth
 if [ -z $6 ]
 then
-	# Start from depth 0 by default
-	d=0
+    # Start from depth 0 by default
+    d=0
 else
-	d=$6
+    d=$6
 fi
 
 # Get ending depth
 if [ -z $7 ]
 then
-	# Default finish depth is maximum possible
-	e=$((n*(n-1)/2))
+    # Default finish depth is maximum possible
+    e=$((n*(n-1)/2))
 else
-	e=$7
+    e=$7
 fi
+
 
 # Solve initial depth if d is 0 and the top-level cube file doesn't exist
 if [ "$d" == "0" ]
 then
 	if [ ! -s $dir/0.cubes ]
 	then
-		#command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o $dir/0.cubes -order $n -prod -numMCTSSims 10 | tee $logdir/0.log"
-		command="python ams_no_mcts.py $f -d 1 -m $m -o $dir/0.cubes | tee $logdir/0.log"
+		if $use_m_flag
+		then
+			echo "Number of simulations set to $s"
+			command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o $dir/0.cubes -order $n -prod -numMCTSSims $s | tee $logdir/0.log"
+		else
+			command="python ams_no_mcts.py $f -d 1 -m $m -o $dir/0.cubes | tee $logdir/0.log"
+		fi
 	echo $command
 	eval $command
 	fi
@@ -112,17 +108,16 @@ do
 		cubeline=`head $dir/$((i-1)).cubes -n $c | tail -n 1`
 
 		echo "$n $f $r $i $c $t"
-		command="./gen_cubes/cube-instance.sh $n $f $i $c $t"
-		echo $command >> $dir/$i.commands
-		if [ "$p" != "-p" ]
+		if $use_m_flag
 		then
-			eval $command
+			command="./gen_cubes/cube-instance.sh -m $s $n $f $i $c $t"
+		else
+			command="./gen_cubes/cube-instance.sh $n $f $i $c $t"
 		fi
+		
+		echo $command >> $dir/$i.commands
+		eval $command
 	done
-	if [ "$p" == "-p" ]
-	then
-		parallel --will-cite < $dir/$i.commands
-	fi
 	for c in `seq 1 $numcubes`
 	do
 		cat $dir/$i-$c.cubes >> $dir/$i.cubes
