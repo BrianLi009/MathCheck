@@ -2,14 +2,14 @@
 
 # Default value for s
 s=2
-use_m_flag=false
+use_s_flag=false
 
 # Parsing the -m flag and its argument
 while getopts ":m:" opt; do
   case $opt in
     m)
       s=$OPTARG
-      use_m_flag=true
+      use_s_flag=true
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -41,11 +41,12 @@ fi
 cubeline=`head $dir/$((i-1)).cubes -n $c | tail -n 1`
 echo "Processing $cubeline..."
 ./gen_cubes/apply.sh $f $dir/$((i-1)).cubes $c > $dir/$((i-1)).cubes$c
-if $use_m_flag
+if $use_s_flag
 then
     command="python -u alpha-zero-general/main.py $dir/$((i-1)).cubes$c -d 1 -m $m -o $dir/$((i-1)).cubes$c.cubes -order $n -prod -numMCTSSims $s | tee $logdir/$((i-1)).cubes$c.log"
 else
-	command="python ams_no_mcts.py $dir/$((i-1)).cubes$c -d 1 -m $m -o $dir/$((i-1)).cubes$c.cubes | tee $logdir/$((i-1)).cubes$c.log"
+	#command="python ams_no_mcts.py $dir/$((i-1)).cubes$c -d 1 -m $m -o $dir/$((i-1)).cubes$c.cubes | tee $logdir/$((i-1)).cubes$c.log"
+  command="./gen_cubes/march_cu/march_cu $dir/$((i-1)).cubes$c.simp -o $dir/$((i-1)).cubes$c.cubes -d 1 -m $m | tee $logdir/$((i-1)).cubes$c.log"
 fi
 
 echo $command

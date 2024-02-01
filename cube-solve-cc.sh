@@ -2,12 +2,12 @@
 
 # Check for the -m flag and its associated value
 s=2 # Default value for s
-use_m_flag=false
-while getopts ":m:" opt; do
+use_s_flag=false
+while getopts ":s:" opt; do
   case $opt in
-    m)
+    s)
       s=$OPTARG
-      use_m_flag=true
+      use_s_flag=true
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -33,9 +33,9 @@ mkdir -p $d/$v/$n-cubes
 
 di="$d/$v"
 
-if $use_m_flag
+if $use_s_flag
 then
-    ./gen_cubes/cube.sh -m $s $n $ins $v $di
+    ./gen_cubes/cube.sh -s $s $n $ins $v $di
 else
     ./gen_cubes/cube.sh $n $ins $v $di
 fi

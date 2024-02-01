@@ -32,7 +32,7 @@ def process_file(args):
     if numMCTS == 0:
         subprocess.run(f"./cube-solve-cc.sh {order} {file_name_solve} {directory} {cube_initial} {cube_next}", shell=True)
     else:
-        subprocess.run(f"./cube-solve-cc.sh -m {numMCTS} {order} {file_name_solve} {directory} {cube_initial} {cube_next}", shell=True)
+        subprocess.run(f"./cube-solve-cc.sh -s {numMCTS} {order} {file_name_solve} {directory} {cube_initial} {cube_next}", shell=True)
     with open(f"{file_name_solve}.commands", "r") as file:
         for line in file:
             print(line)

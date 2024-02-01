@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Check for the -m flag and its associated value
+# Check for the -s flag and its associated value
 s=2 # Default value for s
-use_m_flag=false
-while getopts ":m:" opt; do
+use_s_flag=false
+while getopts ":s:" opt; do
   case $opt in
-    m)
+    s)
       s=$OPTARG
-      use_m_flag=true
+      use_s_flag=true
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -29,9 +29,9 @@ nodes=$5 #number of nodes to submit to in total
 
 d=${f}-d
 
-if $use_m_flag
+if $use_s_flag
 then
-    ./cube-solve-cc.sh -m $s $n $f $d $c1 $c2
+    ./cube-solve-cc.sh -s $s $n $f $d $c1 $c2
 else
     ./cube-solve-cc.sh $n $f $d $c1 $c2
 fi
@@ -56,7 +56,7 @@ for file in shuffled_*; do
 
 module load python/3.10
 
-if $use_m_flag
+if $use_s_flag
 then
     python parallel-solve.py $n $f $d $c1 $c2 ${f}.commands${counter} $s
 else

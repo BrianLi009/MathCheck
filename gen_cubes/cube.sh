@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Check for the -m flag and its associated value
+# Check for the -s flag and its associated value
 s=2 # Default value for s
-use_m_flag=false
-while getopts ":m:" opt; do
+use_s_flag=false
+while getopts ":s:" opt; do
   case $opt in
-    m)
+    s)
       s=$OPTARG
-      use_m_flag=true
+      use_s_flag=true
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -68,12 +68,13 @@ if [ "$d" == "0" ]
 then
 	if [ ! -s $dir/0.cubes ]
 	then
-		if $use_m_flag
+		if $use_s_flag
 		then
 			echo "Number of simulations set to $s"
 			command="python -u alpha-zero-general/main.py $f -d 1 -m $m -o $dir/0.cubes -order $n -prod -numMCTSSims $s | tee $logdir/0.log"
 		else
-			command="python ams_no_mcts.py $f -d 1 -m $m -o $dir/0.cubes | tee $logdir/0.log"
+			#command="python ams_no_mcts.py $f -d 1 -m $m -o $dir/0.cubes | tee $logdir/0.log"
+			command="./gen_cubes/march_cu/march_cu $f -o $dir/0.cubes -d 1 -m $m | tee $logdir/0.log"
 		fi
 	echo $command
 	eval $command
@@ -114,9 +115,9 @@ do
 		cubeline=`head $dir/$((i-1)).cubes -n $c | tail -n 1`
 
 		echo "$n $f $r $i $c $t"
-		if $use_m_flag
+		if $use_s_flag
 		then
-			command="./gen_cubes/cube-instance.sh -m $s $n $f $i $c $t"
+			command="./gen_cubes/cube-instance.sh -s $s $n $f $i $c $t"
 		else
 			command="./gen_cubes/cube-instance.sh $n $f $i $c $t"
 		fi
