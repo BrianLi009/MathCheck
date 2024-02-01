@@ -3,7 +3,7 @@ import multiprocessing
 import os
 
 def run_command(args):
-    command, order, directory, cube_initial, cube_next = args
+    command, order, directory, cube_initial, cube_next, numMCTS = args
     process_id = os.getpid()
 
     print(f"Process {process_id}: Executing command: {command}")
@@ -23,24 +23,27 @@ def run_command(args):
             # Extract the string up to, but not including, "19-cubes"
             new_di = newfile.replace(order + "-cubes/", "")
             print (order, newfile, new_di, cube_next, cube_next)
-            process_file((order, newfile, new_di, cube_next, cube_next))
+            process_file((order, newfile, new_di, cube_next, cube_next, numMCTS))
     else:
         print("next cubing file not found")
 
 def process_file(args):
-    order, file_name_solve, directory, cube_initial, cube_next = args
-    subprocess.run(f"./cube-solve-cc.sh {order} {file_name_solve} {directory} {cube_initial} {cube_next}", shell=True)
+    order, file_name_solve, directory, cube_initial, cube_next, numMCTS = args
+    if numMCTS == 0:
+        subprocess.run(f"./cube-solve-cc.sh {order} {file_name_solve} {directory} {cube_initial} {cube_next}", shell=True)
+    else:
+        subprocess.run(f"./cube-solve-cc.sh -m {numMCTS} {order} {file_name_solve} {directory} {cube_initial} {cube_next}", shell=True)
     with open(f"{file_name_solve}.commands", "r") as file:
         for line in file:
             print(line)
             queue.put((line.strip(), order, directory, cube_initial, cube_next))
 
 def process_initial(args):
-    order, file_name_solve, directory, cube_initial, cube_next, commands = args
+    order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS = args
     with open(commands, "r") as file:
         for line in file:
             print(line)
-            queue.put((line.strip(), order, directory, cube_initial, cube_next))
+            queue.put((line.strip(), order, directory, cube_initial, cube_next, numMCTS))
 
 def remove_related_files(new_file):
     base_file = new_file.rsplit('.', 1)[0]
@@ -68,7 +71,7 @@ def worker(queue):
         run_command(args)
         queue.task_done()
 
-def main(order, file_name_solve, directory, cube_initial, cube_next, commands):
+def main(order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS=0):
     global queue
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
@@ -78,7 +81,7 @@ def main(order, file_name_solve, directory, cube_initial, cube_next, commands):
     for p in processes:
         p.start()
 
-    process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands))
+    process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
 
     # Wait for all tasks to be completed
     queue.join()
@@ -91,7 +94,9 @@ def main(order, file_name_solve, directory, cube_initial, cube_next, commands):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) >= 7:
+    if len(sys.argv) == 8:
+        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+    elif len(sys.argv) >= 7:
         main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
     else:
         print("Usage: python script.py <order> <file_name_solve> <directory> <cube_initial> <cube_next> <commands>")

@@ -55,7 +55,14 @@ for file in shuffled_*; do
 #SBATCH --time=1-00:00
 
 module load python/3.10
-python parallel-solve.py $n $f $d $c1 $c2 ${f}.commands${counter}
+
+if $use_m_flag
+then
+    python parallel-solve.py $n $f $d $c1 $c2 ${f}.commands${counter} $s
+else
+    python parallel-solve.py $n $f $d $c1 $c2 ${f}.commands${counter}
+fi
+
 EOF
 
     ((counter++))
