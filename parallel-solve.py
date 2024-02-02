@@ -79,7 +79,13 @@ def worker(queue):
             run_command(args)
         queue.task_done()
 
-def cube(file_to_cube, m, order, numMCTS, logdir, queue):
+def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv='5', d=0, n=0):
+    if cutoff == 'd':
+        if d > cutoffv:
+            return
+    if cutoff == 'n':
+        if n > cutoffv:
+            return
     subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
     #for i in number of line in 
     with open(f"{file_to_cube}.cubes", 'r') as file:
@@ -90,25 +96,26 @@ def cube(file_to_cube, m, order, numMCTS, logdir, queue):
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 2 > {file_to_cube}{2}", shell=True)
     subprocess.run(['rm', '-f', file_to_cube], check=True)
     subprocess.run(['rm', '-f', file_to_cube + ".cubes"], check=True)
-    command1 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, '{logdir}', queue)"
-    command2 = f"cube('{file_to_cube}{2}', {m}, '{order}', {numMCTS}, '{logdir}', queue)"
+    d += 1
+    n += 2
+    command1 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, queue, {d}, {n})"
+    command2 = f"cube('{file_to_cube}{2}', {m}, '{order}', {numMCTS}, queue, {d}, {n})"
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, directory, cube_initial, cube_next, numMCTS=2):
+def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv='5', d=0, n=0):
     global queue
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
 
     m = int(int(order)*(int(order)-1)/2)
-    logdir = f"{directory}/{order}-log"
 
     # Start worker processes
     processes = [multiprocessing.Process(target=worker, args=(queue,)) for _ in range(num_worker_processes)]
     for p in processes:
         p.start()
 
-    cube(file_name_solve, m, order, numMCTS, logdir, queue)
+    cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, n)
 
     #process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
 
