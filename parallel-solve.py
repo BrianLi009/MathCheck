@@ -78,7 +78,7 @@ def worker(queue):
         queue.task_done()
 
 def cube(file_to_cube, m, directory, order, numMCTS, logdir, queue):
-    subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {directory}/{file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS} | tee {logdir}/{file_to_cube}.log", shell=True)
+    subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {directory}/{file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
     #for i in number of line in 
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {directory}/{file_to_cube}.cubes 1 > {file_to_cube}{1}.cubes")
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {directory}/{file_to_cube}.cubes 2 > {file_to_cube}{2}.cubes")
@@ -94,7 +94,7 @@ def main(order, file_name_solve, directory, cube_initial, cube_next, commands, n
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
 
-    m = int(order)*(int(order)-1)/2
+    m = int(int(order)*(int(order)-1)/2)
     logdir = f"{directory}/{order}-log"
 
     # Start worker processes
