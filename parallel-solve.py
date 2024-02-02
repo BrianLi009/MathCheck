@@ -89,7 +89,7 @@ def cube(file_to_cube, m, directory, order, numMCTS, logdir, queue):
             
 
 
-def main(order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS=0):
+def main(order, file_name_solve, directory, cube_initial, cube_next, numMCTS=0):
     global queue
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
@@ -104,7 +104,7 @@ def main(order, file_name_solve, directory, cube_initial, cube_next, commands, n
 
     cube(file_name_solve, m, directory, order, numMCTS, logdir, queue)
 
-    process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
+    #process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
 
     # Wait for all tasks to be completed
     queue.join()
@@ -117,9 +117,9 @@ def main(order, file_name_solve, directory, cube_initial, cube_next, commands, n
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) == 8:
-        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
-    elif len(sys.argv) >= 7:
+    if len(sys.argv) == 7:
         main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+    elif len(sys.argv) >= 6:
+        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     else:
-        print("Usage: python script.py <order> <file_name_solve> <directory> <cube_initial> <cube_next> <commands>")
+        print("Usage: python script.py <order> <file_name_solve> <directory> <cube_initial> <cube_next>")
