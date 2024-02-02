@@ -71,7 +71,7 @@ def worker(queue):
         args = queue.get()
         if args is None:
             break
-        print (args['command'])
+        print (args)
         if args['command'] == 'cube':
             run_cube_command(args)
         else:
