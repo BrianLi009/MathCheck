@@ -79,13 +79,13 @@ def worker(queue):
             run_command(args)
         queue.task_done()
 
-def cube(file_to_cube, m, directory, order, numMCTS, logdir, queue):
-    subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {directory}/{file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
+def cube(file_to_cube, m, order, numMCTS, logdir, queue):
+    subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
     #for i in number of line in 
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 1 > {file_to_cube}{1}.cubes", shell=True)
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 2 > {file_to_cube}{2}.cubes", shell=True)
-    command1 = f"cube('{directory}/{file_to_cube}{1}.cubes', {m}, '{directory}', '{order}', {numMCTS}, '{logdir}', queue)"
-    command2 = f"cube('{directory}/{file_to_cube}{2}.cubes', {m}, '{directory}', '{order}', {numMCTS}, '{logdir}', queue)"
+    command1 = f"cube('{file_to_cube}{1}.cubes', {m}, '{order}', {numMCTS}, '{logdir}', queue)"
+    command2 = f"cube('{file_to_cube}{2}.cubes', {m}, '{order}', {numMCTS}, '{logdir}', queue)"
     queue.put(command1)
     queue.put(command2)
 
@@ -102,7 +102,7 @@ def main(order, file_name_solve, directory, cube_initial, cube_next, numMCTS=2):
     for p in processes:
         p.start()
 
-    cube(file_name_solve, m, directory, order, numMCTS, logdir, queue)
+    cube(file_name_solve, m, order, numMCTS, logdir, queue)
 
     #process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
 
