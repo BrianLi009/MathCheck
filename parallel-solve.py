@@ -130,9 +130,4 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv='5', d=0, n=0):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) == 7:
-        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
-    elif len(sys.argv) >= 6:
-        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-    else:
-        print("Usage: python script.py <order> <file_name_solve> <directory> <cube_initial> <cube_next>")
+    main(*sys.argv[1:])
