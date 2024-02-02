@@ -82,7 +82,7 @@ def worker(queue):
 def cube(file_to_cube, m, order, numMCTS, logdir, queue):
     subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
     #for i in number of line in 
-    with open({file_to_cube}.cubes, 'r') as file:
+    with open(f"{file_to_cube}.cubes", 'r') as file:
         lines = file.readlines()
     if len(lines) == 1:
         return
