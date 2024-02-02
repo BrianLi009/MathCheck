@@ -71,7 +71,8 @@ def worker(queue):
         args = queue.get()
         if args is None:
             break
-        if args['command'] == 'cube_next':
+        print (args['command'])
+        if args['command'] == 'cube':
             run_cube_command(args)
         else:
             run_command(args)
@@ -86,10 +87,8 @@ def cube(file_to_cube, m, directory, order, numMCTS, logdir, queue):
     command2 = f"cube('{directory}/{file_to_cube}{2}.cubes', {m}, '{directory}', '{order}', {numMCTS}, '{logdir}', queue)"
     queue.put(command1)
     queue.put(command2)
-            
 
-
-def main(order, file_name_solve, directory, cube_initial, cube_next, numMCTS=0):
+def main(order, file_name_solve, directory, cube_initial, cube_next, numMCTS=2):
     global queue
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
