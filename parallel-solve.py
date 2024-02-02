@@ -29,7 +29,7 @@ def run_command(args):
 
 def run_cube_command(command):
     print (command)
-    subprocess.Popen(command, shell=True)
+    eval(command)
 
 def process_file(args):
     order, file_name_solve, directory, cube_initial, cube_next, numMCTS = args
