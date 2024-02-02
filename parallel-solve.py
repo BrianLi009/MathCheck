@@ -95,7 +95,7 @@ def main(order, file_name_solve, directory, cube_initial, cube_next, commands, n
     num_worker_processes = multiprocessing.cpu_count()
 
     m = int(order)*(int(order)-1)/2
-    logdir = f"directory/{order}-log"
+    logdir = f"{directory}/{order}-log"
 
     # Start worker processes
     processes = [multiprocessing.Process(target=worker, args=(queue,)) for _ in range(num_worker_processes)]
