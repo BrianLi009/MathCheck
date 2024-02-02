@@ -79,7 +79,7 @@ def worker(queue):
             run_command(args)
         queue.task_done()
 
-def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv='5', d=0, n=0):
+def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0):
     if cutoff == 'd':
         if d > cutoffv:
             return
