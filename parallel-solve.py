@@ -89,7 +89,7 @@ def cube(file_to_cube, m, order, numMCTS, logdir, queue):
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 1 > {file_to_cube}{1}", shell=True)
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 2 > {file_to_cube}{2}", shell=True)
     subprocess.run(['rm', '-f', file_to_cube], check=True)
-    subprocess.run(['rm', '-f', {file_to_cube}.cubes], check=True)
+    subprocess.run(['rm', '-f', f'{file_to_cube}.cubes'], check=True, shell=True)
     command1 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, '{logdir}', queue)"
     command2 = f"cube('{file_to_cube}{2}', {m}, '{order}', {numMCTS}, '{logdir}', queue)"
     queue.put(command1)
