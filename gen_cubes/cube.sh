@@ -123,7 +123,7 @@ do
 		fi
 		
 		echo $command >> $dir/$i.commands
-		eval $command
+		eval $command 
 	done
 	for c in `seq 1 $numcubes`
 	do

@@ -27,6 +27,9 @@ def run_command(args):
     else:
         print("next cubing file not found")
 
+def run_cube_command(command):
+    subprocess.Popen(command)
+
 def process_file(args):
     order, file_name_solve, directory, cube_initial, cube_next, numMCTS = args
     if numMCTS == 0:
@@ -68,18 +71,38 @@ def worker(queue):
         args = queue.get()
         if args is None:
             break
-        run_command(args)
+        if args['command'] == 'cube_next':
+            run_cube_command(args)
+        else:
+            run_command(args)
         queue.task_done()
+
+def cube(file_to_cube, m, directory, order, numMCTS, logdir, queue):
+    subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {directory}/{file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS} | tee {logdir}/{file_to_cube}.log", shell=True)
+    #for i in number of line in 
+    subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {directory}/{file_to_cube}.cubes 1 > {file_to_cube}{1}.cubes")
+    subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {directory}/{file_to_cube}.cubes 2 > {file_to_cube}{2}.cubes")
+    command1 = f"cube('{file_to_cube}{1}.cubes', {m}, '{directory}', '{order}', {numMCTS}, '{logdir}', queue)"
+    command2 = f"cube('{file_to_cube}{2}.cubes', {m}, '{directory}', '{order}', {numMCTS}, '{logdir}', queue)"
+    queue.put(command1)
+    queue.put(command2)
+            
+
 
 def main(order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS=0):
     global queue
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
 
+    m = int(order)*(int(order)-1)/2
+    logdir = f"directory/{order}-log"
+
     # Start worker processes
     processes = [multiprocessing.Process(target=worker, args=(queue,)) for _ in range(num_worker_processes)]
     for p in processes:
         p.start()
+
+    cube(file_name_solve, m, directory, order, numMCTS, logdir, queue)
 
     process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
 
@@ -99,4 +122,4 @@ if __name__ == "__main__":
     elif len(sys.argv) >= 7:
         main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
     else:
-        print("Usage: python script.py <order> <file_name_solve> <directory> <cube_initial> <cube_next> <commands>")
+        print("Usage: python3 script.py <order> <file_name_solve> <directory> <cube_initial> <cube_next> <commands>")
