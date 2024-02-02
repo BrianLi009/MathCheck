@@ -103,7 +103,7 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv='5', d=0, n=0):
+def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0):
     global queue
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
