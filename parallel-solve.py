@@ -28,6 +28,7 @@ def run_command(args):
         print("next cubing file not found")
 
 def run_cube_command(command):
+    print (command)
     subprocess.Popen(command, shell=True)
 
 def process_file(args):
