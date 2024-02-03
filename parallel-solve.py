@@ -90,7 +90,7 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, directory, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0):
+def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0):
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
     global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg
