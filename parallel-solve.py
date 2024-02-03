@@ -90,6 +90,8 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
         lines = file.readlines()
     if len(lines) == 1:
         subprocess.run(['rm', '-f', file_to_cube + ".cubes"], check=True)
+        command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
+        run_command(command)
         return
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 1 > {file_to_cube}{1}", shell=True)
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 2 > {file_to_cube}{2}", shell=True)
