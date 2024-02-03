@@ -86,11 +86,13 @@ def worker(queue):
 def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0):
     if cutoff == 'd':
         if d > cutoffv:
-            command = f"./maplesat-solve-verify.sh ${order} ${file_to_cube}"
+            command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
             run_command(command)
             return
     if cutoff == 'n':
         if n > cutoffv:
+            command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
+            run_command(command)
             return
     subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
     #for i in number of line in 
