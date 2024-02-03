@@ -70,7 +70,10 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
             command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
             queue.put(command)
             return
-    subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
+    if numMCTS == 0:
+        subprocess.run(f"./gen_cubes/march_cu/march_cu {file_to_cube} -o {file_to_cube}.cubes -d 1 -m {m}", shell=True)
+    else:
+        subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
     #for i in number of line in 
     with open(f"{file_to_cube}.cubes", 'r') as file:
         lines = file.readlines()
