@@ -124,7 +124,7 @@ def main(order, file_name_solve, directory, numMCTS=2, cutoff='d', cutoffv=5, d=
 
     cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, n)
 
-    process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
+    #process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
 
     # Wait for all tasks to be completed
     queue.join()
