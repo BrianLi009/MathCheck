@@ -6,6 +6,8 @@ def run_command(command):
     process_id = os.getpid()
     print(f"Process {process_id}: Executing command: {command}")
 
+    file_to_cube = command.split()[-1]
+
     try:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         stdout, stderr = process.communicate()
@@ -17,8 +19,9 @@ def run_command(command):
             print("solved")
         else:
             print("Continue cubing this subproblem...")
-            # Additional processing based on the presence of 'nextfile'
-            # This might include calling another function to process the new file
+            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, {ng})"
+            queue.put(command)
+
     except Exception as e:
         print(f"Failed to run command due to: {str(e)}")
 
@@ -105,11 +108,11 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     queue.put(command2)
 
 def main(order, file_name_solve, directory, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0):
-    global queue
+    m = int(int(order)*(int(order)-1)/2)
+    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg
+    orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg = order, numMCTS, cutoff, cutoffv, d, n, m
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
-
-    m = int(int(order)*(int(order)-1)/2)
 
     # Start worker processes
     processes = [multiprocessing.Process(target=worker, args=(queue,)) for _ in range(num_worker_processes)]
