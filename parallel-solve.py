@@ -2,30 +2,35 @@ import subprocess
 import multiprocessing
 import os
 
-def run_command(args):
-    command, order, directory, cube_initial, cube_next, numMCTS = args
+def run_command(command):
     process_id = os.getpid()
-
     print(f"Process {process_id}: Executing command: {command}")
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    stdout, stderr = process.communicate()
-    nextfile_pos = command.find("nextfile=")
 
-    if nextfile_pos != -1:
-        newfile = command[nextfile_pos + len("nextfile="):]
-        
-        print (newfile)
-        if "UNSAT" in stdout.decode():
-            print ("removing files no longer needed for" + newfile)
-            remove_related_files(newfile)
+    try:
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        stdout, stderr = process.communicate()
+
+        if stderr:
+            print(f"Error executing command: {stderr.decode()}")
+
+        # Handling the presence of 'nextfile=' in the command's output
+        nextfile_pos = stdout.decode().find("nextfile=")
+        if nextfile_pos != -1:
+            # Extracting the 'newfile' value from the output
+            newfile = stdout.decode()[nextfile_pos:].split()[0].split("nextfile=")[1]
+
+            print(newfile)
+            if "UNSAT" in stdout.decode():
+                print("Removing files no longer needed for " + newfile)
+                remove_related_files(newfile)
+            else:
+                print("Continue cubing this subproblem...")
+                # Additional processing based on the presence of 'nextfile'
+                # This might include calling another function to process the new file
         else:
-            print("continue cubing this subproblem...")
-            # Extract the string up to, but not including, "19-cubes"
-            new_di = newfile.replace(order + "-cubes/", "")
-            print (order, newfile, new_di, cube_next, cube_next)
-            process_file((order, newfile, new_di, cube_next, cube_next, numMCTS))
-    else:
-        print("next cubing file not found")
+            print("Next cubing file not found.")
+    except Exception as e:
+        print(f"Failed to run command due to: {str(e)}")
 
 def run_cube_command(command):
     print (command)
@@ -81,6 +86,8 @@ def worker(queue):
 def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0):
     if cutoff == 'd':
         if d > cutoffv:
+            command = f"./maplesat-solve-verify.sh ${order} ${file_to_cube}"
+            run_command(command)
             return
     if cutoff == 'n':
         if n > cutoffv:
@@ -103,7 +110,7 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0):
+def main(order, file_name_solve, directory, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0):
     global queue
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
@@ -117,7 +124,7 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0):
 
     cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, n)
 
-    #process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
+    process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
 
     # Wait for all tasks to be completed
     queue.join()
