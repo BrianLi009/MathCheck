@@ -67,10 +67,10 @@ def worker(queue):
         args = queue.get()
         if args is None:
             break
-        if isinstance(args, str):
-            run_cube_command(args)
-        else:
+        if args.startwith("./maplesat"):
             run_command(args)
+        else:
+            run_cube_command(args)
         queue.task_done()
 
 def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0):
