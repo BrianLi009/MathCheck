@@ -17,6 +17,7 @@ def run_command(command):
 
         if "UNSAT" in stdout.decode():
             print("solved")
+            remove_related_files(file_to_cube)
         else:
             print("Continue cubing this subproblem...")
             command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, {ng})"
@@ -28,24 +29,6 @@ def run_command(command):
 def run_cube_command(command):
     print (command)
     eval(command)
-
-def process_file(args):
-    order, file_name_solve, directory, cube_initial, cube_next, numMCTS = args
-    if numMCTS == 0:
-        subprocess.run(f"./cube-solve-cc.sh {order} {file_name_solve} {directory} {cube_initial} {cube_next}", shell=True)
-    else:
-        subprocess.run(f"./cube-solve-cc.sh -s {numMCTS} {order} {file_name_solve} {directory} {cube_initial} {cube_next}", shell=True)
-    with open(f"{file_name_solve}.commands", "r") as file:
-        for line in file:
-            print(line)
-            queue.put((line.strip(), order, directory, cube_initial, cube_next))
-
-def process_initial(args):
-    order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS = args
-    with open(commands, "r") as file:
-        for line in file:
-            print(line)
-            queue.put((line.strip(), order, directory, cube_initial, cube_next, numMCTS))
 
 def remove_related_files(new_file):
     base_file = new_file.rsplit('.', 1)[0]
@@ -121,8 +104,6 @@ def main(order, file_name_solve, directory, numMCTS=2, cutoff='d', cutoffv=5, d=
         p.start()
 
     cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, n)
-
-    #process_initial((order, file_name_solve, directory, cube_initial, cube_next, commands, numMCTS))
 
     # Wait for all tasks to be completed
     queue.join()
