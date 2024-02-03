@@ -13,22 +13,12 @@ def run_command(command):
         if stderr:
             print(f"Error executing command: {stderr.decode()}")
 
-        # Handling the presence of 'nextfile=' in the command's output
-        nextfile_pos = stdout.decode().find("nextfile=")
-        if nextfile_pos != -1:
-            # Extracting the 'newfile' value from the output
-            newfile = stdout.decode()[nextfile_pos:].split()[0].split("nextfile=")[1]
-
-            print(newfile)
-            if "UNSAT" in stdout.decode():
-                print("Removing files no longer needed for " + newfile)
-                remove_related_files(newfile)
-            else:
-                print("Continue cubing this subproblem...")
-                # Additional processing based on the presence of 'nextfile'
-                # This might include calling another function to process the new file
+        if "UNSAT" in stdout.decode():
+            print("solved")
         else:
-            print("Next cubing file not found.")
+            print("Continue cubing this subproblem...")
+            # Additional processing based on the presence of 'nextfile'
+            # This might include calling another function to process the new file
     except Exception as e:
         print(f"Failed to run command due to: {str(e)}")
 
