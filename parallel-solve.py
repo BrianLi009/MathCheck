@@ -70,7 +70,7 @@ def worker(queue):
         args = queue.get()
         if args is None:
             break
-        if args.startwith("./maplesat"):
+        if args.startswith("./maplesat"):
             run_command(args)
         else:
             run_cube_command(args)
