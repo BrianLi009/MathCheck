@@ -55,7 +55,7 @@ for i in $(seq 1 $new_index) #1-based indexing for cubes
 
 module load python/3.10
 
-python parallel-solve.py ${n} $cube_file$i.adj $s d 8
+python parallel-solve.py ${n} ${cube_file}${i}.adj $s d 8
 
 EOF
 done
