@@ -5,9 +5,9 @@ s=2
 use_s_flag=false
 
 # Parsing the -m flag and its argument
-while getopts ":m:" opt; do
+while getopts ":s:" opt; do
   case $opt in
-    m)
+    s)
       s=$OPTARG
       use_s_flag=true
       ;;
