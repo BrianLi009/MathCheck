@@ -33,6 +33,16 @@ else
     ./gen_cubes/cube.sh $n $f $nodes $d
 fi
 
+files=$(ls $d/$v/$n-cubes/*.cubes)
+highest_num=$(echo "$files" | awk -F '[./]' '{print $(NF-1)}' | sort -nr | head -n 1)
+echo "currently the cubing depth is $highest_num"
+cube_file=$d/$v/$n-cubes/$highest_num.cubes
 
+numline=$(< $cube_file wc -l)
+new_index=$((numline))
 
+for i in $(seq 1 $new_index) #1-based indexing for cubes
+    do 
+        ./gen_cubes/apply.sh $f $cube_file $i > $cube_file$i.adj
+    done
 
