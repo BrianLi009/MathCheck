@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Check for the -s flag and its associated value
-s=2 # Default value for s
 use_s_flag=false
 while getopts ":s:" opt; do
   case $opt in
@@ -25,10 +24,11 @@ n=$1 #order
 f=$2 #filename
 d=$3 #directory
 nodes=$4 #number of nodes to submit to in total
+s=$5 #number of MCTS simulation, only used if -s is used
 
 if $use_s_flag
 then
-    ./gen_cubes/cube.sh -s $n $f $nodes $d
+    ./gen_cubes/cube.sh -s $s $n $f $nodes $d
 else
     ./gen_cubes/cube.sh $n $f $nodes $d
 fi
@@ -44,5 +44,19 @@ new_index=$((numline))
 for i in $(seq 1 $new_index) #1-based indexing for cubes
     do 
         ./gen_cubes/apply.sh $f $cube_file $i > $cube_file$i.adj
-    done
+        cat <<EOF > "script_${i}.sh"
+#!/bin/bash
+#SBATCH --account=rrg-cbright
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=0
+#SBATCH --time=1-00:00
+
+module load python/3.10
+
+python parallel-solve.py ${n} $cube_file$i.adj $s d 8
+
+EOF
+done
 
