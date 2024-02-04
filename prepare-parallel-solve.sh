@@ -23,50 +23,16 @@ shift $((OPTIND-1))
 
 n=$1 #order
 f=$2 #filename
-c1=$3 #number of cubes initially
-c2=$4 #number of cubes for deeper layers
-nodes=$5 #number of nodes to submit to in total
-
-d=${f}-d
+d=$3 #directory
+nodes=$4 #number of nodes to submit to in total
 
 if $use_s_flag
 then
-    ./cube-solve-cc.sh -s $s $n $f $d $c1 $c2
+    ./gen_cubes/cube.sh -s $n $f $nodes $d
 else
-    ./cube-solve-cc.sh $n $f $d $c1 $c2
+    ./gen_cubes/cube.sh $n $f $nodes $d
 fi
 
-total_lines=$(wc -l < "${f}.commands")
-((lines_per_file = (total_lines + $nodes - 1) / $nodes))
-
-# Shuffle and split the file
-shuf "${f}.commands" | split -l "$lines_per_file" - shuffled_
-
-counter=1
-for file in shuffled_*; do
-    mv "$file" "${f}.commands${counter}"
-    cat <<EOF > "script_${counter}.sh"
-#!/bin/bash
-#SBATCH --account=rrg-cbright
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=32
-#SBATCH --mem=0
-#SBATCH --time=1-00:00
-
-module load python/3.10
-
-if $use_s_flag
-then
-    python parallel-solve.py $n $f $d $c1 $c2 ${f}.commands${counter} $s
-else
-    python parallel-solve.py $n $f $d $c1 $c2 ${f}.commands${counter}
-fi
-
-EOF
-
-    ((counter++))
-done
 
 
 
