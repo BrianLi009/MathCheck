@@ -22,16 +22,10 @@ shift $((OPTIND-1))
 
 n=$1 #order
 f=$2 #filename
-d=$3 #directory
 nodes=$4 #number of nodes to submit to in total
 s=$5 #number of MCTS simulation, only used if -s is used
 
-if $use_s_flag
-then
-    ./gen_cubes/cube.sh -s $s $n $f $nodes $d
-else
-    ./gen_cubes/cube.sh $n $f $nodes $d
-fi
+python parallel-solve.py $n $f $m $d $dv
 
 files=$(ls $d/$v/$n-cubes/*.cubes)
 highest_num=$(echo "$files" | awk -F '[./]' '{print $(NF-1)}' | sort -nr | head -n 1)

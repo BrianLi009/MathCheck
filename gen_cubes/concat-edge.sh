@@ -18,5 +18,5 @@ numlines2=$(awk "sqrt(\$(NF-1)*\$(NF-1))<=$m" "$l" | wc -l | cut -d' ' -f1)
 newlines=$((numlines1+numlines2))
 
 echo "p cnf $numvars $newlines"
-tail "$f" -n +2
+tail -n +2 "$f"
 awk "sqrt(\$(NF-1)*\$(NF-1))<=$m" "$l" | sed 's/ 0.*/ 0/' # Additional clauses defining edge variables
