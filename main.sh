@@ -42,8 +42,10 @@ fi
 
 n=$1 # Order
 c=${2:-0.5} # Color percentage
-r=${3:-0} # Number of variables to eliminate during first cubing stage
-a=${4:-0} # Amount of additional variables to remove for each cubing call
+m=${3:-2} #Num of MCTS simulations. m=0 activate march
+d=${4:-d} #Cubing cutoff criteria, choose d(depth) as default
+dv=${5:-5} #By default cube to depth 5
+nodes=${6:-1} #Number of nodes to submit to if using -l
 
 # Dependency Setup
 ./dependency-setup.sh
@@ -58,21 +60,45 @@ dir="."
 case $solve_mode in
     "no_cubing")
         echo "No cubing, just solve"
-        ./simp-solve-no-cubing.sh $n constraints_${n}_${c}
+        
+        echo "Simplifying $f for 10000 conflicts using CaDiCaL+CAS"
+        ./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
+
+        echo "Solving $f using MapleSAT+CAS"
+        ./maplesat-solve-verify.sh $n constraints_${n}_${c}.simp
         ;;
     "seq_cubing")
-        echo "Cubing with sequential solving"
-        ./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
-        ./cube-solve.sh $n constraints_${n}_${c}.simp $r $a
+        echo "Cubing and solving in parallel on local machine"
+        python parallel-solve.py $n constraints_${n}_${c} $m $d $dv
         ;;
     "par_cubing")
-        echo "Cubing with parallel solving"
-        ./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
-        ./prepare-parallel-solve.sh $n constraints_${n}_${c}.simp $r $a 50
+        echo "Cubing and solving in parallel on Compute Canada"
+        python parallel-solve.py $n constraints_${n}_${c} $m False n $nodes
+        i=1
+        for file in constraints_${n}_${c}*.simp; do
+            cat <<EOF > "script_${i}.sh"
+#!/bin/bash
+#SBATCH --account=rrg-cbright
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=0
+#SBATCH --time=1-00:00
+
+module load python/3.10
+
+python parallel-solve.py ${n} $file $m 'True' $d $dv
+
+EOF
+    i=$((i + 1))
+    done
         ;;
     *)
         echo "No solving mode selected, use -n by default"
-        ./simp-solve-no-cubing.sh $n constraints_${n}_${c}
+        echo "Simplifying $f for 10000 conflicts using CaDiCaL+CAS"
+        ./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
+
+        echo "Solving $f using MapleSAT+CAS"
         ;;
 esac
 
