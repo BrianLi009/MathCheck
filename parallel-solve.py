@@ -75,7 +75,7 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
         print("the cube is UNSAT")
         return
 
-    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\1/' < {file_to_cube}.ext | awk '\$0<=$m' | sort | uniq | wc -l"
+    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_cube}.ext | awk '$0<={mg}' | sort | uniq | wc -l"
 
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
     var_removed = int(result.stdout.strip())
