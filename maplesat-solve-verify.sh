@@ -24,12 +24,10 @@ Options:
     <f>: file name of the CNF instance to be solved
 " && exit
 
-./simplification/simplify-by-conflicts.sh -s $f $n 10000 | tee $f.simplog
+./maplesat-ks/simp/maplesat_static $f $f.drat -perm-out=$f.perm -exhaustive=$f.exhaust -order=$n -no-pre -minclause -max-proof-size=7168 -unembeddable-check=17 -unembeddable-out="$f.nonembed" | tee $f.log
 
-./maplesat-ks/simp/maplesat_static $f.simp $f.simp.drat -perm-out=$f.simp.perm -exhaustive=$f.simp.exhaust -order=$n -no-pre -minclause -max-proof-size=7168 -unembeddable-check=17 -unembeddable-out="$f.simp.nonembed" | tee $f.simp.log
-
-if ! grep -q "UNSAT" "$f.simp.log" || [ "$s" == "-s" ]; then
+if ! grep -q "UNSAT" "$f.log" || [ "$s" == "-s" ]; then
     echo "instance not solved, no need to verify unless learnt clause or skipping verification"
 else
-    ./proof-module.sh $n $f $f.simp.verify
+    ./proof-module.sh $n $f $f.verify
 fi
