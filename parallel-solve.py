@@ -31,6 +31,7 @@ def run_cube_command(command):
     eval(command)
 
 def remove_related_files(new_file):
+    #this function needs to be fixed
     base_file = new_file.rsplit('.', 1)[0]
     files_to_remove = [
         base_file,
@@ -60,6 +61,14 @@ def worker(queue):
         queue.task_done()
 
 def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0):
+    subprocess.run(f"./cadical-ks/build/cadical-ks {file_to_cube} -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000")
+    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\1/' < {file_to_cube}.ext | awk '\$0<=$m' | sort | uniq | wc -l"
+
+    file_to_cube = f"{file_to_cube}.simp"
+
+    result = subprocess.run(command, shell=True, text=True, capture_output=True)
+    var_removed = int(result.stdout.strip())
+
     if cutoff == 'd':
         if d > cutoffv:
             command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
@@ -67,6 +76,11 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
             return
     if cutoff == 'n':
         if n > cutoffv:
+            command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
+            queue.put(command)
+            return
+    if cutoff == 'v':
+        if var_removed > cutoffv:
             command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
             queue.put(command)
             return
