@@ -61,7 +61,7 @@ def worker(queue):
         queue.task_done()
 
 def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0):
-    subprocess.run(f"./cadical-ks/build/cadical-ks {file_to_cube} -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000")
+    subprocess.run(f"./cadical-ks/build/cadical-ks {file_to_cube} -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000", shell=True)
     command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\1/' < {file_to_cube}.ext | awk '\$0<=$m' | sort | uniq | wc -l"
 
     file_to_cube = f"{file_to_cube}.simp"
