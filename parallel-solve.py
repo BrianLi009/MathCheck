@@ -84,19 +84,19 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
     file_to_cube = f"{file_to_cube}.simp"
 
     if cutoff == 'd':
-        if d > cutoffv:
+        if d >= cutoffv:
             if s == 'True':
                 command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
     if cutoff == 'n':
-        if n > cutoffv:
+        if n >= cutoffv:
             if s == 'True':
                 command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
     if cutoff == 'v':
-        if var_removed > cutoffv:
+        if var_removed >= cutoffv:
             if s == 'True':
                 command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
