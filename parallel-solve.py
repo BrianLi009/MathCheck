@@ -61,10 +61,21 @@ def worker(queue):
         queue.task_done()
 
 def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0):
-    subprocess.run(f"./cadical-ks/build/cadical-ks {file_to_cube} -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000", shell=True)
+    command = "./cadical-ks/build/cadical-ks {file_to_cube} -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000"
+    # Run the command and capture the output
+    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # Decode the output and error to utf-8
+    output = result.stdout.decode('utf-8') + result.stderr.decode('utf-8')
+
+    # Check if the output contains "c exit 20"
+    if "c exit 20" in output:
+        print("the cube is UNSAT")
+        return
+
     command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\1/' < {file_to_cube}.ext | awk '\$0<=$m' | sort | uniq | wc -l"
 
-    file_to_cube = f"{file_to_cube}.simp"
+    subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
     var_removed = int(result.stdout.strip())
@@ -88,14 +99,6 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
         subprocess.run(f"./gen_cubes/march_cu/march_cu {file_to_cube} -o {file_to_cube}.cubes -d 1 -m {m}", shell=True)
     else:
         subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
-    #for i in number of line in 
-    with open(f"{file_to_cube}.cubes", 'r') as file:
-        lines = file.readlines()
-    if len(lines) == 1:
-        subprocess.run(['rm', '-f', file_to_cube + ".cubes"], check=True)
-        command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
-        queue.put(command)
-        return
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 1 > {file_to_cube}{1}", shell=True)
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 2 > {file_to_cube}{2}", shell=True)
     subprocess.run(['rm', '-f', file_to_cube], check=True)
