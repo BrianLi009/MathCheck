@@ -70,6 +70,8 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
 
     # Check if the output contains "c exit 20"
     if "c exit 20" in output:
+        os.remove(file_to_cube)
+        os.remove(f'{file_to_cube}.simp')
         print("the cube is UNSAT")
         return
 
@@ -77,6 +79,8 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
 
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
     var_removed = int(result.stdout.strip())
+
+    print (f'{var_removed} variables removed from the cube')
 
     file_to_cube = f"{file_to_cube}.simp"
 
