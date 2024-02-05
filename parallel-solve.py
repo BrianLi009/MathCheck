@@ -20,7 +20,7 @@ def run_command(command):
             remove_related_files(file_to_cube)
         else:
             print("Continue cubing this subproblem...")
-            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, {ng})"
+            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{sg}', '{cutoffg}', {cutoffvg}, {dg}, {ng})"
             queue.put(command)
 
     except Exception as e:
@@ -59,7 +59,7 @@ def worker(queue):
             run_cube_command(args)
         queue.task_done()
 
-def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0, v=0):
+def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
     command = f"./cadical-ks/build/cadical-ks {file_to_cube} -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000"
     # Run the command and capture the output
     result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -85,18 +85,21 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
 
     if cutoff == 'd':
         if d > cutoffv:
-            command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
-            queue.put(command)
+            if s == 'True':
+                command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
+                queue.put(command)
             return
     if cutoff == 'n':
         if n > cutoffv:
-            command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
-            queue.put(command)
+            if s == 'True':
+                command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
+                queue.put(command)
             return
     if cutoff == 'v':
         if var_removed > cutoffv:
-            command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
-            queue.put(command)
+            if s == 'True':
+                command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
+                queue.put(command)
             return
     if int(numMCTS) == 0:
         subprocess.run(f"./gen_cubes/march_cu/march_cu {file_to_cube} -o {file_to_cube}.cubes -d 1 -m {m}", shell=True)
@@ -113,11 +116,11 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0, v=0):
+def main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
-    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg
-    orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg = order, numMCTS, cutoff, cutoffv, d, n, m
+    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg
+    orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg = order, numMCTS, cutoff, cutoffv, d, n, m, s
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
 
@@ -126,7 +129,7 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0, v=0
     for p in processes:
         p.start()
 
-    cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, n, v)
+    cube(file_name_solve, m, order, numMCTS, queue, s, cutoff, cutoffv, d, n, v)
 
     # Wait for all tasks to be completed
     queue.join()
