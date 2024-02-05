@@ -60,7 +60,7 @@ def worker(queue):
             run_cube_command(args)
         queue.task_done()
 
-def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0):
+def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0, v=0):
     command = f"./cadical-ks/build/cadical-ks {file_to_cube} -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000"
     # Run the command and capture the output
     result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -78,7 +78,7 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_cube}.ext | awk '$0<={mg}' | sort | uniq | wc -l"
 
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
-    var_removed = int(result.stdout.strip())
+    var_removed = v + int(result.stdout.strip())
 
     print (f'{var_removed} variables removed from the cube')
 
@@ -109,12 +109,12 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     subprocess.run(['rm', '-f', file_to_cube + ".cubes"], check=True)
     d += 1
     n += 2
-    command1 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, {n})"
-    command2 = f"cube('{file_to_cube}{2}', {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, {n})"
+    command1 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
+    command2 = f"cube('{file_to_cube}{2}', {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0):
+def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0, v=0):
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
     global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg
@@ -127,7 +127,7 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0):
     for p in processes:
         p.start()
 
-    cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, n)
+    cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, n, v)
 
     # Wait for all tasks to be completed
     queue.join()
