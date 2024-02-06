@@ -74,6 +74,8 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
         os.remove(f'{file_to_cube}.simp')
         print("the cube is UNSAT")
         return
+    else:
+        n += 1
 
     command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_cube}.ext | awk '$0<={mg}' | sort | uniq | wc -l"
 
@@ -112,7 +114,6 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
     subprocess.run(['rm', '-f', file_to_cube], check=True)
     subprocess.run(['rm', '-f', file_to_cube + ".cubes"], check=True)
     d += 1
-    n += 2
     command1 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
     command2 = f"cube('{file_to_cube}{2}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
     queue.put(command1)
