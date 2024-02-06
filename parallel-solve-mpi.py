@@ -63,7 +63,6 @@ def mpi_cube(file_to_cube, m, order, numMCTS, rank, size, s='True', cutoff='d', 
     command = f"./cadical-ks/build/cadical-ks {file_to_cube} --order {order} --unembeddable-check 17 -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000 | tee {file_to_cube}.simplog"
     print(f"Process {rank}: Running cube command.")
     try:
-        print(f"Process {rank}: {command}")
         result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output = result.stdout.decode('utf-8') + result.stderr.decode('utf-8')
         print(f"Process {rank}: Cube command completed.")
