@@ -81,31 +81,35 @@ def mpi_main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5,
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
-    print(f"Process {rank}: Starting mpi_main function with order {order} and file {file_name_solve}.")
     m = int(int(order)*(int(order)-1)/2)
+
     if rank == 0:
-        print("Master process: Distributing tasks.")
-        tasks = [file_name_solve]  # Simplified task list
-        for i, task in enumerate(tasks, start=1):
-            if i < size:
-                print(f"Master process: Sending task {task} to process {i}.")
+        print("Master process: Starting mpi_main function with order {} and file {}.".format(order, file_name_solve))
+        tasks = [file_name_solve]  # This should be a list of tasks if you have multiple tasks
+        # Distribute tasks
+        for i in range(1, size):
+            if tasks:
+                task = tasks.pop(0)  # Get the next task
+                print("Master process: Sending task {} to process {}.".format(task, i))
                 comm.send(task, dest=i, tag=1)
             else:
                 break
+        # After distributing all tasks, send a termination signal to all worker processes
+        for i in range(1, size):
+            print("Master process: Sending termination signal to process {}.".format(i))
+            comm.send(None, dest=i, tag=0)  # Using None as a termination signal
     else:
-        status = MPI.Status()
         while True:
-            print(f"Process {rank}: Waiting for task.")
-            task = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
-            if status.Get_tag() == 1:
-                print(f"Process {rank}: Received task {task}. Executing mpi_cube.")
-                mpi_cube(task, m, order, numMCTS, rank, size, s, cutoff, cutoffv, d, n, v)
-            elif status.Get_tag() == 0:
-                print(f"Process {rank}: Received termination signal. Exiting.")
+            task = comm.recv(source=0, tag=MPI.ANY_TAG)
+            if task is None:
+                print("Process {}: Received termination signal. Exiting.".format(rank))
                 break
+            else:
+                print("Process {}: Received task {}. Executing mpi_cube.".format(rank, task))
+                mpi_cube(task, m, order, numMCTS, rank, size, s, cutoff, cutoffv, d, n, v)
 
-    print(f"Process {rank}: Finalizing MPI.")
     MPI.Finalize()
+
 
 if __name__ == "__main__":
     mpi_main(*sys.argv[1:])
