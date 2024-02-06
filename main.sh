@@ -87,7 +87,7 @@ case $solve_mode in
 
 module load python/3.10
 
-python parallel-solve.py ${n} $file $m 'True' $d $dv
+python parallel-solve.py $n $file $m 'True' $d $dv
 
 EOF
     i=$((i + 1))
