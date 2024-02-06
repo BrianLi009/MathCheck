@@ -85,9 +85,8 @@ def mpi_main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5,
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
-
+    m = int(int(order)*(int(order)-1)/2)
     if rank == 0:
-        m = int(int(order)*(int(order)-1)/2)
         tasks = [file_name_solve]  # Simplified task list
         
         for i, task in enumerate(tasks, start=1):
