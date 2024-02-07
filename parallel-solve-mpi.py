@@ -7,6 +7,9 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
+print(f"Hello from process {rank}")
+
+
 def run_cube_command(instance_id):
     print(f"Process {rank}: Cubing instance {instance_id}...")
     # Simulate cubing process
