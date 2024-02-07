@@ -120,11 +120,11 @@ def cube(file_to_cube, m, order, numMCTS, pool, s='True', cutoff='d', cutoffv=5,
 
 def main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
     from multiprocessing import Pool
-    pool = Pool()
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
     global pool, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg
     orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg = order, numMCTS, cutoff, cutoffv, d, n, m, s
+    pool = Pool()
     num_worker_processes = multiprocessing.cpu_count()
 
     # Start worker processes
