@@ -1,9 +1,9 @@
 import subprocess
-import multiprocessing
-from ray.util.queue import Queue
 import os
+import ray
+from ray.util.queue import Queue
 
-def run_command(command):
+def run_command(command, queue):
     process_id = os.getpid()
     print(f"Process {process_id}: Executing command: {command}")
 
@@ -21,14 +21,14 @@ def run_command(command):
             remove_related_files(file_to_cube)
         else:
             print("Continue cubing this subproblem...")
-            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{sg}', '{cutoffg}', {cutoffvg}, {dg}, {ng})"
+            command = f"cube.remote('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{sg}', '{cutoffg}', {cutoffvg}, {dg}, {ng})"
             queue.put(command)
 
     except Exception as e:
         print(f"Failed to run command due to: {str(e)}")
 
-def run_cube_command(command):
-    print (command)
+def run_cube_command(command, queue):
+    print(command)
     eval(command)
 
 def remove_related_files(new_file):
@@ -36,10 +36,8 @@ def remove_related_files(new_file):
     files_to_remove = [
         base_file,
         new_file,
-        #f"{new_file}.permcheck",
         f"{new_file}.nonembed",
         f"{new_file}.drat",
-        #f"{base_file}.drat"
     ]
 
     for file in files_to_remove:
@@ -49,16 +47,16 @@ def remove_related_files(new_file):
         except OSError as e:
             print(f"Error: {e.strerror}. File: {file}")
 
+@ray.remote
 def worker(queue):
     while True:
-        args = queue.get()
+        args = ray.get(queue.get(block=True))
         if args is None:
             break
         if args.startswith("./maplesat"):
-            run_command(args)
+            run_command(args, queue)
         else:
-            run_cube_command(args)
-        queue.task_done()
+            run_cube_command(args, queue)
 
 def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
     command = f"./cadical-ks/build/cadical-ks {file_to_cube} --order {order} --unembeddable-check 17 -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000 | tee {file_to_cube}.simplog"
@@ -121,14 +119,20 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
     queue.put(command2)
 
 def main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
+    ray.init()
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
     global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg
     orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg = order, numMCTS, cutoff, cutoffv, d, n, m, s
     queue = Queue()
-    num_worker_processes = multiprocessing.cpu_count()
 
-    cube(file_name_solve, m, order, numMCTS, queue, s, cutoff, cutoffv, d, n, v)
+    # Start worker tasks
+    num_worker_processes = os.cpu_count() or 1  # Fallback to 1 if os.cpu_count() is None
+    workers = [worker.remote(queue) for _ in range(num_worker_processes)]
+
+    cube.remote(file_name_solve, m, order, numMCTS, queue, s, cutoff, cutoffv, d, n, v)
+
+    # Ray handles task completion and queue management
 
 if __name__ == "__main__":
     import sys
