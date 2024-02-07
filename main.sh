@@ -85,14 +85,14 @@ case $solve_mode in
 
         # Calculate the number of files to distribute names across and initialize counters
         total_files=${#found_files[@]}
-        files_per_node=$(( (total_files + node - 1) / node )) # Ceiling division to evenly distribute
+        files_per_node=$(( (total_files + nodes - 1) / nodes )) # Ceiling division to evenly distribute
         counter=0
         file_counter=1
 
         # Check if there are files to distribute
         if [ ${#found_files[@]} -eq 0 ]; then
-        echo "No files found to distribute."
-        exit 1
+            echo "No files found to distribute."
+            exit 1
         fi
 
         # Create $node number of files and distribute the names of found files across them
