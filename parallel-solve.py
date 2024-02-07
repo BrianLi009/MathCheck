@@ -1,4 +1,4 @@
-]import subprocess
+import subprocess
 import multiprocessing
 import os
 
