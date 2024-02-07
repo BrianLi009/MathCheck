@@ -75,5 +75,5 @@ case $solve_mode in
         echo "Cubing and solving in parallel on Compute Canada"
         python parallel-solve.py $n constraints_${n}_${c} $m False $d $dv
         i=1
-
+esac
 
