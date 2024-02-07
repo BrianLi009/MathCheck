@@ -48,6 +48,28 @@ def remove_related_files(new_file):
         except OSError as e:
             print(f"Error: {e.strerror}. File: {file}")
 
+def rename_file(filename):
+    # Remove .simp from file name
+    if filename.endswith('.simp'):
+        filename = filename[:-5]
+    
+    # Split the filename to get the base and the binary number
+    parts = filename.rsplit('.', 1)
+    if len(parts) != 2:
+        raise ValueError("Filename does not contain a binary number or is not in expected format.")
+    
+    base, binary_number = parts
+    
+    # Check if the binary number contains only 0s and 1s
+    if not set(binary_number).issubset({'0', '1'}):
+        raise ValueError("Number after the last '.' contains characters other than 0 and 1.")
+    
+    # Convert binary number to base 10
+    base_10_number = int(binary_number, 2)
+    
+    # Return the new filename
+    return f"{base}{base_10_number}"
+    
 def worker(queue):
     while True:
         args = queue.get()
@@ -85,6 +107,7 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
     print (f'{var_removed} variables removed from the cube')
     original_file = file_to_cube
     file_to_cube = f"{file_to_cube}.simp"
+    file_to_cube = rename_file(f"{file_to_cube}.simp")
 
     if cutoff == 'd':
         if d >= cutoffv:
@@ -108,14 +131,14 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
         subprocess.run(f"./gen_cubes/march_cu/march_cu {file_to_cube} -o {file_to_cube}.cubes -d 1 -m {m}", shell=True)
     else:
         subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
-    subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 1 > {file_to_cube}{1}", shell=True)
-    subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 2 > {file_to_cube}{2}", shell=True)
+    subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 1 > {file_to_cube}.{1}", shell=True)
+    subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 2 > {file_to_cube}.{2}", shell=True)
     subprocess.run(['rm', '-f', original_file], check=True)
     subprocess.run(['rm', '-f', file_to_cube], check=True)
     subprocess.run(['rm', '-f', file_to_cube + ".cubes"], check=True)
     d += 1
-    command1 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
-    command2 = f"cube('{file_to_cube}{2}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
+    command1 = f"cube('{file_to_cube}.{1}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
+    command2 = f"cube('{file_to_cube}.{2}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
     queue.put(command1)
     queue.put(command2)
 
