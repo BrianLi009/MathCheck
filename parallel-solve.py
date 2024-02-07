@@ -125,7 +125,7 @@ def main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5, d=0
     m = int(int(order)*(int(order)-1)/2)
     global pool, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg
     orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg = order, numMCTS, cutoff, cutoffv, d, n, m, s
-    pool = multiprocessing.Joinablepool()
+    pool = Pool(5)
     num_worker_processes = multiprocessing.cpu_count()
 
     # Start worker processes
