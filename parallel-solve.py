@@ -139,20 +139,28 @@ def main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5, d=0
     processes = [multiprocessing.Process(target=worker, args=(queue,)) for _ in range(num_worker_processes)]
     for p in processes:
         p.start()
-        
+
     #file_name_solve is a file where each line is a filename to solve
     with open(file_name_solve, 'r') as file:
-        instance_lst = [line.strip() for line in file]
-    if s == 'True':
-        print ("solving instances first...")
-        for instance in instance_lst:
-            command = f"./maplesat-solve-verify.sh {order} {instance}"
-            queue.put(command)
+        first_line = file.readline().strip()  # Read the first line and strip whitespace
+
+    # Check if the first line starts with 'p cnf'
+    if first_line.startswith('p cnf'):
+        print("input file is a CNF file")
+        cube(file_name_solve, m, order, numMCTS, queue, s, cutoff, cutoffv, d, n, v)
     else:
-        print ("cubing each instance first...")
-        for instance in instance_lst:
-            command = f"cube('{instance}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {v})"
-            queue.put(command)
+        print("input file contains name of multiple CNF file")
+        instance_lst = [line.strip() for line in file]
+        if s == 'True':
+            print ("solving instances first...")
+            for instance in instance_lst:
+                command = f"./maplesat-solve-verify.sh {order} {instance}"
+                queue.put(command)
+        else:
+            print ("cubing each instance first...")
+            for instance in instance_lst:
+                command = f"cube('{instance}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {v})"
+                queue.put(command)
 
     # Wait for all tasks to be completed
     queue.join()
