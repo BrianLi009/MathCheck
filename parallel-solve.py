@@ -1,5 +1,6 @@
 import subprocess
 import os
+import multiprocessing
 
 def run_command(command):
     process_id = os.getpid()
@@ -125,8 +126,6 @@ def main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5, d=0
     global pool, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg
     orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg = order, numMCTS, cutoff, cutoffv, d, n, m, s
     pool = Pool()
-    num_worker_processes = multiprocessing.cpu_count()
-
     # Start worker processes
     processes = [multiprocessing.Process(target=worker, args=(pool,)) for _ in range(num_worker_processes)]
     for p in processes:
