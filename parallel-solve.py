@@ -50,6 +50,7 @@ def remove_related_files(new_file):
 
 def rename_file(filename):
     # Remove .simp from file name
+    print (filename)
     if filename.endswith('.simp'):
         filename = filename[:-5]
     
