@@ -75,12 +75,10 @@ if rank == 0:
 else:
     while True:
         received_task = comm.recv(source=0, tag=0)
-        print (received_task)
         if received_task[0] == "cube":
-            print ("recieved cubing task")
             run_cube_command(received_task[1])
         elif received_task[0] == "solve":
-            print ("recieved solving task")
             run_solve_command(received_task[1])
         else:
+            print ("no valid task received")
             break  # Exit the loop if no valid task is received
