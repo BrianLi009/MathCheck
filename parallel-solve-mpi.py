@@ -14,7 +14,7 @@ def run_cube_command(instance_id):
     print(f"Process {rank}: Cubing instance {instance_id}...")
     # Simulate cubing process
     time.sleep(1)  # Simulate some processing time
-    needs_more_cubing = rank % 2 == 0  # Simulate decision: even ranks need more cubing, odd ranks don't
+    needs_more_cubing = True  # Simulate decision: even ranks need more cubing, odd ranks don't
     print(f"Process {rank}: Cubing done. Needs more cubing: {needs_more_cubing}")
     comm.send((rank, instance_id, "cube_done", needs_more_cubing), dest=0, tag=0)
 
