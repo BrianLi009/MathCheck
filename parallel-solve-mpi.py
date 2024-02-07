@@ -51,22 +51,6 @@ def manager(sat_instance):
         tasks["cube"] = new_cube_tasks
         tasks["solve"] = new_solve_tasks
 
-        # Collect results and decide on next steps
-        while cube_history:
-            received_data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG)
-            worker_rank, instance_id, task_done, needs_action = received_data
-            if task_done == "cube_done":
-                if needs_action:
-                    tasks["cube"].append(instance_id)
-                else:
-                    tasks["solve"].append(instance_id)
-            elif task_done == "solve_done":
-                if needs_action:
-                    tasks["cube"].append(instance_id)
-                else:
-                    solved_instances.append(instance_id)
-                    del cube_history[instance_id]
-
     print("All instances solved:", solved_instances)
 
 if rank == 0:
