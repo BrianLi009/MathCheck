@@ -76,10 +76,39 @@ case $solve_mode in
     "par_cubing")
         echo "Cubing and solving in parallel on Compute Canada"
         python parallel-solve.py $n ${di}/constraints_${n}_${c} $m $d $dv False
-        i=1
-        find . -regextype posix-extended -regex "./constraints_${n}_${c}[^/]*" ! -regex '.*\.(simplog|ext)$' -print0 | while IFS= read -r -d $'\0' file; do
-            echo "Processing $file"
-            # Your commands here
+        found_files=()
+
+        # Populate the array with the names of files found by the find command
+        while IFS= read -r -d $'\0' file; do
+        found_files+=("$file")
+        done < <(find . -regextype posix-extended -regex "./${di}/constraints_${n}_${c}[^/]*" ! -regex '.*\.(simplog|ext)$' -print0)
+
+        # Calculate the number of files to distribute names across and initialize counters
+        total_files=${#found_files[@]}
+        files_per_node=$(( (total_files + node - 1) / node )) # Ceiling division to evenly distribute
+        counter=0
+        file_counter=1
+
+        # Check if there are files to distribute
+        if [ ${#found_files[@]} -eq 0 ]; then
+        echo "No files found to distribute."
+        exit 1
+        fi
+
+        # Create $node number of files and distribute the names of found files across them
+        for file_name in "${found_files[@]}"; do
+        # Determine the current output file to write to
+        output_file="distribution_${file_counter}.txt"
+        
+        # Write the current file name to the output file
+        echo "$file_name" >> "$output_file"
+        
+        # Update counters
+        ((counter++))
+        if [ "$counter" -ge "$files_per_node" ]; then
+            counter=0
+            ((file_counter++))
+        fi
         done
 
 
