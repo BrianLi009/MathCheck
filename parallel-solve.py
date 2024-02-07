@@ -31,15 +31,15 @@ def run_cube_command(command):
     eval(command)
 
 def remove_related_files(new_file):
-    base_file = new_file.rsplit('.', 1)[0]
     files_to_remove = [
-        base_file,
         new_file,
         #f"{new_file}.permcheck",
         f"{new_file}.nonembed",
         f"{new_file}.drat",
         #f"{base_file}.drat"
     ]
+
+    print (files_to_remove)
 
     for file in files_to_remove:
         try:
