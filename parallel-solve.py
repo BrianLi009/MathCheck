@@ -94,19 +94,19 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
 
     if cutoff == 'd':
         if d >= cutoffv:
-            if s == 'True':
+            if solveaftercubeg == 'True':
                 command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
     if cutoff == 'n':
         if n >= cutoffv:
-            if s == 'True':
+            if solveaftercubeg == 'True':
                 command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
     if cutoff == 'v':
         if var_removed >= cutoffv:
-            if s == 'True':
+            if solveaftercubeg == 'True':
                 command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
@@ -124,12 +124,16 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0, v=0):
+def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True'):
+
+    d=0
+    n=0
+    v=0
     
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
-    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg
-    orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg = order, numMCTS, cutoff, cutoffv, d, n, m
+    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, solveaftercubeg
+    orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, solveaftercubeg = order, numMCTS, cutoff, cutoffv, d, n, m, solveaftercube
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
 
