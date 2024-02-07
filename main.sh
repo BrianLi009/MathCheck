@@ -69,11 +69,13 @@ case $solve_mode in
         ;;
     "seq_cubing")
         echo "Cubing and solving in parallel on local machine"
-        python parallel-solve.py $n constraints_${n}_${c} $m True $d $dv
+        python parallel-solve.py $n constraints_${n}_${c} $m False $d $dv
         ;;
     "par_cubing")
         echo "Cubing and solving in parallel on Compute Canada"
         python parallel-solve.py $n constraints_${n}_${c} $m False $d $dv
         i=1
 esac
+
+
 

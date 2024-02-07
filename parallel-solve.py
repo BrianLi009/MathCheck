@@ -127,6 +127,7 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
     queue.put(command2)
 
 def main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
+
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
     global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg
@@ -138,8 +139,20 @@ def main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5, d=0
     processes = [multiprocessing.Process(target=worker, args=(queue,)) for _ in range(num_worker_processes)]
     for p in processes:
         p.start()
-
-    cube(file_name_solve, m, order, numMCTS, queue, s, cutoff, cutoffv, d, n, v)
+        
+    #file_name_solve is a file where each line is a filename to solve
+    with open(file_name_solve, 'r') as file:
+        instance_lst = [line.strip() for line in file]
+    if s == 'True':
+        print ("solving instances first...")
+        for instance in instance_lst:
+            command = f"./maplesat-solve-verify.sh {order} {instance}"
+            queue.put(command)
+    else:
+        print ("cubing each instance first...")
+        for instance in instance_lst:
+            command = f"cube('{instance}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {v})"
+            queue.put(command)
 
     # Wait for all tasks to be completed
     queue.join()
