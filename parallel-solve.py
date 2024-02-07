@@ -130,6 +130,7 @@ def main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5, d=0
     # Start worker tasks
     num_worker_processes = os.cpu_count() or 1  # Fallback to 1 if os.cpu_count() is None
     workers = [worker.remote(queue) for _ in range(num_worker_processes)]
+    print (workers)
 
     cube.remote(file_name_solve, m, order, numMCTS, queue, s, cutoff, cutoffv, d, n, v)
 
