@@ -77,6 +77,10 @@ case $solve_mode in
         echo "Cubing and solving in parallel on Compute Canada"
         python parallel-solve.py $n ${di}/constraints_${n}_${c} $m $d $dv False
         i=1
+        find . -regextype posix-extended -regex "./constraints_${n}_${c}[^/]*" ! -regex '.*\.(simplog|ext)$' -print0 | while IFS= read -r -d $'\0' file; do
+            echo "Processing $file"
+            # Your commands here
+        done
 
 
         ;;
