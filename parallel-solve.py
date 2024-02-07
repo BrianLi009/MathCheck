@@ -1,5 +1,6 @@
 import subprocess
-from multiprocessing import Pool
+import multiprocessing
+from multiprocessing import pool
 import os
 
 def run_command(command):
