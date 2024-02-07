@@ -71,7 +71,7 @@ def rename_file(filename):
     base_10_number = int(binary_number, 2)
     
     # Return the new filename
-    return f"{base}.{base_10_number}"
+    return f"{base}-{base_10_number}"
     
 def worker(queue):
     while True:
