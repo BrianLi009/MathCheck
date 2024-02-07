@@ -108,9 +108,7 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
 
     print (f'{var_removed} variables removed from the cube')
     original_file = file_to_cube
-    os.remove(file_to_cube)
     file_to_cube = f"{file_to_cube}.simp"
-    file_to_cube = rename_file(file_to_cube)
 
     if cutoff == 'd':
         if d >= cutoffv:
