@@ -56,7 +56,7 @@ mkdir $di
 
 # Generate Instance
 ./generate-instance.sh $n $c
-mv constraints_${n}_${c} $di
+cp constraints_${n}_${c} $di
 
 # Solve Based on Mode
 case $solve_mode in
@@ -75,7 +75,7 @@ case $solve_mode in
         ;;
     "par_cubing")
         echo "Cubing and solving in parallel on Compute Canada"
-        python parallel-solve.py $n ${di}/constraints_${n}_${c} $m $d $dv
+        python parallel-solve.py $n ${di}/constraints_${n}_${c} $m $d $dv False
         i=1
 
 
