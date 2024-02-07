@@ -59,6 +59,8 @@ def rename_file(filename):
         raise ValueError("Filename does not contain a binary number or is not in expected format.")
     
     base, binary_number = parts
+
+    print (binary_number)
     
     # Check if the binary number contains only 0s and 1s
     if not set(binary_number).issubset({'0', '1'}):
