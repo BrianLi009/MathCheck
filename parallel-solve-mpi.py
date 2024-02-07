@@ -76,8 +76,10 @@ else:
     while True:
         received_task = comm.recv(source=0, tag=0)
         if received_task[0] == "cube":
+            print ("recieved cubing task")
             run_cube_command(received_task[1])
         elif received_task[0] == "solve":
+            print ("recieved solving task")
             run_solve_command(received_task[1])
         else:
             break  # Exit the loop if no valid task is received
