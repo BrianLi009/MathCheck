@@ -1,5 +1,5 @@
 import subprocess
-import multiprocessing
+from multiprocessing import Pool
 import os
 
 def run_command(command):
@@ -20,8 +20,8 @@ def run_command(command):
             remove_related_files(file_to_cube)
         else:
             print("Continue cubing this subproblem...")
-            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{sg}', '{cutoffg}', {cutoffvg}, {dg}, {ng})"
-            queue.put(command)
+            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, pool, '{sg}', '{cutoffg}', {cutoffvg}, {dg}, {ng})"
+            pool.map(command)
 
     except Exception as e:
         print(f"Failed to run command due to: {str(e)}")
@@ -48,18 +48,18 @@ def remove_related_files(new_file):
         except OSError as e:
             print(f"Error: {e.strerror}. File: {file}")
 
-def worker(queue):
+def worker(pool):
     while True:
-        args = queue.get()
+        args = pool.get()
         if args is None:
             break
         if args.startswith("./maplesat"):
             run_command(args)
         else:
             run_cube_command(args)
-        queue.task_done()
+        pool.task_done()
 
-def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
+def cube(file_to_cube, m, order, numMCTS, pool, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
     command = f"./cadical-ks/build/cadical-ks {file_to_cube} --order {order} --unembeddable-check 17 -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000 | tee {file_to_cube}.simplog"
     # Run the command and capture the output
     print (command)
@@ -90,19 +90,19 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
         if d >= cutoffv:
             if s == 'True':
                 command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
-                queue.put(command)
+                pool.map(command)
             return
     if cutoff == 'n':
         if n >= cutoffv:
             if s == 'True':
                 command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
-                queue.put(command)
+                pool.map(command)
             return
     if cutoff == 'v':
         if var_removed >= cutoffv:
             if s == 'True':
                 command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
-                queue.put(command)
+                pool.map(command)
             return
     if int(numMCTS) == 0:
         subprocess.run(f"./gen_cubes/march_cu/march_cu {file_to_cube} -o {file_to_cube}.cubes -d 1 -m {m}", shell=True)
@@ -114,32 +114,32 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
     subprocess.run(['rm', '-f', file_to_cube], check=True)
     subprocess.run(['rm', '-f', file_to_cube + ".cubes"], check=True)
     d += 1
-    command1 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
-    command2 = f"cube('{file_to_cube}{2}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
-    queue.put(command1)
-    queue.put(command2)
+    command1 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, pool, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
+    command2 = f"cube('{file_to_cube}{2}', {m}, '{order}', {numMCTS}, pool, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
+    pool.map(command1)
+    pool.map(command2)
 
 def main(order, file_name_solve, numMCTS=2, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
-    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg
+    global pool, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg
     orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg = order, numMCTS, cutoff, cutoffv, d, n, m, s
-    queue = multiprocessing.JoinableQueue()
+    pool = multiprocessing.Joinablepool()
     num_worker_processes = multiprocessing.cpu_count()
 
     # Start worker processes
-    processes = [multiprocessing.Process(target=worker, args=(queue,)) for _ in range(num_worker_processes)]
+    processes = [multiprocessing.Process(target=worker, args=(pool,)) for _ in range(num_worker_processes)]
     for p in processes:
         p.start()
 
-    cube(file_name_solve, m, order, numMCTS, queue, s, cutoff, cutoffv, d, n, v)
+    cube(file_name_solve, m, order, numMCTS, pool, s, cutoff, cutoffv, d, n, v)
 
     # Wait for all tasks to be completed
-    queue.join()
+    pool.join()
 
     # Stop workers
     for _ in processes:
-        queue.put(None)
+        pool.map(None)
     for p in processes:
         p.join()
 
