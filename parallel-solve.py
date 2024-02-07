@@ -58,6 +58,7 @@ def worker(queue):
         else:
             run_cube_command(args, queue)
 
+@ray.remote
 def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
     command = f"./cadical-ks/build/cadical-ks {file_to_cube} --order {order} --unembeddable-check 17 -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000 | tee {file_to_cube}.simplog"
     # Run the command and capture the output
