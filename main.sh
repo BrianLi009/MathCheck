@@ -97,18 +97,33 @@ case $solve_mode in
 
         # Create $node number of files and distribute the names of found files across them
         for file_name in "${found_files[@]}"; do
-        # Determine the current output file to write to
-        output_file="${di}/node_${file_counter}.txt"
-        
-        # Write the current file name to the output file
-        echo "$file_name" >> "$output_file"
-        
-        # Update counters
-        ((counter++))
-        if [ "$counter" -ge "$files_per_node" ]; then
-            counter=0
-            ((file_counter++))
-        fi
+            # Determine the current output file to write to
+            output_file="${di}/node_${file_counter}.txt"
+            submit_file="${di}/node_${file_counter}.sh"
+            cat <<EOF > "$submit_file"
+#!/bin/bash
+#SBATCH --account=rrg-cbright
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=0
+#SBATCH --time=1-00:00
+
+module load python/3.10
+
+python parallel-solve.py $n $output_file $m $d $dv
+
+EOF
+            
+            # Write the current file name to the output file
+            echo "$file_name" >> "$output_file"
+            
+            # Update counters
+            ((counter++))
+            if [ "$counter" -ge "$files_per_node" ]; then
+                counter=0
+                ((file_counter++))
+            fi
         done
 
 
