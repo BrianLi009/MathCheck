@@ -39,8 +39,6 @@ def remove_related_files(new_file):
         #f"{base_file}.drat"
     ]
 
-    print (files_to_remove)
-
     for file in files_to_remove:
         try:
             os.remove(file)

@@ -47,14 +47,14 @@ d=${4:-d} #Cubing cutoff criteria, choose d(depth) as default #d, n, v
 dv=${5:-5} #By default cube to depth 5
 nodes=${6:-1} #Number of nodes to submit to if using -l
 
+di="${1}-${c}-${m}-${d}-${dv}-${nodes}-$(date +%Y%m%d%H%M%S)"
+
 # Dependency Setup
 ./dependency-setup.sh
 
-# Check if Instance Already Solved
-dir="."
-
 # Generate Instance
 ./generate-instance.sh $n $c
+mv constraints_${n}_${c} $di
 
 # Solve Based on Mode
 case $solve_mode in
@@ -62,19 +62,22 @@ case $solve_mode in
         echo "No cubing, just solve"
         
         echo "Simplifying $f for 10000 conflicts using CaDiCaL+CAS"
-        ./simplification/simplify-by-conflicts.sh constraints_${n}_${c} $n 10000
+        ./simplification/simplify-by-conflicts.sh ${di}/constraints_${n}_${c} $n 10000
 
         echo "Solving $f using MapleSAT+CAS"
-        ./maplesat-solve-verify.sh $n constraints_${n}_${c}.simp
+        ./maplesat-solve-verify.sh $n ${di}/constraints_${n}_${c}.simp
         ;;
     "seq_cubing")
         echo "Cubing and solving in parallel on local machine"
-        python parallel-solve.py $n constraints_${n}_${c} $m False $d $dv
+        python parallel-solve.py $n ${di}/constraints_${n}_${c} $m $d $dv
         ;;
     "par_cubing")
         echo "Cubing and solving in parallel on Compute Canada"
-        python parallel-solve.py $n constraints_${n}_${c} $m False $d $dv
+        python parallel-solve.py $n ${di}/constraints_${n}_${c} $m $d $dv
         i=1
+
+
+        ;;
 esac
 
 
