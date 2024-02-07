@@ -87,7 +87,7 @@ def worker(queue):
 def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
     command = f"./cadical-ks/build/cadical-ks {file_to_cube} --order {order} --unembeddable-check 17 -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000 | tee {file_to_cube}.simplog"
     # Run the command and capture the output
-    print (command)
+    os.remove(file_to_cube)
     result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Decode the output and error to utf-8
@@ -95,7 +95,6 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
 
     # Check if the output contains "c exit 20"
     if "c exit 20" in output:
-        os.remove(file_to_cube)
         os.remove(f'{file_to_cube}.simp')
         print("the cube is UNSAT")
         return
