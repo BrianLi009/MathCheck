@@ -50,28 +50,11 @@ def remove_related_files(new_file):
 
 def rename_file(filename):
     # Remove .simp from file name
-    print (filename)
+    
     if filename.endswith('.simp'):
         filename = filename[:-5]
     
-    # Split the filename to get the base and the binary number
-    parts = filename.rsplit('-', 1)
-    if len(parts) != 2:
-        return filename
-    
-    base, binary_number = parts
-
-    print (binary_number)
-    
-    # Check if the binary number contains only 0s and 1s
-    if not set(binary_number).issubset({'0', '1'}):
-        raise ValueError("Number after the last '-' contains characters other than 0 and 1.")
-    
-    # Convert binary number to base 10
-    base_10_number = int(binary_number, 2)
-    
-    # Return the new filename
-    return f"{base}-{base_10_number}"
+    return filename
     
 def worker(queue):
     while True:
@@ -107,8 +90,9 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
     var_removed = v + int(result.stdout.strip())
 
     print (f'{var_removed} variables removed from the cube')
-    original_file = file_to_cube
-    file_to_cube = f"{file_to_cube}.simp"
+
+    subprocess.run(['rm', '-f', file_to_cube], check=True)
+    os.rename(f"{file_to_cube}.simp", rename_file(file_to_cube))
 
     if cutoff == 'd':
         if d >= cutoffv:
@@ -134,7 +118,6 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
         subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.cubes -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 1 > {file_to_cube}-{0}", shell=True)
     subprocess.run(f"./gen_cubes/apply.sh {file_to_cube} {file_to_cube}.cubes 2 > {file_to_cube}-{1}", shell=True)
-    subprocess.run(['rm', '-f', original_file], check=True)
     subprocess.run(['rm', '-f', file_to_cube], check=True)
     subprocess.run(['rm', '-f', file_to_cube + ".cubes"], check=True)
     d += 1
