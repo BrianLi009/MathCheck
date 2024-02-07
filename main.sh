@@ -85,7 +85,7 @@ case $solve_mode in
 
         # Calculate the number of files to distribute names across and initialize counters
         total_files=${#found_files[@]}
-        files_per_node=$(( (total_files + node - 1) / node )) # Ceiling division to evenly distribute
+        files_per_node=$(( (total_files + $node - 1) / $node )) # Ceiling division to evenly distribute
         counter=0
         file_counter=1
 
