@@ -20,7 +20,7 @@ def run_command(command):
             remove_related_files(file_to_cube)
         else:
             print("Continue cubing this subproblem...")
-            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{sg}', '{cutoffg}', {cutoffvg}, {dg}, {ng})"
+            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, {ng})"
             queue.put(command)
 
     except Exception as e:
@@ -65,7 +65,7 @@ def worker(queue):
             run_cube_command(args)
         queue.task_done()
 
-def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5, d=0, n=0, v=0):
+def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0, v=0):
     command = f"./cadical-ks/build/cadical-ks {file_to_cube} --order {order} --unembeddable-check 17 -o {file_to_cube}.simp -e {file_to_cube}.ext -n -c 10000 | tee {file_to_cube}.simplog"
     # Run the command and capture the output
     result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -119,17 +119,17 @@ def cube(file_to_cube, m, order, numMCTS, queue, s='True', cutoff='d', cutoffv=5
     subprocess.run(['rm', '-f', file_to_cube], check=True)
     subprocess.run(['rm', '-f', file_to_cube + ".cubes"], check=True)
     d += 1
-    command1 = f"cube('{file_to_cube}{0}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
-    command2 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
+    command1 = f"cube('{file_to_cube}{0}', {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
+    command2 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0, v=0, s='True'):
+def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0, v=0):
     
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
-    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg
-    orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, sg = order, numMCTS, cutoff, cutoffv, d, n, m, s
+    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg
+    orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg = order, numMCTS, cutoff, cutoffv, d, n, m
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
 
@@ -145,20 +145,13 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, d=0, n=0, v=0
     # Check if the first line starts with 'p cnf'
     if first_line.startswith('p cnf'):
         print("input file is a CNF file")
-        cube(file_name_solve, m, order, numMCTS, queue, s, cutoff, cutoffv, d, n, v)
+        cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, n, v)
     else:
-        print("input file contains name of multiple CNF file")
+        print("input file contains name of multiple CNF file, solving them first")
         instance_lst = [line.strip() for line in file]
-        if s == 'True':
-            print ("solving instances first...")
-            for instance in instance_lst:
-                command = f"./maplesat-solve-verify.sh {order} {instance}"
-                queue.put(command)
-        else:
-            print ("cubing each instance first...")
-            for instance in instance_lst:
-                command = f"cube('{instance}', {m}, '{order}', {numMCTS}, queue, '{sg}', '{cutoff}', {cutoffv}, {d}, {n}, {v})"
-                queue.put(command)
+        for instance in instance_lst:
+            command = f"./maplesat-solve-verify.sh {order} {instance}"
+            queue.put(command)
 
     # Wait for all tasks to be completed
     queue.join()
