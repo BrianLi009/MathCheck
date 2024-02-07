@@ -98,7 +98,7 @@ case $solve_mode in
         # Create $node number of files and distribute the names of found files across them
         for file_name in "${found_files[@]}"; do
         # Determine the current output file to write to
-        output_file="distribution_${file_counter}.txt"
+        output_file="${di}/node_${file_counter}.txt"
         
         # Write the current file name to the output file
         echo "$file_name" >> "$output_file"
