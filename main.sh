@@ -52,6 +52,8 @@ di="${1}-${c}-${m}-${d}-${dv}-${nodes}-$(date +%Y%m%d%H%M%S)"
 # Dependency Setup
 ./dependency-setup.sh
 
+mkdir $di
+
 # Generate Instance
 ./generate-instance.sh $n $c
 mv constraints_${n}_${c} $di
