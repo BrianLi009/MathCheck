@@ -34,7 +34,7 @@ def remove_related_files(new_file):
     files_to_remove = [
         new_file,
         #f"{new_file}.permcheck",
-        f"{new_file}.nonembed",
+        #f"{new_file}.nonembed",
         f"{new_file}.drat",
         #f"{base_file}.drat"
     ]
