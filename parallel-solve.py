@@ -60,7 +60,7 @@ def worker(queue):
         if args is None:
             queue.task_done()
             break
-        if args.startswith("./maplesat"):
+        if args.startswith("./solve-verify"):
             run_command(args)
         else:
             run_cube_command(args)
