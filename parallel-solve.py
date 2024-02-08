@@ -101,19 +101,19 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     if cutoff == 'd':
         if d >= cutoffv:
             if solveaftercubeg == 'True':
-                command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
+                command = f"./solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
     if cutoff == 'n':
         if n >= cutoffv:
             if solveaftercubeg == 'True':
-                command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
+                command = f"./solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
     if cutoff == 'v':
         if var_removed >= cutoffv:
             if solveaftercubeg == 'True':
-                command = f"./maplesat-solve-verify.sh {order} {file_to_cube}"
+                command = f"./solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
     if int(numMCTS) == 0:
@@ -161,7 +161,7 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercub
             # Prepend the already read first line to the list of subsequent lines
             instance_lst = [first_line] + [line.strip() for line in file]
             for instance in instance_lst:
-                command = f"./maplesat-solve-verify.sh {order} {instance}"
+                command = f"./solve-verify.sh {order} {instance}"
                 queue.put(command)
 
     # Wait for all tasks to be completed

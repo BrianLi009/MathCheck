@@ -67,7 +67,7 @@ case $solve_mode in
         ./simplification/simplify-by-conflicts.sh ${di}/constraints_${n}_${c} $n 10000
 
         echo "Solving $f using MapleSAT+CAS"
-        ./maplesat-solve-verify.sh $n ${di}/constraints_${n}_${c}.simp
+        ./solve-verify.sh $n ${di}/constraints_${n}_${c}.simp
         ;;
     "seq_cubing")
         echo "Cubing and solving in parallel on local machine"

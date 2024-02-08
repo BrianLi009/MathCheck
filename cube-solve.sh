@@ -25,7 +25,7 @@ new_index=$((numline))
 for i in $(seq 1 $new_index) #1-based indexing for cubes
     do 
         command1="./gen_cubes/apply.sh $f $cube_file $i > $cube_file$i.adj"
-        command2="./maplesat-solve-verify.sh $n $cube_file$i.adj"
+        command2="./solve-verify.sh $n $cube_file$i.adj"
         command="$command1 && $command2"
         echo $command >> $d/$v/solve.commands
         echo $command
