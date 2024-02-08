@@ -152,7 +152,8 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercub
             cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, n, v)
         else:
             print("input file contains name of multiple CNF file, solving them first")
-            instance_lst = [line.strip() for line in file]
+            # Prepend the already read first line to the list of subsequent lines
+            instance_lst = [first_line] + [line.strip() for line in file]
             for instance in instance_lst:
                 command = f"./maplesat-solve-verify.sh {order} {instance}"
                 queue.put(command)
