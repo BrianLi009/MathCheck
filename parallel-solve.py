@@ -85,7 +85,8 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
 
     if file_to_cube != file_name_solveg:
         previous_ext = file_to_cube[:-1] + ".ext"
-        command = f'cat {previous_ext} >> {file_to_cube}.ext && rm {previous_ext}'
+        command = f'cat {previous_ext} >> {file_to_cube}.ext'
+        print (command)
         subprocess.run(command, shell=True)
 
     command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_cube}.ext | awk '$0<={mg}' | sort | uniq | wc -l"
