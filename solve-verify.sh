@@ -24,7 +24,7 @@ Options:
     <f>: file name of the CNF instance to be solved
 " && exit
 
-./maplesat-ks/simp/maplesat_static $f $f.drat -perm-out=$f.perm -exhaustive=$f.exhaust -order=$n -no-pre -minclause -max-proof-size=7168 -unembeddable-check=17 -unembeddable-out="$f.nonembed" | tee $f.log
+./cadical-ks/build/cadical-ks $f $f.drat --order $n --unembeddable-check 17 --perm-out $f.perm --proofsize 7168 | tee $f.log
 
 if ! grep -q "UNSAT" "$f.log" || [ "$s" == "-s" ]; then
     echo "instance not solved, no need to verify unless learnt clause or skipping verification"
