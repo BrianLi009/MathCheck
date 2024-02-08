@@ -58,6 +58,7 @@ def worker(queue):
     while True:
         args = queue.get()
         if args is None:
+            queue.task_done()
             break
         if args.startswith("./maplesat"):
             run_command(args)
