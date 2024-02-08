@@ -16,7 +16,7 @@ Description:
     Script for solving and generating drat proof for instance
 
 Usage:
-    ./maplesat-solve-verify.sh n f e
+    ./solve-verify.sh n f e
 
 Options:
     [-l]: generate learnt clauses
