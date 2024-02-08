@@ -83,6 +83,11 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     else:
         n += 1
 
+    if file_to_cube != file_name_solveg:
+        previous_ext = file_to_cube[:-1] + ".ext"
+        command = f'cat {previous_ext} >> {file_to_cube}.ext && rm {previous_ext}'
+        subprocess.run(command, shell=True)
+
     command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_cube}.ext | awk '$0<={mg}' | sort | uniq | wc -l"
 
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
@@ -133,8 +138,8 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercub
     
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
-    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, solveaftercubeg
-    orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, solveaftercubeg = order, numMCTS, cutoff, cutoffv, d, n, m, solveaftercube
+    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, solveaftercubeg, file_name_solveg
+    orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, solveaftercubeg, file_name_solveg = order, numMCTS, cutoff, cutoffv, d, n, m, solveaftercube, file_name_solve
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
 
