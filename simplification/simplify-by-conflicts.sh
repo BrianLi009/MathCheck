@@ -36,7 +36,7 @@ i=1
 
 if [ "$s" != "true" ]; then
     echo "verifying the simplification now..."
-    ./drat-trim/drat-trim "$f_dir" "$f_dir.drat" -f | tee log/"$f_base".simp1.verify
+    ./drat-trim/drat-trim "$f_dir" "$f_dir.drat" -f
     if ! grep -E "s DERIVATION|s VERIFIED" -q log/"$f_base".simp1.verify; then
         echo "ERROR: Proof not verified"
     fi
