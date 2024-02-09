@@ -20,7 +20,7 @@ def run_command(command):
             remove_related_files(file_to_cube)
         else:
             print("Continue cubing this subproblem...")
-            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, {ng})"
+            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg})"
             queue.put(command)
 
     except Exception as e:
@@ -66,7 +66,7 @@ def worker(queue):
             run_cube_command(args)
         queue.task_done()
 
-def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0, v=0):
+def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, v=0):
     command = f"./simplification/simplify-by-conflicts.sh -s {file_to_cube} {order} 10000 | tee {file_to_cube}.simplog"
     # Run the command and capture the output
     print (command)
@@ -127,21 +127,20 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, n=0
     subprocess.run(['rm', '-f', file_to_cube], check=True)
     subprocess.run(['rm', '-f', file_to_cube + ".cubes"], check=True)
     d += 1
-    command1 = f"cube('{file_to_cube}{0}', {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
-    command2 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, {n}, {var_removed})"
+    command1 = f"cube('{file_to_cube}{0}', {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, {var_removed})"
+    command2 = f"cube('{file_to_cube}{1}', {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, {var_removed})"
     queue.put(command1)
     queue.put(command2)
 
 def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True'):
 
     d=0
-    n=0
     v=0
     
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
-    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, solveaftercubeg, file_name_solveg
-    orderg, numMCTSg, cutoffg, cutoffvg, dg, ng, mg, solveaftercubeg, file_name_solveg = order, numMCTS, cutoff, cutoffv, d, n, m, solveaftercube, file_name_solve
+    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg
+    orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg = order, numMCTS, cutoff, cutoffv, d, m, solveaftercube, file_name_solve
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
 
@@ -157,7 +156,7 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercub
         # Check if the first line starts with 'p cnf'
         if first_line.startswith('p cnf'):
             print("input file is a CNF file")
-            cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, n, v)
+            cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, v)
         else:
             print("input file contains name of multiple CNF file, solving them first")
             # Prepend the already read first line to the list of subsequent lines

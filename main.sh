@@ -43,7 +43,7 @@ fi
 n=$1 # Order
 c=${2:-0.5} # Color percentage
 m=${3:-2} #Num of MCTS simulations. m=0 activate march
-d=${4:-d} #Cubing cutoff criteria, choose d(depth) as default #d, n, v
+d=${4:-d} #Cubing cutoff criteria, choose d(depth) as default #d, v
 dv=${5:-5} #By default cube to depth 5
 nodes=${6:-1} #Number of nodes to submit to if using -l
 
