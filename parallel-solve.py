@@ -81,8 +81,6 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, v=0
         os.remove(f'{file_to_cube}.simp')
         print("the cube is UNSAT")
         return
-    else:
-        n += 1
 
     if file_to_cube != file_name_solveg:
         previous_ext = file_to_cube[:-1] + ".ext"
@@ -102,12 +100,6 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, v=0
 
     if cutoff == 'd':
         if d >= cutoffv:
-            if solveaftercubeg == 'True':
-                command = f"./solve-verify.sh {order} {file_to_cube}"
-                queue.put(command)
-            return
-    if cutoff == 'n':
-        if n >= cutoffv:
             if solveaftercubeg == 'True':
                 command = f"./solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
