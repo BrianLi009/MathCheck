@@ -68,5 +68,10 @@ else
     cd -
 fi 
 
+cd alpha-zero-general
+git submodule init
+git submodule update
+cd ..
+
 
 echo "all dependency properly installed"
