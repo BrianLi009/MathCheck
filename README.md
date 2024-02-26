@@ -1,29 +1,35 @@
-`embedability`: Check whether Kochen–Specker candidates are embeddable, if a candidate is indeed embeddable, it is a Kochen–Specker graph as desired. Can be ran using check-embed.sh
+# Kochen-Specker Graph Generation and Verification
 
-`gen_cubes`: Generate the cubes to used in cube-and-conquer
+This repository contains a collection of scripts and tools for generating and verifying Kochen-Specker graphs. 
 
-`gen_instance`: Include scripts that generate SAT instance of certain order with satisfying certain constraints. Can be ran using generate-instance.sh
+## Components
 
-`maplesat-ks`: MapleSAT solver with orderly generation (SAT + CAS)
+- `embedability`: Checks whether Kochen–Specker candidates are embeddable. If a candidate is embeddable, it is a Kochen–Specker graph. Use `check-embed.sh` to run this check.
 
-`cadical-ks`: CaDiCaL solver with orderly generation (SAT + CAS)
+- `gen_cubes`: Generates the cubes used in the cube-and-conquer approach.
 
-`simplification`: Contains scripts relevant to simplification in the pipeline
+- `gen_instance`: Includes scripts that generate SAT instances of a certain order satisfying certain constraints. Use `generate-instance.sh` to run these scripts.
 
-`generate-instance.sh`: Script that initiates the instance generation in order n. Can be called with ./generate-instance.sh n
+- `maplesat-ks`: A MapleSAT solver with orderly generation (SAT + CAS).
 
-`cube-solve.sh`: Script that performs iterative cubing, merges cubes into the instance, simplifies with CaDiCaL+CAS, and solves with MapleSAT+CAS
+- `cadical-ks`: A CaDiCaL solver with orderly generation (SAT + CAS).
 
-`check-embed`: Script that performs embeddability checking on n.exhaust, which is the file that contains all Kochen–Specker candidates output by MapleSAT. Can be called with ./check-embed.sh n (graph order)
+- `simplification`: Contains scripts relevant to the simplification process in the pipeline.
 
-`dependency-setup.sh`: Script that sets up all dependencies; see the script documentation for details. Can be called with ./dependency-setup.sh
+## Scripts
 
-`main.sh`: Driver script that connects all scripts stated above; running this script will execute the entire pipeline. Can be called with ./main.sh n (graph order)
+- `generate-instance.sh`: Initiates the instance generation in order `n`. Run with `./generate-instance.sh n`.
 
-`verify.sh`: Verify all KS candidates satisfy the constraints
+- `cube-solve.sh`: Performs iterative cubing, merges cubes into the instance, simplifies with CaDiCaL+CAS, and solves with MapleSAT+CAS.
 
-`Pipeline`:
+- `check-embed.sh`: Performs embeddability checking on `n.exhaust`, which is the file that contains all Kochen–Specker candidates output by MapleSAT. Run with `./check-embed.sh n` (graph order).
 
-dependencies: MapleSAT-ks, CaDiCaL-ks, NetworkX, z3-solver, and AlphaMapleSAT. Run dependency-setup.sh for dependency setup
+- `dependency-setup.sh`: Sets up all dependencies. See the script documentation for details. Run with `./dependency-setup.sh`.
 
-![Showing pipeline and which directory to enter for each step](pipeline.png?raw=true "Pipeline")
+- `main.sh`: Driver script that connects all scripts stated above. Running this script will execute the entire pipeline. Run with `./main.sh n` (graph order).
+
+- `verify.sh`: Verifies all KS candidates satisfy the constraints.
+
+## Pipeline
+
+The pipeline depends on MapleSAT-ks, CaDiCaL-ks, NetworkX, z3-solver, and AlphaMapleSAT. Run `dependency-setup.sh` for dependency setup.
