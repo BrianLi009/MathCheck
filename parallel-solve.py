@@ -20,7 +20,8 @@ def run_command(command):
             remove_related_files(file_to_cube)
         else:
             print("Continue cubing this subproblem...")
-            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg})"
+            local_cutoff = cutoffvg + 40
+            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {local_cutoff}, {dg})"
             queue.put(command)
 
     except Exception as e:
@@ -126,7 +127,7 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, v=0
 
 def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True'):
 
-    d=0
+    d=0 
     v=0
     
     cutoffv = int(cutoffv)
