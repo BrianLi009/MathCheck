@@ -112,7 +112,7 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, ext
         if var_removed >= cutoffv:
             if extension == "True":
                 cutoffv == var_removed + 30
-                print ("cubing extended cube with " + str(cutoff) + " variables removed as the cutoff")
+                print ("cubing extended cube with " + str(cutoffv) + " variables removed as the cutoff")
             elif solveaftercubeg == 'True':
                 command = f"./solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
