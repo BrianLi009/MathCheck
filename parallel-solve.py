@@ -92,6 +92,8 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, ext
 
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
     var_removed = int(result.stdout.strip())
+    if extension == "True":
+        cutoffv = var_removed + 40
 
     print (f'{var_removed} variables removed from the cube')
 
@@ -106,19 +108,11 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, ext
                 queue.put(command)
             return
     if cutoff == 'v':
-        print ("SANITY CHECK")
-        print (var_removed)
-        print (cutoffv)
-        print (extension)
         if var_removed >= cutoffv:
-            if extension == "True":
-                cutoffv = var_removed + 40
-                print ("cubing extended cube with " + str(cutoffv) + " variables removed as the cutoff")
-            elif solveaftercubeg == 'True':
+            if solveaftercubeg == 'True':
                 command = f"./solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
-            else:
-                return
+            return
     if int(numMCTS) == 0:
         subprocess.run(f"./gen_cubes/march_cu/march_cu {file_to_cube} -o {file_to_cube}.cubes -d 1 -m {m}", shell=True)
     else:
