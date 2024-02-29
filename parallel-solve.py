@@ -20,8 +20,7 @@ def run_command(command):
             remove_related_files(file_to_cube)
         else:
             print("Continue cubing this subproblem...")
-            local_cutoff = cutoffvg + 40
-            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {local_cutoff}, {dg})"
+            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, True)"
             queue.put(command)
 
     except Exception as e:
@@ -67,7 +66,7 @@ def worker(queue):
             run_cube_command(args)
         queue.task_done()
 
-def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, v=0):
+def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, extension="False"):
     command = f"./simplification/simplify-by-conflicts.sh -s {file_to_cube} {order} 10000 | tee {file_to_cube}.simplog"
     # Run the command and capture the output
     print (command)
@@ -107,10 +106,13 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, v=0
             return
     if cutoff == 'v':
         if var_removed >= cutoffv:
-            if solveaftercubeg == 'True':
+            if extension == "True":
+                cutoffv == var_removed + 30
+            elif solveaftercubeg == 'True':
                 command = f"./solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
-            return
+            else:
+                return
     if int(numMCTS) == 0:
         subprocess.run(f"./gen_cubes/march_cu/march_cu {file_to_cube} -o {file_to_cube}.cubes -d 1 -m {m}", shell=True)
     else:
@@ -128,7 +130,6 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, v=0
 def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True'):
 
     d=0 
-    v=0
     
     cutoffv = int(cutoffv)
     m = int(int(order)*(int(order)-1)/2)
@@ -149,7 +150,7 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercub
         # Check if the first line starts with 'p cnf'
         if first_line.startswith('p cnf'):
             print("input file is a CNF file")
-            cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d, v)
+            cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d)
         else:
             print("input file contains name of multiple CNF file, solving them first")
             # Prepend the already read first line to the list of subsequent lines
