@@ -18,6 +18,7 @@ def run_command(command):
         if "UNSAT" in stdout.decode():
             print("solved")
             remove_related_files(file_to_cube)
+            process.terminate()
         else:
             print("Continue cubing this subproblem...")
             command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, 'True')"
