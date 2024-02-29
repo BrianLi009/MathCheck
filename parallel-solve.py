@@ -105,6 +105,10 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, ext
                 queue.put(command)
             return
     if cutoff == 'v':
+        print ("SANITY CHECK")
+        print (var_removed)
+        print (cutoffv)
+        print (extension)
         if var_removed >= cutoffv:
             if extension == "True":
                 cutoffv == var_removed + 30
