@@ -104,7 +104,7 @@ case $solve_mode in
 #!/bin/bash
 #SBATCH --account=rrg-cbright
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=32
+#SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=0
 #SBATCH --time=1-00:00
