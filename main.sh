@@ -81,8 +81,8 @@ case $solve_mode in
         # Populate the array with the names of files found by the find command
         while IFS= read -r -d $'\0' file; do
         found_files+=("$file")
-        done < <(find "${di}" ! -name '*.drat' ! -name '*.ext' ! -name '*.ext1' ! -name '*.simp1' ! -name '*.simplog' ! -name '*.cubes' -print0)
-
+        done < <(find "${di}" -mindepth 1 ! -name '*.drat' ! -name '*.ext' ! -name '*.ext1' ! -name '*.simp1' ! -name '*.simplog' ! -name '*.cubes' -print0)
+        
         # Calculate the number of files to distribute names across and initialize counters
         total_files=${#found_files[@]}
         files_per_node=$(( (total_files + nodes - 1) / nodes )) # Ceiling division to evenly distribute
