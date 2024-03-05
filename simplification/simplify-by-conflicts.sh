@@ -32,7 +32,7 @@ f_base=$(basename "$f")
 # Simplify m seconds
 echo "simplifying for $m conflicts"
 i=1
-./cadical-ks/build/cadical-ks "$f_dir" "$f_dir.drat" --order $o --unembeddable-check 17 -o "$f_dir".simp1 -e "$f_dir".ext1 -n -c $m
+./cadical-ks/build/cadical-ks "$f_dir" "$f_dir.drat" --order $o --unembeddable-check 17 -o "$f_dir".simp1 -e "$f_dir".ext -n -c $m
 
 if [ "$s" != "true" ]; then
     echo "verifying the simplification now..."
@@ -44,5 +44,5 @@ if [ "$s" != "true" ]; then
 fi
 
 # Output final simplified instance
-./gen_cubes/concat-edge.sh $o "$f_dir".simp1 "$f_dir".ext1 > "$f_dir".simp
-rm -f "$f_dir".simp1 "$f_dir".ext1
+./gen_cubes/concat-edge.sh $o "$f_dir".simp1 "$f_dir".ext > "$f_dir".simp
+rm -f "$f_dir".simp1
