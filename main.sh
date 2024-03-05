@@ -11,8 +11,8 @@ Usage:
 
 Options:
     -n: No cubing, just solve
-    -s: Cubing with sequential solving
-    -l: Cubing with parallel solving
+    -s: Cubing with parallel solving on one node
+    -l: Cubing with parallel solving across different nodes
     <n>: Order of the instance/number of vertices in the graph
     <c>: Percentage of vertices that are color 1 (default: 0.5)
     <r>: Number of variables to remove in cubing (default: 0, assuming no cubing needed)
@@ -25,8 +25,8 @@ while getopts "nsl" opt
 do
     case $opt in
         n) solve_mode="no_cubing" ;;
-        s) solve_mode="seq_cubing" ;;
-        l) solve_mode="par_cubing" ;;
+        s) solve_mode="sin_cubing" ;;
+        l) solve_mode="mul_cubing" ;;
         *) echo "Invalid option: -$OPTARG. Use -n, -s, or -l. Use -h or --help for help" >&2
            exit 1 ;;
     esac
@@ -69,11 +69,11 @@ case $solve_mode in
         echo "Solving $f using MapleSAT+CAS"
         ./solve-verify.sh $n ${di}/constraints_${n}_${c}.simp
         ;;
-    "seq_cubing")
+    "sin_cubing")
         echo "Cubing and solving in parallel on local machine"
         python parallel-solve.py $n ${di}/constraints_${n}_${c} $m $d $dv
         ;;
-    "par_cubing")
+    "mul_cubing")
         echo "Cubing and solving in parallel on Compute Canada"
         python parallel-solve.py $n ${di}/constraints_${n}_${c} $m $d $dv False
         found_files=()
