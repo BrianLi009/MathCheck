@@ -15,8 +15,10 @@ Options:
     -l: Cubing with parallel solving across different nodes
     <n>: Order of the instance/number of vertices in the graph
     <c>: Percentage of vertices that are color 1 (default: 0.5)
-    <r>: Number of variables to remove in cubing (default: 0, assuming no cubing needed)
-    <a>: Amount of additional variables to remove for each cubing call (default: 0)
+    <m>: Number of MCTS simulations (default: 2)
+    <d>: Cubing cutoff criteria, choose d(depth) as default #d, v (default: d)
+    <dv>: By default cube to depth 5 (default: 5)
+    <nodes>: Number of nodes to submit to if using -l (default: 1)
 " && exit
 
 # Option Handling
