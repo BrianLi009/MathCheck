@@ -83,11 +83,6 @@ def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, ext
         print("the cube is UNSAT")
         return
 
-    if file_to_cube != file_name_solveg:
-        previous_ext = file_to_cube[:-1] + ".ext"
-        command = f'cat {previous_ext} >> {file_to_cube}.ext'
-        subprocess.run(command, shell=True)
-
     command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_cube}.ext | awk '$0<={mg}' | sort | uniq | wc -l"
 
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
