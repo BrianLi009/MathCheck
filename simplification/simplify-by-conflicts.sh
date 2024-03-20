@@ -40,7 +40,7 @@ i=1
 if [ "$s" != "true" ]; then
   echo "verifying the simplification now..."
   if grep -q "exit 20" "$f_dir".simplog; then
-    echo "CaDiCaL returns UNKSAT, using backward proof checking..."
+    echo "CaDiCaL returns UNSAT, using backward proof checking..."
     ./drat-trim/drat-trim "$f_dir" "$f_dir.drat" | tee "$f_dir".verify
   else
     echo "CaDiCaL returns UNKNOWN, using forward proof checking..."
