@@ -68,7 +68,7 @@ def worker(queue):
         queue.task_done()
 
 def cube(file_to_cube, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, extension="False"):
-    command = f"./simplification/simplify-by-conflicts.sh -s {file_to_cube} {order} 10000 | tee {file_to_cube}.simplog"
+    command = f"./simplification/simplify-by-conflicts.sh -s {file_to_cube} {order} 10000"
     # Run the command and capture the output
     print (command)
     result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
