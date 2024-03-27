@@ -89,7 +89,7 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             print("the cube is UNSAT")
             return
     
-    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_check} | awk '$0<={m}' | sort | uniq | wc -l"
+    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\1/' < {file_to_check} | awk '$0<={m}' | sort | uniq | wc -l"
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
     var_removed = int(result.stdout.strip())
     if extension == "True":
