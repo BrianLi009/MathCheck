@@ -70,12 +70,11 @@ def worker(queue):
 
 def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, extension="False"):
     if cube is not None:
-        command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {original_file}-{cube}-{index} && ./simplification/simplify-by-conflicts.sh -s {original_file}-{cube}-{index} {order} 10000"
-        file_to_cube = f"{original_file}-{cube}-{index}.simp"
-        simplog_file = f"{original_file}-{cube}-{index}.simplog"
-        file_to_check = f"{original_file}-{cube}-{index}.ext"
+        command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {original_file}{index} && ./simplification/simplify-by-conflicts.sh -s {original_file}{index} {order} 10000"
+        file_to_cube = f"{original_file}{index}.simp"
+        simplog_file = f"{original_file}{index}.simplog"
+        file_to_check = f"{original_file}{index}.ext"
     else:
-        cube = "1"
         command = f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000"
         file_to_cube = f"{original_file}.simp"
         simplog_file = f"{original_file}.simplog"
@@ -90,7 +89,7 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             print("the cube is UNSAT")
             return
     
-    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_check} | awk '$0<={mg}' | sort | uniq | wc -l"
+    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_check} | awk '$0<={m}' | sort | uniq | wc -l"
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
     var_removed = int(result.stdout.strip())
     if extension == "True":
@@ -110,14 +109,16 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
                 command = f"./solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
-    subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {original_file}-{cube}-{index}.temp -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
+    subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.temp -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
     d += 1
     if cube is not None:
-        subprocess.run(f'''sed -E "s/^a (.*)/$(head -n {index} {cube} | tail -n 1 | sed -E 's/(.*) 0/\\1/') \\1/" {original_file}-{cube}-{index}.temp > {original_file}-{cube}-{index}.cubes''', shell=True)
+        subprocess.run(f'''sed -E "s/^a (.*)/$(head -n {index} {cube} | tail -n 1 | sed -E 's/(.*) 0/\\1/') \\1/" {file_to_cube}.temp > {file_to_cube}-{index}.cubes''', shell=True)
+        next_cube = f'{file_to_cube}-{index}.cubes'
     else:
-        subprocess.run(f'mv {original_file}-{cube}-{index}.temp {original_file}-{cube}-{index}.cubes', shell=True)
-    command1 = f"cube('{original_file}', '{original_file}-{cube}-{index}.cubes', 1, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
-    command2 = f"cube('{original_file}', '{original_file}-{cube}-{index}.cubes', 2, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
+        subprocess.run(f'mv {file_to_cube}.temp {file_to_cube}.cubes', shell=True)
+        next_cube = f'{file_to_cube}.cubes'
+    command1 = f"cube('{original_file}', '{next_cube}', 1, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
+    command2 = f"cube('{original_file}', '{next_cube}', 2, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
     queue.put(command1)
     queue.put(command2)
 
