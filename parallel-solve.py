@@ -73,10 +73,12 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
         command = f"./gen_cubes/apply.sh {original_file} cube {index} > {original_file}{index} && ./simplification/simplify-by-conflicts.sh -s {original_file}{index} {order} 10000"
         file_to_cube = f"{original_file}{index}.simp"
         simplog_file = f"{original_file}{index}.simplog"
+        file_to_check = f"{original_file}{index}.ext"
     else:
         command = f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000"
         file_to_cube = f"{original_file}.simp"
         simplog_file = f"{original_file}.simplog"
+        file_to_check = f"{original_file}.ext"
     subprocess.run(command, shell=True)
 
     # Check if the output contains "c exit 20"
@@ -87,8 +89,7 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             print("the cube is UNSAT")
             return
     
-    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {original_file}{index}.ext | awk '$0<={m}' | sort | uniq | wc -l"
-
+    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_check} | awk '$0<={m}' | sort | uniq | wc -l"
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
     var_removed = int(result.stdout.strip())
     if extension == "True":
