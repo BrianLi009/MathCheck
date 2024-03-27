@@ -1,6 +1,7 @@
 import subprocess
 import multiprocessing
 import os
+import queue
 
 def run_command(command):
     process_id = os.getpid()
@@ -71,21 +72,22 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     if cube is not None:
         command = f"./gen_cubes/apply.sh {original_file} cube {index} > {original_file}{index} && ./simplification/simplify-by-conflicts.sh -s {original_file}{index} {order} 10000"
         file_to_cube = f"{original_file}{index}.simp"
+        simplog_file = f"{original_file}{index}.simplog"
     else:
         command = f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000"
         file_to_cube = f"{original_file}.simp"
+        simplog_file = f"{original_file}.simplog"
     subprocess.run(command, shell=True)
 
     # Check if the output contains "c exit 20"
-    file_path = f"{original_file}{index}.simplog"
-    with open(f"{original_file}{index}.simplog", "r") as file:
+    with open(simplog_file, "r") as file:
         if "c exit 20" in file.read():
             os.remove(f'{original_file}{index}')
-            os.remove(f'{original_file}{index}.simp')
+            os.remove(f'{file_to_cube}')
             print("the cube is UNSAT")
             return
     
-    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {original_file}{index}.ext | awk '$0<={mg}' | sort | uniq | wc -l"
+    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {original_file}{index}.ext | awk '$0<={m}' | sort | uniq | wc -l"
 
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
     var_removed = int(result.stdout.strip())
@@ -108,10 +110,9 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             return
     subprocess.run(f"python -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {original_file}{index}.temp -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
     d += 1
-    {file_to_cube}.cubes
     subprocess.run(f'''sed -E "s/^a (.*)/$(head -n {index} {cube} | tail -n 1 | sed -E 's/(.*) 0/\\1/') \\1/" {original_file}{index}.temp > {original_file}{index}.cubes''', shell=True)
-    command1 = f"cube('{original_file}', {original_file}{index}.cubes, 1, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
-    command2 = f"cube('{original_file}', {original_file}{index}.cubes, 2, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
+    command1 = f"cube('{original_file}', '{original_file}{index}.cubes', 1, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
+    command2 = f"cube('{original_file}', '{original_file}{index}.cubes', 2, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
     queue.put(command1)
     queue.put(command2)
 
@@ -138,7 +139,7 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercub
         # Check if the first line starts with 'p cnf'
         if first_line.startswith('p cnf'):
             print("input file is a CNF file")
-            cube(file_name_solve, m, order, numMCTS, queue, cutoff, cutoffv, d)
+            cube(file_name_solve, None, 0, m, order, numMCTS, queue, cutoff, cutoffv, d)
         else:
             print("input file contains name of multiple CNF file, solving them first")
             # Prepend the already read first line to the list of subsequent lines
