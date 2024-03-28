@@ -22,7 +22,7 @@ def run_command(command):
             process.terminate()
         else:
             print("Continue cubing this subproblem...")
-            command = f"cube('{file_to_cube}', N, 0, {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, 'True')"
+            command = f"cube('{file_to_cube}', 'N', 0, {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, 'True')"
             queue.put(command)
 
     except Exception as e:
