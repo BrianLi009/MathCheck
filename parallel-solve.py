@@ -22,7 +22,7 @@ def run_command(command):
             process.terminate()
         else:
             print("Continue cubing this subproblem...")
-            command = f"cube('{file_to_cube}', {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, 'True')"
+            command = f"cube('{file_to_cube}', N, 0, {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, 'True')"
             queue.put(command)
 
     except Exception as e:
@@ -69,7 +69,7 @@ def worker(queue):
         queue.task_done()
 
 def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, extension="False"):
-    if cube is not None:
+    if cube == "N":
         command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {original_file}{cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh -s {original_file}{cube}{index}.cnf {order} 10000"
         file_to_cube = f"{original_file}{cube}{index}.cnf.simp"
         simplog_file = f"{original_file}{cube}{index}.cnf.simplog"
@@ -113,8 +113,8 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
         subprocess.run(f'''sed -E "s/^a (.*)/$(head -n {index} {cube} | tail -n 1 | sed -E 's/(.*) 0/\\1/') \\1/" {file_to_cube}.temp > {cube}{index}''', shell=True)
         next_cube = f'{cube}{index}'
     else:
-        subprocess.run(f'mv {file_to_cube}.temp 0', shell=True)
-        next_cube = f'0'
+        subprocess.run(f'mv {file_to_cube}.temp {original_file}0', shell=True)
+        next_cube = f'{original_file}0'
     command1 = f"cube('{original_file}', '{next_cube}', 1, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
     command2 = f"cube('{original_file}', '{next_cube}', 2, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
     queue.put(command1)
@@ -143,7 +143,7 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercub
         # Check if the first line starts with 'p cnf'
         if first_line.startswith('p cnf'):
             print("input file is a CNF file")
-            cube(file_name_solve, None, 0, m, order, numMCTS, queue, cutoff, cutoffv, d)
+            cube(file_name_solve, "N", 0, m, order, numMCTS, queue, cutoff, cutoffv, d)
         else:
             print("input file contains name of multiple CNF file, solving them first")
             # Prepend the already read first line to the list of subsequent lines
