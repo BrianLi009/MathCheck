@@ -70,10 +70,10 @@ def worker(queue):
 
 def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, extension="False"):
     if cube != "N":
-        command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {original_file}{cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh -s {original_file}{cube}{index}.cnf {order} 10000"
-        file_to_cube = f"{original_file}{cube}{index}.cnf.simp"
-        simplog_file = f"{original_file}{cube}{index}.cnf.simplog"
-        file_to_check = f"{original_file}{cube}{index}.cnf.ext"
+        command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh -s {cube}{index}.cnf {order} 10000"
+        file_to_cube = f"{cube}{index}.cnf.simp"
+        simplog_file = f"{cube}{index}.cnf.simplog"
+        file_to_check = f"{cube}{index}.cnf.ext"
     else:
         command = f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000"
         file_to_cube = f"{original_file}.simp"
