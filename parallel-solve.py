@@ -109,7 +109,7 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             return
     subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.temp -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
     d += 1
-    if cube is not None:
+    if cube != "N":
         subprocess.run(f'''sed -E "s/^a (.*)/$(head -n {index} {cube} | tail -n 1 | sed -E 's/(.*) 0/\\1/') \\1/" {file_to_cube}.temp > {cube}{index}''', shell=True)
         next_cube = f'{cube}{index}'
     else:
