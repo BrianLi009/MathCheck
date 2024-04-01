@@ -1,23 +1,20 @@
 import os
 import sys
-def enumerate_files(folder_name, filename, depth=1):
-    base_name = f'{folder_name}/{filename}0'
-    for subfix in generate_strings(depth):
-        new_file_name = f'{base_name}{subfix}.cnf.simplog'
-        with open(new_file_name, 'r') as file:
-            content = file.read()
-            if "exit 20" in content:
-                print(f"'exit 20' found in {new_file_name}")
-            else:
-                if depth > 1:
-                    for i in range(1, depth+1):
-                        new_file_name = f'{base_name}{subfix}{i}.cnf.simplog'
-                        with open(new_file_name, 'r') as file:
-                            content = file.read()
-                            if "exit 20" in content:
-                                print(f"'exit 20' found in {new_file_name}")
-                            else:
-                                enumerate_files(folder_name, filename, depth+1)
+def enumerate_files(folder_name, filename):
+    filename_1 = f'{folder_name}/{filename}1.cnf.simplog'
+    filename_2 = f'{folder_name}/{filename}2.cnf.simplog'
+    with open(filename_1, 'r') as file:
+        content = file.read()
+        if "exit 20" in content:
+            print(f"'exit 20' found in {filename_1}")
+        else:
+            enumerate_files(folder_name, f'{folder_name}/{filename}1')
+    with open(filename_2, 'r') as file:
+        content = file.read()
+        if "exit 20" in content:
+            print(f"'exit 20' found in {filename_1}")
+        else:
+            enumerate_files(folder_name, f'{folder_name}/{filename}2')
 
 def generate_strings(n):
     if n == 0:
