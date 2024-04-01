@@ -8,13 +8,13 @@ def enumerate_files(folder_name, filename):
         if "exit 20" in content:
             print(f"'exit 20' found in {filename_1}")
         else:
-            enumerate_files(folder_name, f'{folder_name}/{filename}1')
+            enumerate_files(folder_name, f'{filename}1')
     with open(filename_2, 'r') as file:
         content = file.read()
         if "exit 20" in content:
             print(f"'exit 20' found in {filename_1}")
         else:
-            enumerate_files(folder_name, f'{folder_name}/{filename}2')
+            enumerate_files(folder_name, f'{filename}2')
 
 def generate_strings(n):
     if n == 0:
