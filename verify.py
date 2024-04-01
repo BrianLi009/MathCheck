@@ -3,11 +3,13 @@ import sys
 def enumerate_files(folder_name, filename):
     filename_1 = f'{folder_name}/{filename}1.cnf.simplog'
     filename_2 = f'{folder_name}/{filename}2.cnf.simplog'
+    file1 = False
+    file2 = False
     with open(filename_1, 'r') as file:
         content = file.read()
         if "exit 20" in content:
             print(f"'exit 20' found in {filename_1}")
-            return True
+            file1 = True
         else:
             if enumerate_files(folder_name, f'{filename}1'):
                 print (f'{folder_name}/{filename}1.cnf.simp.log needs to be UNSAT')
@@ -15,10 +17,11 @@ def enumerate_files(folder_name, filename):
         content = file.read()
         if "exit 20" in content:
             print(f"'exit 20' found in {filename_1}")
-            return True
+            file2 = True
         else:
             if enumerate_files(folder_name, f'{filename}2'):
                 print (f'{folder_name}/{filename}2.cnf.simp.log needs to be UNSAT')
+    return file1 and file2
 
 def generate_strings(n):
     if n == 0:
