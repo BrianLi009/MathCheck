@@ -115,8 +115,9 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     else:
         subprocess.run(f'mv {file_to_cube}.temp {original_file}0', shell=True)
         next_cube = f'{original_file}0'
-    os.remove(f'{cube}{index}.cnf')
-    os.remove(f'{cube}{index}.cnf.drat')
+    if cube != "N":
+        os.remove(f'{cube}{index}.cnf')
+        os.remove(f'{cube}{index}.cnf.drat')
     os.remove(file_to_cube)
     os.remove(f'{file_to_cube}.temp')
     os.remove(file_to_check)
