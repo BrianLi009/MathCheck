@@ -88,7 +88,6 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             if cube != "N":
                 os.remove(f'{cube}{index}.cnf')
                 os.remove(f'{cube}{index}.cnf.drat')
-                os.remove(f'{file_to_cube}.temp')
             os.remove(file_to_cube)
             os.remove(file_to_check)
             return
