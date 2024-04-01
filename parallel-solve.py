@@ -85,6 +85,12 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     with open(simplog_file, "r") as file:
         if "c exit 20" in file.read():
             print("the cube is UNSAT")
+            if cube != "N":
+                os.remove(f'{cube}{index}.cnf')
+                os.remove(f'{cube}{index}.cnf.drat')
+                os.remove(f'{file_to_cube}.temp')
+            os.remove(file_to_cube)
+            os.remove(file_to_check)
             return
     
     command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_check} | awk '$0<={m}' | sort | uniq | wc -l"
