@@ -33,11 +33,11 @@ f_base=$(basename "$f")
 
 # Simplify m seconds
 echo "simplifying for $m conflicts"
-i=1
-./cadical-ks/build/cadical-ks "$f_dir" "$f_dir.drat" --order $o --unembeddable-check 17 -o "$f_dir".simp1 -e "$f_dir".ext -n -c $m | tee "$f_dir".simplog
+
 
 # Check if "exit 20" is in the log
 if [ "$s" != "true" ]; then
+  ./cadical-ks/build/cadical-ks "$f_dir" "$f_dir.drat" --order $o --unembeddable-check 17 -o "$f_dir".simp1 -e "$f_dir".ext -n -c $m | tee "$f_dir".simplog
   echo "verifying the simplification now..."
   if grep -q "exit 20" "$f_dir".simplog; then
     echo "CaDiCaL returns UNSAT, using backward proof checking..."
@@ -46,6 +46,9 @@ if [ "$s" != "true" ]; then
     echo "CaDiCaL returns UNKNOWN, using forward proof checking..."
     ./drat-trim/drat-trim "$f_dir" "$f_dir.drat" -f | tee "$f_dir".verify
   fi
+else
+  echo "skipping generation of DRAT file"
+  ./cadical-ks/build/cadical-ks "$f_dir" --order $o --unembeddable-check 17 -o "$f_dir".simp1 -e "$f_dir".ext -n -c $m | tee "$f_dir".simplog
 fi
 
 # Output final simplified instance
