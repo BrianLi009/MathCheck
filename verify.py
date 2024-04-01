@@ -7,16 +7,18 @@ def enumerate_files(folder_name, filename):
         content = file.read()
         if "exit 20" in content:
             print(f"'exit 20' found in {filename_1}")
-            return
+            return True
         else:
-            enumerate_files(folder_name, f'{filename}1')
+            if enumerate_files(folder_name, f'{filename}1'):
+                print (f'{folder_name}/{filename}1.cnf.simp.log needs to be UNSAT')
     with open(filename_2, 'r') as file:
         content = file.read()
         if "exit 20" in content:
             print(f"'exit 20' found in {filename_1}")
-            return
+            return True
         else:
-            enumerate_files(folder_name, f'{filename}2')
+            if enumerate_files(folder_name, f'{filename}2'):
+                print (f'{folder_name}/{filename}2.cnf.simp.log needs to be UNSAT')
 
 def generate_strings(n):
     if n == 0:
