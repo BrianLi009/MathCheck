@@ -102,12 +102,14 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     if cutoff == 'd':
         if d >= cutoffv:
             if solveaftercubeg == 'True':
+                os.remove(f'{cube}{index}.cnf')
                 command = f"./solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
     if cutoff == 'v':
         if var_removed >= cutoffv:
             if solveaftercubeg == 'True':
+                os.remove(f'{cube}{index}.cnf')
                 command = f"./solve-verify.sh {order} {file_to_cube}"
                 queue.put(command)
             return
