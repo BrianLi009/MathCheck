@@ -23,15 +23,15 @@ n=$1 #order
 c=${2:-0.5} #ratio of color-1 vertices to block
 o=${3:-1} #assume using definition 1, can use definition 2 as well
 
-if [ -f constraints_$n_$c ]
+if [ -f constraints_$n_$c_$o ]
 then
     echo "instance already generated"
 else
     if [ $o -eq 1 ]
     then
-        python3 gen_instance/generate.py $n $c 1 #generate the instance of order n
+        python3 gen_instance/generate.py $n $c #generate the instance of order n
     else
-        echo "using extended finition of KS system..."
-        python3 gen_instance/generate-def2.py $n $c 2 #generate the instance of order n
+        echo "using extended definition of KS system..."
+        python3 gen_instance/generate-def2.py $n $c #generate the instance of order n
     fi
 fi

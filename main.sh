@@ -44,12 +44,13 @@ fi
 
 n=$1 # Order
 c=${2:-0.5} # Color percentage
-m=${3:-2} #Num of MCTS simulations. m=0 activate march
-d=${4:-d} #Cubing cutoff criteria, choose d(depth) as default #d, v
-dv=${5:-5} #By default cube to depth 5
-nodes=${6:-1} #Number of nodes to submit to if using -l
+d=${3:-1} #definition used
+m=${4:-2} #Num of MCTS simulations. m=0 activate march
+d=${5:-d} #Cubing cutoff criteria, choose d(depth) as default #d, v
+dv=${6:-5} #By default cube to depth 5
+nodes=${7:-1} #Number of nodes to submit to if using -l
 
-di="${1}-${c}-${m}-${d}-${dv}-${nodes}-$(date +%Y%m%d%H%M%S)"
+di="${1}-${c}-${d}-${m}-${d}-${dv}-${nodes}-$(date +%Y%m%d%H%M%S)"
 
 # Dependency Setup
 ./dependency-setup.sh
@@ -57,8 +58,8 @@ di="${1}-${c}-${m}-${d}-${dv}-${nodes}-$(date +%Y%m%d%H%M%S)"
 mkdir $di
 
 # Generate Instance
-./generate-instance.sh $n $c
-cp constraints_${n}_${c} $di
+./generate-instance.sh $n $c $d
+cp constraints_${n}_${c}_${d} $di
 
 # Solve Based on Mode
 case $solve_mode in
@@ -66,18 +67,18 @@ case $solve_mode in
         echo "No cubing, just solve"
         
         echo "Simplifying $f for 10000 conflicts using CaDiCaL+CAS"
-        ./simplification/simplify-by-conflicts.sh ${di}/constraints_${n}_${c} $n 10000
+        ./simplification/simplify-by-conflicts.sh ${di}/constraints_${n}_${c}_${d} $n 10000
 
         echo "Solving $f using MapleSAT+CAS"
-        ./solve-verify.sh $n ${di}/constraints_${n}_${c}.simp
+        ./solve-verify.sh $n ${di}/constraints_${n}_${c}_${d}.simp
         ;;
     "sin_cubing")
         echo "Cubing and solving in parallel on local machine"
-        python parallel-solve.py $n ${di}/constraints_${n}_${c} $m $d $dv
+        python parallel-solve.py $n ${di}/constraints_${n}_${c}_${d} $m $d $dv
         ;;
     "mul_cubing")
         echo "Cubing and solving in parallel on Compute Canada"
-        python parallel-solve.py $n ${di}/constraints_${n}_${c} $m $d $dv False
+        python parallel-solve.py $n ${di}/constraints_${n}_${c}_${d} $m $d $dv False
         found_files=()
 
         # Populate the array with the names of files found by the find command
