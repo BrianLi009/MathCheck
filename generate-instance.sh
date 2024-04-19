@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ "$1" = "-h" -o "$1" = "--help" -o "$#" -lt 1 -o "$#" -gt 2 ] && echo "
+[ "$1" = "-h" -o "$1" = "--help" -o "$#" -lt 1 -o "$#" -gt 3 ] && echo "
 Description:
     Updated on 2023-01-11
     This script call the python file generate.py in gen_instance to generate the SAT encoding for a Kochen Specker candidates. Such candidate satisfies the following condition:
@@ -11,10 +11,11 @@ Description:
     5. We also applied the cubic isomorphism blocking clauses
 
 Usage:
-    ./generate-instance.sh n
+    ./generate-instance.sh n m
 
 Options:
     <n>: the order of the instance/number of vertices in the graph
+    <m>: (optional) additional parameter
     
 " && exit
 
