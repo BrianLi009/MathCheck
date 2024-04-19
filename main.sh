@@ -67,18 +67,18 @@ case $solve_mode in
         echo "No cubing, just solve"
         
         echo "Simplifying $f for 10000 conflicts using CaDiCaL+CAS"
-        ./simplification/simplify-by-conflicts.sh ${di}/constraints_${n}_${c}_${d} $n 10000
+        ./simplification/simplify-by-conflicts.sh ${di}/constraints_${n}_${c}_${o} $n 10000
 
         echo "Solving $f using MapleSAT+CAS"
-        ./solve-verify.sh $n ${di}/constraints_${n}_${c}_${d}.simp
+        ./solve-verify.sh $n ${di}/constraints_${n}_${c}_${o}.simp
         ;;
     "sin_cubing")
         echo "Cubing and solving in parallel on local machine"
-        python parallel-solve.py $n ${di}/constraints_${n}_${c}_${d} $m $d $dv
+        python parallel-solve.py $n ${di}/constraints_${n}_${c}_${o} $m $d $dv
         ;;
     "mul_cubing")
         echo "Cubing and solving in parallel on Compute Canada"
-        python parallel-solve.py $n ${di}/constraints_${n}_${c}_${d} $m $d $dv False
+        python parallel-solve.py $n ${di}/constraints_${n}_${c}_${o} $m $d $dv False
         found_files=()
 
         # Populate the array with the names of files found by the find command
