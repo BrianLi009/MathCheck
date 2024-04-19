@@ -49,4 +49,4 @@ def generate(n, block):
     subprocess.call(["./gen_instance/append.sh", cnf_file, cnf_file+"_new", firstline])
 
 if __name__ == "__main__":
-   generate(int(sys.argv[1]))
+   generate(int(sys.argv[1]), sys.argv[2])
