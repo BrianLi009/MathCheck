@@ -8,7 +8,7 @@ from cubic import cubic
 import subprocess
 import os
 
-def generate(n):
+def generate(n, block):
     """
     n: size of the graph
     Given n, the function calls each individual constraint-generating function, then write them into a DIMACS file as output
@@ -17,7 +17,7 @@ def generate(n):
     triangles - n choose 3 variables
     extra variables from cubic
     """
-    cnf_file = "constraints_" + str(n)
+    cnf_file = "constraints_" + str(n) + "_" + str(block)
     if os.path.exists(cnf_file):
         print(f"File '{cnf_file}' already exists. Terminating...")
         sys.exit()
@@ -38,7 +38,7 @@ def generate(n):
     print ("graph is squarefree")
     clause_count += triangle(n, edge_dict, tri_dict, cnf_file)
     print ("all edges are part of a triangle")
-    clause_count += noncolorable(n,  edge_dict, tri_dict, cnf_file)
+    clause_count += noncolorable(n,  edge_dict, tri_dict, cnf_file, block)
     print ("graph is noncolorable")
     clause_count += neighbor(n, edge_dict, cnf_file)
     print ("every vertex has a neightbor")
