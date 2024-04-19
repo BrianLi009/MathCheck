@@ -41,7 +41,7 @@ def generate(n):
     clause_count += noncolorable(n,  edge_dict, tri_dict, cnf_file)
     print ("graph is noncolorable")
     clause_count += neighbor(n, edge_dict, cnf_file)
-    print ("minimum degree of each vertex is 3")
+    print ("every vertex has a neightbor")
     var_count, c_count = cubic(n, count, cnf_file) #total number of variables
     clause_count += c_count
     print ("isomorphism blocking applied")
