@@ -32,6 +32,6 @@ else
         python3 gen_instance/generate.py $n $c 1 #generate the instance of order n
     else
         echo "using extended finition of KS system..."
-        python3 gen_instance/generate-def2.py $n $c #generate the instance of order n
+        python3 gen_instance/generate-def2.py $n $c 2 #generate the instance of order n
     fi
 fi
