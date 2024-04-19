@@ -44,13 +44,13 @@ fi
 
 n=$1 # Order
 c=${2:-0.5} # Color percentage
-d=${3:-1} #definition used
+o=${3:-1} #definition used
 m=${4:-2} #Num of MCTS simulations. m=0 activate march
 d=${5:-d} #Cubing cutoff criteria, choose d(depth) as default #d, v
 dv=${6:-5} #By default cube to depth 5
 nodes=${7:-1} #Number of nodes to submit to if using -l
 
-di="${1}-${c}-${d}-${m}-${d}-${dv}-${nodes}-$(date +%Y%m%d%H%M%S)"
+di="${1}-${c}-${o}-${m}-${d}-${dv}-${nodes}-$(date +%Y%m%d%H%M%S)"
 
 # Dependency Setup
 ./dependency-setup.sh
@@ -58,8 +58,8 @@ di="${1}-${c}-${d}-${m}-${d}-${dv}-${nodes}-$(date +%Y%m%d%H%M%S)"
 mkdir $di
 
 # Generate Instance
-./generate-instance.sh $n $c $d
-cp constraints_${n}_${c}_${d} $di
+./generate-instance.sh $n $c $o
+cp constraints_${n}_${c}_${o} $di
 
 # Solve Based on Mode
 case $solve_mode in
