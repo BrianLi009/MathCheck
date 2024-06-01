@@ -22,4 +22,5 @@ def tri_relation(n, dual_edge_dict, original_edge_dict, tri_dict, cnf):
         cnf_file.write('{} {} 0\n'.format(str(-dual_edge_dict[dual_edge]), str(tri_1_var)))
         cnf_file.write('{} {} 0\n'.format(str(-dual_edge_dict[dual_edge]), str(tri_2_var)))
         cnf_file.write('{} {} {} 0\n'.format(str(dual_edge_dict[dual_edge]), str(-tri_1_var), str(-tri_2_var)))
+        clause_count += 3
     return clause_count

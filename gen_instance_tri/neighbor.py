@@ -6,12 +6,10 @@ def neighbor(n, edge_dict, cnf):
     cnf_file = open(cnf, 'a+')
     vertices_lst = list(range(1, n+1))
     for v in vertices_lst:
-        clause = []
-        for v2 in vertices_lst:
-            if v != v2:
-                edge = tuple(sorted((v, v2)))
-                clause.append(str(edge_dict[edge]))
-        constraint_1 = ' '.join(clause)
-        cnf_file.write(constraint_1 + " 0\n")
+        edges = []
+        for edge in edge_dict.keys():
+            if edge[0] == v:
+                edges.append(edge)
+        cnf_file.write('{} {} {} 0\n'.format(str(edge_dict[edges[0]]), str(edge_dict[edges[1]]), str(edge_dict[edges[2]])))
         clause_count += 1
     return clause_count

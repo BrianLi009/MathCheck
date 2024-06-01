@@ -20,7 +20,7 @@ def generate(n, block):
     triangles - n choose 3 variables
     extra variables from cubic
     """
-    cnf_file = "constraints_" + str(n) + "_" + str(block) + "_2"
+    cnf_file = "constraints_" + str(n) + "_" + str(block) + ".cnf"
     if os.path.exists(cnf_file):
         print(f"File '{cnf_file}' already exists. Terminating...")
         sys.exit()
@@ -43,15 +43,12 @@ def generate(n, block):
     for tri in range(1, n+1):
         tri_dict[tri] = tri_var
         tri_var += 1
-    print (dual_edge_dict)
-    print (edge_mapping_dict)
-    print (tri_dict)
-    #clause_count += tri_relation(n, dual_edge_dict, edge_mapping_dict, tri_dict, "test")
-    #clause_count += squarefree(n, edge_mapping_dict, "test")
-    #clause_count += neighbor(n, dual_edge_dict, "test")
+    clause_count += tri_relation(n, dual_edge_dict, edge_mapping_dict, tri_dict, cnf_file)
+    clause_count += squarefree(n, edge_mapping_dict, cnf_file)
+    clause_count += neighbor(n, edge_mapping_dict, cnf_file)
     #clause_count += noncolorable(n, edge_mapping_dict, tri_dict, "test") #have to think about this
-
-
+    firstline = 'p cnf ' + str(tri_var-1) + ' ' + str(clause_count)
+    subprocess.call(["./gen_instance/append.sh", cnf_file, cnf_file+"_new", firstline])
 
 if __name__ == "__main__":
    generate(int(sys.argv[1]), sys.argv[2])
