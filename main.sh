@@ -59,6 +59,7 @@ mkdir $di
 
 # Generate Instance
 ./generate-instance.sh $n $c $o
+f=constraints_${n}_${c}_${o}
 cp constraints_${n}_${c}_${o} $di
 
 # Solve Based on Mode
