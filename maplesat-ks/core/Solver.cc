@@ -1037,6 +1037,46 @@ void Solver::callbackFunction(bool complete, vec<vec<Lit> >& out_learnts) {
                 }
                 fprintf(permoutfile, "\n");
             }
+
+            // Add the learned clause to the vector of original clauses if the 'keep blocking' option enabled
+            if(opt_keep_blocking==2)
+            {
+                vec<Lit> clause;
+                out_learnts[0].copyTo(clause);
+                {
+                    int max_index = 0;
+                    for(int i=1; i<clause.size(); i++)
+                        if(level(var(clause[i])) > level(var(clause[max_index])))
+                            max_index = i;
+                    Lit p = clause[0];
+                    clause[0] = clause[max_index];
+                    clause[max_index] = p;
+                }
+
+                {
+                    int max_index = 1;
+                    for(int i=2; i<clause.size(); i++)
+                        if(level(var(clause[i])) > level(var(clause[max_index])))
+                            max_index = i;
+                    Lit p = clause[1];
+                    clause[1] = clause[max_index];
+                    clause[max_index] = p;
+                }
+
+                if (verbosity >= 2)
+                {
+                    printf("Keeping clause ");
+                    for(int i=0; i<clause.size(); i++)
+                    {   printf("%s%d ", sign(clause[i]) ? "-" : "", var(clause[i])+1);
+                    }
+                    printf("0\n");
+                }
+
+                CRef confl_clause = ca.alloc(clause, false);
+                attachClause(confl_clause);
+                clauses.push(confl_clause);
+            }
+
             return;
         }
     }
