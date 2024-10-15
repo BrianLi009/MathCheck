@@ -15,6 +15,7 @@ Options:
     -l: Cubing with parallel solving across different nodes
     <n>: Order of the instance/number of vertices in the graph
     <c>: Percentage of vertices that are color 1 (default: 0.5)
+    <o>: Definition used (default: 1)
     <m>: Number of MCTS simulations (default: 2)
     <d>: Cubing cutoff criteria, choose d(depth) as default #d, v (default: d)
     <dv>: By default cube to depth 5 (default: 5)
