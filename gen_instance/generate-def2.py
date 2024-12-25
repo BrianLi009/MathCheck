@@ -5,10 +5,11 @@ from triangle_e import triangle
 from neighbor import neighbor
 from noncolorable import noncolorable
 from cubic import cubic
+from b_b_card import generate_edge_clauses
 import subprocess
 import os
 
-def generate(n, block):
+def generate(n, block, lower_bound, upper_bound):
     """
     n: size of the graph
     Given n, the function calls each individual constraint-generating function, then write them into a DIMACS file as output
@@ -45,8 +46,16 @@ def generate(n, block):
     var_count, c_count = cubic(n, count, cnf_file) #total number of variables
     clause_count += c_count
     print ("isomorphism blocking applied")
+    
+    # Convert triangle dictionary values to sorted list
+    tri_vars = [v for k, v in sorted(tri_dict.items())]
+    var_count_card, clause_count_card = generate_edge_clauses(tri_vars, int(sys.argv[3]), int(sys.argv[4]), var_count, cnf_file)
+    var_count = var_count_card
+    clause_count += clause_count_card
+    print("triangle count constraints applied")
+    
     firstline = 'p cnf ' + str(var_count) + ' ' + str(clause_count)
     subprocess.call(["./gen_instance/append.sh", cnf_file, cnf_file+"_new", firstline])
 
 if __name__ == "__main__":
-   generate(int(sys.argv[1]), sys.argv[2])
+   generate(int(sys.argv[1]), sys.argv[2], sys.argv[3], sys.argv[4])
