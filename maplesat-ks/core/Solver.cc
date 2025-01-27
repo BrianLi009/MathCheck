@@ -665,7 +665,7 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i) {
 
 #ifdef UNEMBED_SUBGRAPH_CHECK
 // The 17 minimal unembeddable subgraphs on 10, 11, and 12 vertices
-const int gub[17][66] = {
+const int gub[13][66] = {
     {1,1,1,1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,1,1}, // I{O_ogI@W (10 vertices, 15 edges) originally ICOedPKL? or It?IQGiDO complex
     {1,1,1,1,0,0,1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,1,1,1}, // I{d@?gI@w (10 vertices, 16 edges) originally I?qa``eeO or IpD?GUbV? complex
     {1,1,1,1,0,0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0,1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,1,0,1,0,1,0}, // J{`@?gQBOT? (11 vertices, 17 edges) originally J@`ICC[Gv_? complex
