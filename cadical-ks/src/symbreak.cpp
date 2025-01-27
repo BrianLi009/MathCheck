@@ -187,7 +187,7 @@ bool SymmetryBreaker::cb_has_external_clause () {
             int p[i+1]; // Permutation on i+1 vertices
             int x, y;   // These will be the indices of first adjacency matrix entry that demonstrates noncanonicity (when such indices exist)
             int mi;     // This will be the index of the maximum defined entry of p
-            bool ret = (hash == 0) ? true : is_canonical(i+1, p, x, y, mi, i < n-1);
+            bool ret = (hash == 0) ? true : is_canonical(i+1, p, x, y, mi, false);
 #ifdef VVERBOSE
             if(!ret) {
                 printf("x: %d y: %d, mi: %d, ", x, y, mi);
