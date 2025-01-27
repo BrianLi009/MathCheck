@@ -1,13 +1,20 @@
 #!/bin/bash
+set -e  # Exit immediately if any command fails
+set -o pipefail  # Fail piped commands
 
-# Function to display help information
+# Updated help function
 function display_help() {
     echo "
     Description:
-        This script will install and compile all required dependencies and packages, including maplesat-ks, cadical, networkx, z3-solver, and march_cu from cube and conquer
+        This script manages dependencies including installation and cleanup
 
     Usage:
-        ./dependency-setup.sh 
+        ./dependency-setup.sh [options]
+
+    Options:
+        -h, --help      Show this help
+        -x              Enable verbose mode
+        --clean         Remove all built artifacts
     "
     exit
 }
@@ -15,18 +22,20 @@ function display_help() {
 # Check if help is requested
 [ "$1" = "-h" -o "$1" = "--help" ] && display_help
 
-echo "Prerequisite: pip and make installed"
+# Add -x flag for verbose output if needed
+[ "$1" = "-x" ] && set -x
 
+echo "Prerequisite: Checking for pip and make..."
+command -v pip3 >/dev/null 2>&1 || { echo "pip3 not found. Aborting."; exit 1; }
+command -v make >/dev/null 2>&1 || { echo "make not found. Aborting."; exit 1; }
+
+# Networkx version check with better python parsing
 required_version="2.5"
-installed_version=$(pip3 show networkx | grep Version | awk '{print $2}')
-
-# Check if networkx needs to be updated
-if [[ "$(printf '%s\n' "$installed_version" "$required_version" | sort -V | head -n1)" != "$required_version" ]]; then
-    echo "Need to install networkx version newer than $required_version"
-    pip3 install --upgrade networkx
-    echo "Networkx has been successfully updated."
+if ! python3 -c "import networkx as nx; exit(not (tuple(map(int, nx.__version__.split('.'))) >= (2,5)))" 2>/dev/null; then
+    echo "Upgrading networkx to >=${required_version}..."
+    pip3 install --upgrade "networkx>=${required_version}"
 else
-    echo "Networkx version $installed_version is already installed and newer than $required_version"
+    echo "Networkx >=${required_version} already installed"
 fi
 
 # Check if z3-solver is installed
@@ -37,51 +46,46 @@ else
     pip3 install z3-solver
 fi
 
-# Check if march_cu is present
-if [ -f gen_cubes/march_cu/march_cu ]
-then
-    echo "March installed and binary file compiled"
-else
-    cd gen_cubes/march_cu
-    make
-    cd -
-fi
+# Modified build_dependency function
+build_dependency() {
+    local dir="$1"
+    local target="$2"
+    local build_cmd="${3:-make}"
+    
+    echo "Building ${dir}..."
+    (cd "$dir" || exit 1
+     # Add -f flag to make clean to ignore missing files
+     [ -f "$target" ] || { eval "make clean -f Makefile 2>/dev/null || true; $build_cmd" && echo "Build successful"; })
+}
 
-# Check if drat-trim is present
-if [ -f drat-trim/drat-trim ]
-then
-    echo "Drat-trim installed and binary file compiled"
-else
-    cd drat-trim
-    make
-    cd -
-fi
+build_dependency drat-trim drat-trim "make -f Makefile"
+build_dependency cadical-ks build/cadical-ks "./configure && make"
+build_dependency maplesat-ks simp/maplesat_static "make clean && make"
 
-# Check if cadical-ks is present
-if [ -f cadical-ks/build/cadical-ks ]
-then
-    echo "Cadical-ks installed and binary file compiled"
-else
-    cd cadical-ks
-    ./configure
-    make
-    cd -
-fi
+# More robust submodule handling
+echo "Updating git submodules..."
+git submodule update --init --recursive
 
-# Install maplesat-ks
-if [ -d maplesat-ks ] && [ -f maplesat-ks/simp/maplesat_static ]
-then
-    echo "Maplesat-ks installed and binary file compiled"
-else
-    cd maplesat-ks
-    make
-    cd -
-fi 
+# New clean function
+clean_artifacts() {
+    echo "Cleaning all artifacts..."
+    
+    # Clean drat-trim
+    (cd drat-trim && make clean -f Makefile 2>/dev/null || true)
+    
+    # Clean cadical-ks
+    (cd cadical-ks && [ -f Makefile ] && make clean 2>/dev/null || true)
+    
+    # Clean maplesat-ks
+    (cd maplesat-ks && make clean 2>/dev/null || true)
+    
+    # Clean march_cu
+    (cd gen_cubes/march_cu && make clean 2>/dev/null || true)
+    
+    echo "Cleanup completed"
+}
 
-# Update git submodules
-cd alpha-zero-general
-git submodule init
-git submodule update
-cd ..
+# Handle clean mode
+[ "$1" = "--clean" ] && { clean_artifacts; exit; }
 
-echo "All dependencies properly installed"
+echo "Dependency setup completed successfully"
