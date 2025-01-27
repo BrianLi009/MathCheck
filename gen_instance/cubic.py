@@ -14,22 +14,27 @@ def generate_implication_clause(X, Y):
         clause.append(y)
     return clause
 
-# Generate clauses encoding that the vector X is lexicographically less than (or equal to if strict is false) vector Y
+# Generate clauses encoding that the vector X is lexicographically greater than (or equal to if strict is false) vector Y
 def generate_lex_clauses(X, Y, strict, total_vars):
     clauses = []
     n = len(X)
-    clauses.append(generate_implication_clause({X[0]}, {Y[0]}))
-    clauses.append(generate_implication_clause({X[0]}, {total_vars+1}))
-    clauses.append(generate_clause({Y[0], total_vars+1}))
+    # First bit: X[0] ≥ Y[0]
+    clauses.append(generate_implication_clause({Y[0]}, {X[0]}))
+    clauses.append(generate_implication_clause({Y[0]}, {total_vars+1}))
+    clauses.append(generate_clause({X[0], total_vars+1}))
+    
+    # For remaining bits: maintain the lexicographic ordering
     for k in range(1, n-1): 
-        clauses.append(generate_implication_clause({total_vars+k}, {-X[k], Y[k]}))
-        clauses.append(generate_implication_clause({total_vars+k}, {-X[k], total_vars+k+1}))
-        clauses.append(generate_implication_clause({total_vars+k}, {Y[k], total_vars+k+1}))
+        clauses.append(generate_implication_clause({total_vars+k}, {-Y[k], X[k]}))
+        clauses.append(generate_implication_clause({total_vars+k}, {-Y[k], total_vars+k+1}))
+        clauses.append(generate_implication_clause({total_vars+k}, {X[k], total_vars+k+1}))
+    
+    # Handle the last bit
     if strict:
-        clauses.append(generate_implication_clause({total_vars+n-1}, {-X[n-1]}))
-        clauses.append(generate_implication_clause({total_vars+n-1}, {Y[n-1]}))
+        clauses.append(generate_implication_clause({total_vars+n-1}, {-Y[n-1]}))
+        clauses.append(generate_implication_clause({total_vars+n-1}, {X[n-1]}))
     else:
-        clauses.append(generate_implication_clause({total_vars+n-1}, {-X[n-1], Y[n-1]}))
+        clauses.append(generate_implication_clause({total_vars+n-1}, {-Y[n-1], X[n-1]}))
     return (clauses, total_vars+n-1)
 
 def cubic(n, count, cnf):
