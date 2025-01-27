@@ -229,6 +229,8 @@ public:
 
   void add_trusted_clause(const std::vector<int> & clause);
   FILE * permoutfile = NULL;
+  bool pseudocheck = true;
+  bool minclause = true;
 
   static const char *signature (); // name of this library
 
@@ -901,6 +903,8 @@ public:
   // is '<stdout>' or '<stderr>' then terminal color codes might be used.
   //
   static void build (FILE *file, const char *prefix = "c ");
+
+  bool tracking = false;  // Track permutation statistics
 
 private:
   //==== start of state ====================================================

@@ -23,6 +23,9 @@ class SymmetryBreaker : CaDiCaL::ExternalPropagator {
     int num_edge_vars = 0;
     std::set<unsigned long> canonical_hashes[MAXORDER];
     std::set<unsigned long> solution_hashes;
+    long total_perms[MAXORDER] = {};     // Total permutations tried for each order
+    long max_perms[MAXORDER] = {};       // Maximum permutations tried for each order
+    long subgraph_count[MAXORDER] = {};  // Count of subgraphs checked for each order
 public:
     SymmetryBreaker(CaDiCaL::Solver * s, int order, int uc);
     ~SymmetryBreaker ();
@@ -37,4 +40,5 @@ public:
     int cb_add_reason_clause_lit (int plit);
     bool is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test);
     bool has_mus_subgraph(int k, int* P, int* p, int g);
+    void print_tracking_stats();
 };
