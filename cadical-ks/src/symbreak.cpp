@@ -403,8 +403,8 @@ int SymmetryBreaker::cb_add_reason_clause_lit (int plit) {
 // Returns true when the k-vertex subgraph (with adjacency matrix M) is canonical
 // M is determined by the current assignment to the first k*(k-1)/2 variables
 // If M is noncanonical, then p, x, and y will be updated so that
-// * p will be a permutation of the rows of M so that row[i] -> row[p[i]] generates a matrix smaller than M (and therefore demonstrates the noncanonicity of M)
-// * (x,y) will be the indices of the first entry in the permutation of M demonstrating that the matrix is indeed lex-smaller than M
+// * p will be a permutation of the rows of M so that row[i] -> row[p[i]] generates a matrix larger than M (and therefore demonstrates the noncanonicity of M)
+// * (x,y) will be the indices of the first entry in the permutation of M demonstrating that the matrix is indeed lex-larger than M
 // * i will be the maximum defined index defined in p
 bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test) {
     int pl[k]; // pl[k] contains the current list of possibilities for kth vertex (encoded bitwise)
@@ -437,7 +437,7 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
 #ifdef PERM_STATS
                     canon_np[k-1] += np;
 #endif
-                    // No permutations produce a smaller matrix; M is canonical
+                    // No permutations produce a larger matrix; M is canonical
                     return true;
                 }
             }
@@ -462,7 +462,7 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
             last_y = 0;
         }
 
-        // Determine if the permuted matrix p(M) is lex-smaller than M
+        // Determine if the permuted matrix p(M) is lex-larger than M
         bool lex_result_unknown = false;
         x = last_x == 0 ? 1 : last_x;
         y = last_y;
@@ -476,15 +476,15 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
             const int px = MAX(p[x], p[y]);
             const int py = MIN(p[x], p[y]);
             const int pj = px*(px-1)/2 + py;
-            if(assign[j] == l_False && assign[pj] == l_True) {
-                // Permutation produces a larger matrix; stop considering
+            if(assign[j] == l_True && assign[pj] == l_False) {
+                // Permutation produces a smaller matrix; stop considering
                 break;
             }
-            if(assign[j] == l_True && assign[pj] == l_False) {
+            if(assign[j] == l_False && assign[pj] == l_True) {
 #ifdef PERM_STATS
                 noncanon_np[k-1] += np;
 #endif
-                // Permutation produces a smaller matrix; M is not canonical
+                // Permutation produces a larger matrix; M is not canonical
                 return false;
             }
 
