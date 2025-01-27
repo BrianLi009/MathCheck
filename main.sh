@@ -1,98 +1,155 @@
 #!/bin/bash
 
-# Description and Usage
-[ "$1" = "-h" -o "$1" = "--help" ] && echo "
+show_help() {
+    cat << EOF
 Description:
-    This is a driver script that handles generating the SAT encoding, simplifying the instance with CaDiCaL+CAS,
-    solving the instance with MapleSAT+CAS, then finally determine if a KS system exists for a certain order through embeddability checking.
+    Driver script for SAT encoding generation, instance simplification (CaDiCaL+CAS),
+    solving (MapleSAT+CAS), and KS system existence verification through embeddability checking.
 
 Usage:
-    ./main.sh <option> n [c] [r] [a]
+    ./main.sh -m=MODE [OPTIONS] ORDER
+
+Modes (-m):
+    none     No cubing, just solve
+    single   Cubing with parallel solving on one node
+    multi    Cubing with parallel solving across different nodes
+
+Required:
+    ORDER                   Number of vertices in the graph
 
 Options:
-    -n: No cubing, just solve
-    -s: Cubing with parallel solving on one node
-    -l: Cubing with parallel solving across different nodes
-    <n>: Order of the instance/number of vertices in the graph
-    <c>: Percentage of vertices that are color 1 (default: 0.5)
-    <o>: Definition used (default: 1)
-    <m>: Number of MCTS simulations (default: 2)
-    <d>: Cubing cutoff criteria, choose d(depth) as default #d, v (default: d)
-    <dv>: By default cube to depth 5 (default: 5)
-    <nodes>: Number of nodes to submit to if using -l (default: 1)
-" && exit
+    -m, --mode=MODE        Solving mode (required)
+    -c, --color=FLOAT      Color percentage (default: 0.5)
+    -o, --def=INT         Definition used (default: 1)
+    -s, --sims=INT         Number of MCTS simulations (default: 2)
+    -d, --criteria=CHAR    Cubing cutoff criteria: 'd' for depth, 'v' for vertices (default: d)
+    -v, --value=INT        Cubing depth/vertex value (default: 5)
+    -n, --nodes=INT        Number of nodes for multi mode (default: 1)
+    -h, --help            Show this help message
 
-# Option Handling
-solve_mode=""
-while getopts "nsl" opt
-do
-    case $opt in
-        n) solve_mode="no_cubing" ;;
-        s) solve_mode="sin_cubing" ;;
-        l) solve_mode="mul_cubing" ;;
-        *) echo "Invalid option: -$OPTARG. Use -n, -s, or -l. Use -h or --help for help" >&2
-           exit 1 ;;
+Examples:
+    ./main.sh -m=single 10
+    ./main.sh --mode=single --color=0.6 --def=2 --sims=3 10
+    ./main.sh -m=multi -n=4 10
+EOF
+    exit 0
+}
+
+# Default values
+mode=""
+color_pct=0.5
+definition=1
+mcts_sims=2
+cutoff_criteria="d"
+cutoff_value=5
+num_nodes=1
+
+# Parse long and short options
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --mode=*|-m=*)
+            mode="${1#*=}"
+            ;;
+        --color=*|-c=*)
+            color_pct="${1#*=}"
+            ;;
+        --def=*|-o=*)
+            definition="${1#*=}"
+            ;;
+        --sims=*|-s=*)
+            mcts_sims="${1#*=}"
+            ;;
+        --criteria=*|-d=*)
+            cutoff_criteria="${1#*=}"
+            ;;
+        --value=*|-v=*)
+            cutoff_value="${1#*=}"
+            ;;
+        --nodes=*|-n=*)
+            num_nodes="${1#*=}"
+            ;;
+        -h|--help)
+            show_help
+            ;;
+        -*)
+            echo "Error: Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)
+            # First non-option argument is ORDER
+            if [ -z "$order" ]; then
+                order="$1"
+            else
+                echo "Error: Unexpected argument: $1" >&2
+                exit 1
+            fi
+            ;;
     esac
+    shift
 done
-shift $((OPTIND-1))
 
-# Input Parameters
-if [ -z "$1" ]
-then
-    echo "Need instance order (number of vertices), use -h or --help for further instruction"
-    exit
+# Validate required parameters
+if [ -z "$order" ]; then
+    echo "Error: ORDER parameter is required"
+    echo "Use -h for help"
+    exit 1
 fi
 
-n=$1 # Order
-c=${2:-0.5} # Color percentage
-o=${3:-1} #definition used
-m=${4:-2} #Num of MCTS simulations. m=0 activate march
-d=${5:-d} #Cubing cutoff criteria, choose d(depth) as default #d, v
-dv=${6:-5} #By default cube to depth 5
-nodes=${7:-1} #Number of nodes to submit to if using -l
+if [ -z "$mode" ]; then
+    echo "Error: Mode (-m) is required"
+    echo "Use -h for help"
+    exit 1
+fi
 
-di="${1}-${c}-${o}-${m}-${d}-${dv}-${nodes}-$(date +%Y%m%d%H%M%S)"
+# Validate mode
+case $mode in
+    "none"|"single"|"multi") ;;
+    *) echo "Error: Invalid mode. Use none, single, or multi"; exit 1 ;;
+esac
+
+# Create unique directory for this run
+dir_name="${order}-${color_pct}-${definition}-${mcts_sims}-${cutoff_criteria}-${cutoff_value}-${num_nodes}-$(date +%Y%m%d%H%M%S)"
 
 # Dependency Setup
 ./dependency-setup.sh
 
-mkdir $di
+mkdir $dir_name
 
 # Generate Instance
-./generate-instance.sh $n $c $o
-f=constraints_${n}_${c}_${o}
-cp constraints_${n}_${c}_${o} $di
+./generate-instance.sh $order $color_pct $definition
+f=constraints_${order}_${color_pct}_${definition}
+cp constraints_${order}_${color_pct}_${definition} $dir_name
 
 # Solve Based on Mode
-case $solve_mode in
-    "no_cubing")
+case $mode in
+    "none")
         echo "No cubing, just solve"
         
         echo "Simplifying $f for 10000 conflicts using CaDiCaL+CAS"
-        ./simplification/simplify-by-conflicts.sh ${di}/constraints_${n}_${c}_${o} $n 10000
+        ./simplification/simplify-by-conflicts.sh ${dir_name}/constraints_${order}_${color_pct}_${definition} $order 10000
 
         echo "Solving $f using MapleSAT+CAS"
-        ./solve-verify.sh $n ${di}/constraints_${n}_${c}_${o}.simp
+        ./solve-verify.sh $order ${dir_name}/constraints_${order}_${color_pct}_${definition}.simp
         ;;
-    "sin_cubing")
+    "single")
         echo "Cubing and solving in parallel on local machine"
-        python parallel-solve.py $n ${di}/constraints_${n}_${c}_${o} $m $d $dv
+        python parallel-solve.py $order ${dir_name}/constraints_${order}_${color_pct}_${definition} $mcts_sims $cutoff_criteria $cutoff_value
         ;;
-    "mul_cubing")
+    "multi")
         echo "Cubing and solving in parallel on Compute Canada"
-        python parallel-solve.py $n ${di}/constraints_${n}_${c}_${o} $m $d $dv False
+        python parallel-solve.py $order ${dir_name}/constraints_${order}_${color_pct}_${definition} $mcts_sims $cutoff_criteria $cutoff_value False
         found_files=()
 
         # Populate the array with the names of files found by the find command
 
         while IFS= read -r -d $'\0' file; do
         found_files+=("$file")
-        done < <(find "${di}" -mindepth 1 -regex ".*\.\(00\|01\|10\|11\)$" -print0)
+        done < <(find "${dir_name}" -mindepth 1 -regex ".*\.\(00\|01\|10\|11\)$" -print0)
 
         
         # Calculate the number of files to distribute names across and initialize counters
         total_files=${#found_files[@]}
-        files_per_node=$(( (total_files + nodes - 1) / nodes )) # Ceiling division to evenly distribute
+        files_per_node=$(( (total_files + num_nodes - 1) / num_nodes )) # Ceiling division to evenly distribute
         counter=0
         file_counter=1
 
@@ -102,11 +159,11 @@ case $solve_mode in
             exit 1
         fi
 
-        # Create $node number of files and distribute the names of found files across them
+        # Create $num_nodes number of files and distribute the names of found files across them
         for file_name in "${found_files[@]}"; do
             # Determine the current output file to write to
-            output_file="${di}/node_${file_counter}.txt"
-            submit_file="${di}/node_${file_counter}.sh"
+            output_file="${dir_name}/node_${file_counter}.txt"
+            submit_file="${dir_name}/node_${file_counter}.sh"
             cat <<EOF > "$submit_file"
 #!/bin/bash
 #SBATCH --account=rrg-cbright
@@ -115,11 +172,11 @@ case $solve_mode in
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=0
 #SBATCH --time=1-00:00
-#SBATCH --output=${di}/node_${file_counter}_%N_%j.out
+#SBATCH --output=${dir_name}/node_${file_counter}_%N_%j.out
 
 module load python/3.10
 
-python parallel-solve.py $n $output_file $m $d $dv
+python parallel-solve.py $order $output_file $mcts_sims $cutoff_criteria $cutoff_value
 
 EOF
             
