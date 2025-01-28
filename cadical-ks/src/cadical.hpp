@@ -230,6 +230,7 @@ public:
   void add_trusted_clause(const std::vector<int> & clause);
   FILE * permoutfile = NULL;
   bool pseudocheck = true;
+  bool lex_greatest = false;
   bool minclause = true;
 
   static const char *signature (); // name of this library

@@ -545,6 +545,10 @@ int App::main (int argc, char **argv) {
       solver->pseudocheck = false;
     } else if (!strcmp (argv[i], "--pseudo-check")) {
       solver->pseudocheck = true;
+    } else if (!strcmp (argv[i], "--lex-greatest")) {
+      solver->lex_greatest = true;
+    } else if (!strcmp (argv[i], "--no-lex-greatest")) {
+      solver->lex_greatest = false;
     } else if (!strcmp (argv[i], "--no-minclause")) {
       solver->minclause = false;
     } else if (!strcmp (argv[i], "--minclause")) {

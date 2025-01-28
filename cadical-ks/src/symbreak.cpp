@@ -282,10 +282,15 @@ bool SymmetryBreaker::cb_has_external_clause () {
 
                 if(solver->minclause) {
                     // Generate a blocking clause smaller than the naive blocking clause
-                    new_clauses.back().push_back(-(x*(x-1)/2+y+1));
                     const int px = MAX(p[x], p[y]);
                     const int py = MIN(p[x], p[y]);
-                    new_clauses.back().push_back(px*(px-1)/2+py+1);
+                    if(solver->lex_greatest) {
+                        new_clauses.back().push_back(-(px*(px-1)/2 + py + 1)); 
+                        new_clauses.back().push_back(x*(x-1)/2 + y + 1);
+                    } else {
+                        new_clauses.back().push_back(-(x*(x-1)/2+y+1));
+                        new_clauses.back().push_back(px*(px-1)/2+py+1);
+                    }
                     for(int ii=0; ii < x+1; ii++) {
                         for(int jj=0; jj < ii; jj++) {
                             if(ii==x && jj==y) {
@@ -295,10 +300,18 @@ bool SymmetryBreaker::cb_has_external_clause () {
                             const int pjj = MIN(p[ii], p[jj]);
                             if(ii==pii && jj==pjj) {
                                 continue;
-                            } else if(assign[ii*(ii-1)/2+jj] == l_True) {
-                                new_clauses.back().push_back(-(ii*(ii-1)/2+jj+1));
-                            } else if (assign[pii*(pii-1)/2+pjj] == l_False) {
-                                new_clauses.back().push_back(pii*(pii-1)/2+pjj+1);
+                            } else if(solver->lex_greatest) {
+                                if(assign[pii*(pii-1)/2+pjj] == l_True) {
+                                    new_clauses.back().push_back(-(pii*(pii-1)/2+pjj+1));
+                                } else if (assign[ii*(ii-1)/2+jj] == l_False) {
+                                    new_clauses.back().push_back(ii*(ii-1)/2+jj+1);
+                                }
+                            } else {
+                                if(assign[ii*(ii-1)/2+jj] == l_True) {
+                                    new_clauses.back().push_back(-(ii*(ii-1)/2+jj+1));
+                                } else if (assign[pii*(pii-1)/2+pjj] == l_False) {
+                                    new_clauses.back().push_back(pii*(pii-1)/2+pjj+1);
+                                }
                             }
                         }
                     }
@@ -517,11 +530,13 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
             const int px = MAX(p[x], p[y]);
             const int py = MIN(p[x], p[y]);
             const int pj = px*(px-1)/2 + py;
-            if(assign[j] == l_False && assign[pj] == l_True) {
+            if((solver->lex_greatest ? assign[j] == l_True && assign[pj] == l_False 
+                                   : assign[j] == l_False && assign[pj] == l_True)) {
                 // Permutation produces a larger matrix; stop considering
                 break;
             }
-            if(assign[j] == l_True && assign[pj] == l_False) {
+            if((solver->lex_greatest ? assign[j] == l_False && assign[pj] == l_True 
+                                   : assign[j] == l_True && assign[pj] == l_False)) {
                 // Update tracking stats before returning
                 if (solver->tracking) {
                     total_perms[k-1] += np;
