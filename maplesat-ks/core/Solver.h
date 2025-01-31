@@ -190,7 +190,7 @@ public:
     long curRestart = 1;
     int reductions = 0;
     int nbclausesbeforereduce = firstReduceDB;
-    bool is_canonical(int k, int p[], int& x, int& y, int& i);
+    bool is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test = true);
 #ifdef UNEMBED_SUBGRAPH_CHECK
     bool has_gub_subgraph(int k, int* P, int * p, int g);
 #endif
