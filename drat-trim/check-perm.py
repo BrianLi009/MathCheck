@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # This script takes a list of trusted clauses in a DRAT proof and a list of permutations and verifies that
-# applying the ith permutation to the ith clause produces a clause blocking a lex-smaller object
+# applying the ith permutation to the ith clause produces a clause blocking a lex-smaller object (or lex-larger if -lex-greatest is used)
 
 # It also verifies that a clause blocking the existence of minimal unemeddable graph (of index 0 to 16) does in fact
 # block that graph by applying the corresponding permutation
@@ -13,6 +13,9 @@ start = time.time()
 
 verbose = "-v" in sys.argv
 if verbose: sys.argv.remove("-v")
+
+lex_greatest = "-lex-greatest" in sys.argv
+if lex_greatest: sys.argv.remove("-lex-greatest")
 
 # Return inverse of permutation
 def inv(p):
@@ -82,22 +85,17 @@ def matrix_edges_equal(M1, M2, order):
 				return False
 	return True
 
-# Returns true if M1 is strictly lexicographically smaller than M2
+# Modify matrix_lex to handle both modes
 def matrix_lex(M1, M2):
 	for i in range(n):
 		for j in range(i):
-			if M1[i][j] == 0 and M2[i][j] == 1:
-				return True
-			elif M1[i][j] == 0:
-				continue
-			elif M2[i][j] == 1:
-				continue
-			elif M1[i][j] == 1 and M2[i][j] == 0:
-				return False
-			elif M1[i][j] != M2[i][j]:
-				if verbose:
-					print(str(M1[i][j]) + " != " + str(M2[i][j]))
-				return False
+			if M1[i][j] != M2[i][j]:
+				if lex_greatest:
+					# For lex-greatest: return True if M1 is lex-larger
+					return M1[i][j] == 1 and M2[i][j] == 0
+				else:
+					# For lex-least: return True if M1 is lex-smaller
+					return M1[i][j] == 0 and M2[i][j] == 1
 	return False
 
 # Extend given permutation to a full permutation of {0, ..., n-1}
@@ -201,11 +199,17 @@ for perm in fileinput.input(permfile):
 	if not(lex) or verbose:
 		print(origperm, perm, line, lex)
 		print(to_string_dual(to_matrix_perm(line, perm), to_matrix(line)))
+		if lex_greatest:
+			print("Error: Found permutation making matrix smaller in lex-greatest mode")
+		else:
+			print("Error: Found permutation making matrix larger in lex-least mode")
 
 	assert(lex)
 	c += 1
 
 if c == len(lines):
-	print("VERIFIED: All {} blocking clauses verified with {} unembeddable blocking clauses and {} complete solutions found ({} sec)".format(len(lines), unembed, sols, round(time.time() - start, 2)))
+	mode = "lex-greatest" if lex_greatest else "lex-least"
+	print("VERIFIED: All {} blocking clauses verified ({} mode) with {} unembeddable blocking clauses and {} complete solutions found ({} sec)".format(
+		len(lines), mode, unembed, sols, round(time.time() - start, 2)))
 else:
 	print("ERROR: Verified {} of {} total blocking clauses".format(c, len(lines)))
