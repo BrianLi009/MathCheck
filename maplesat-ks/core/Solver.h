@@ -226,6 +226,7 @@ protected:
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
+    bool                lex_greatest;     // If TRUE, use lex-greatest instead of lex-least for canonicity checking
     vec<CRef>           clauses;          // List of problem clauses.
     vec<CRef>           learnts;          // List of learnt clauses.
 #if ! LBD_BASED_CLAUSE_DELETION

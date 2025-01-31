@@ -105,6 +105,7 @@ static StringOption  opt_perm_out       (_cat, "perm-out", "File to output the p
 static StringOption  opt_short_out       (_cat, "short-out", "File to output the short learnt clauses");
 static BoolOption    opt_pseudo_test    (_cat, "pseudo-test",  "Use a pseudo-canonicity test that is faster but may incorrectly label matrices as canonical", true);
 static BoolOption    opt_minclause      (_cat, "minclause",   "Minimize learned programmatic clause", true);
+static BoolOption    opt_lex_greatest   (_cat, "lex-greatest", "Use lex-greatest instead of lex-least for canonicity checking", false);
 #ifdef UNEMBED_SUBGRAPH_CHECK
 static StringOption  opt_gub_out        (_cat, "unembeddable-out", "File to output unembeddable subgraphs found during search");
 static IntOption     opt_check_gub      (_cat, "unembeddable-check", "Number of minimal unembeddable subgraphs to check for", 0, IntRange(0, 17));
@@ -196,6 +197,8 @@ Solver::Solver() :
   , conflict_budget    (-1)
   , propagation_budget (-1)
   , asynch_interrupt   (false)
+  , lex_greatest       (opt_lex_greatest)
+  , clauses            ()
 {
     if(exhauststring != NULL)
     {   //if(opt_order == 0)
@@ -553,7 +556,7 @@ long perm_cutoff[MAXORDER] = {0, 0, 0, 0, 0, 0, 20, 50, 125, 313, 783, 1958, 489
 // * p will be a permutation of the rows of M so that row[i] -> row[p[i]] generates a matrix smaller than M (and therefore demonstrates the noncanonicity of M)
 // * (x,y) will be the indices of the first entry in the permutation of M demonstrating that the matrix is indeed lex-smaller than M
 // * i will be the maximum defined index defined in p
-bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i) {
+bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test) {
     int pl[k]; // pl[k] contains the current list of possibilities for kth vertex (encoded bitwise)
     int pn[k+1]; // pn[k] contains the initial list of possibilities for kth vertex (encoded bitwise)
     pl[0] = (1 << k) - 1;
@@ -823,7 +826,7 @@ void Solver::callbackFunction(bool complete, vec<vec<Lit> >& out_learnts) {
             int p[i+1]; // Permutation on i+1 vertices
             int x, y;   // These will be the indices of first adjacency matrix entry that demonstrates noncanonicity (when such indices exist)
             int mi;     // This will be the index of the maximum defined entry of p
-            bool ret = (hash == 0) ? true : is_canonical(i+1, p, x, y, mi);
+            bool ret = (hash == 0) ? true : is_canonical(i+1, p, x, y, mi, opt_pseudo_test);
 #ifdef VERBOSE
             if(!ret) {
                 printf("x: %d y: %d, mi: %d, ", x, y, mi);
