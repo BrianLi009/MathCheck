@@ -1,0 +1,61 @@
+# makefile for greechie programs
+
+# Change the next line to point to where the nauty include files are
+NAUTY=${HOME}/nauty
+# Change the next line to point to where the nauty libraries (nauty.a etc) are
+NAUTYLIB=${NAUTY}
+
+CFLAGS=-O3 -mpopcnt -I${NAUTY}
+LDFLAGS=
+
+SMALL=-DMAXN=32
+DYNAMIC=-DMAXN=0
+L1=-DMAXN=WORDSIZE -DWORDSIZE=64
+L=-DMAXN=0 -DWORDSIZE=64
+NAUTYBITS=naudesign.c ${NAUTYLIB}/nauty.a
+NAUTYLBITS=naudesign.c ${NAUTYLIB}/nautyL.a
+NAUTY1BITS=naudesign.c ${NAUTYLIB}/nauty1.a
+NAUTYL1BITS=naudesign.c ${NAUTYLIB}/nautyL1.a
+
+design:  greechie greechieL gengre gengreL shortd shortdL ;
+
+clean:
+	rm -f greechie greechieL gengre gengreL rangre shortd shortdL
+
+greechie : ${NAUTY}/nauty.h ${NAUTY}/gtools.h naudesign.h greechie.c ${NAUTY1BITS}
+	${CC} ${CFLAGS} -o greechie greechie.c ${NAUTY1BITS} ${LDFLAGS}
+
+greechieL : ${NAUTY}/nauty.h ${NAUTY}/gtools.h naudesign.h greechie.c ${NAUTYL1BITS}
+	${CC} ${CFLAGS} ${L1} -o greechieL greechie.c ${NAUTYL1BITS} ${LDFLAGS}
+
+greechieS : ${NAUTY}/nauty.h ${NAUTY}/gtools.h naudesign.h greechie.c ${NAUTY1BITS}
+	${CC} -DSPLITTEST ${CFLAGS} ${L} -o greechieS \
+		greechie.c ${NAUTY1BITS} ${LDFLAGS}
+
+gengreL : ${NAUTY}/nauty.h naudesign.h ${NAUTY}/gtools.h gengre.c ${NAUTYLBITS}
+	${CC} ${CFLAGS} ${L} -o gengreL gengre.c ${NAUTYLBITS} ${LDFLAGS}
+
+gengreL3 : ${NAUTY}/nauty.h ${NAUTY}/naudesign.h gtools.h gengred3.c ${NAUTYL1BITS}
+	${CC} ${CFLAGS} ${L} -o gengreL3 gengred3.c ${NAUTYL1BITS} ${LDFLAGS}
+
+gengre : ${NAUTY}/nauty.h naudesign.h ${NAUTY}/gtools.h gengre.c ${NAUTYBITS}
+	${CC} ${CFLAGS} -o gengre gengre.c ${NAUTYBITS} ${LDFLAGS}
+
+shortd : naudesign.h ${NAUTYBITS} canond.c shortd.c dio.c greio.c ${NAUTYBITS}
+	${CC} ${CFLAGS} -o shortd shortd.c canond.c dio.c greio.c ${NAUTYBITS}
+
+shortdL : naudesign.h ${NAUTYLBITS} shortd.c canond.c dio.c greio.c ${NAUTYLBITS}
+	${CC} ${CFLAGS} ${L} -o shortdL shortd.c canond.c \
+                          dio.c greio.c ${NAUTYLBITS}
+
+rangre : ${NAUTY}/nauty.h ${NAUTY}/naurng.h rangre.c ${NAUTYBITS}
+	${CC} ${CFLAGS} -o rangre rangre.c ${NAUTYBITS} ${LDFLAGS}
+
+DVERSION=design28
+tarfile: 
+	mkdir ${DVERSION}
+	cp ~/nauty/naudesign.h ~/nauty/naudesign.c greechie.c gengre.c \
+	   shortd.c rangre.c gengred3.c canond.c dio.c greio.c ${DVERSION}/
+	cp makefile ${DVERSION}/dmakefile
+	tar cvzf ${DVERSION}.tar.gz ${DVERSION}
+	rm -rf ${DVERSION}
