@@ -4,6 +4,7 @@
 #include "hash_values.h"
 #include <iomanip>
 #include <algorithm>
+#include <chrono>
 
 FILE * canonicaloutfile = NULL;
 FILE * noncanonicaloutfile = NULL;
@@ -63,6 +64,21 @@ SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int uc) : solve
     for (int i = 0; i < num_edge_vars; i++) {
         solver->add_observed_var(i+1);
     }
+
+    // Initialize nauty options
+    options.getcanon = FALSE;
+    options.digraph = FALSE;
+    options.writeautoms = FALSE;
+    options.writemarkers = FALSE;
+    options.defaultptn = FALSE;
+    options.cartesian = FALSE;
+    options.linelength = 0;
+    options.outfile = NULL;
+    options.userrefproc = NULL;
+    options.userautomproc = NULL;
+    options.userlevelproc = NULL;
+    options.usernodeproc = NULL;
+    options.usercanonproc = NULL;
 }
 
 SymmetryBreaker::~SymmetryBreaker () {
@@ -448,11 +464,26 @@ int SymmetryBreaker::cb_add_reason_clause_lit (int plit) {
 // * p will be a permutation of the rows of M so that row[i] -> row[p[i]] generates a matrix smaller than M (and therefore demonstrates the noncanonicity of M)
 // * (x,y) will be the indices of the first entry in the permutation of M demonstrating that the matrix is indeed lex-smaller than M
 // * i will be the maximum defined index defined in p
-bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test = false) {
+bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test) {
     int pl[k]; // pl[k] contains the current list of possibilities for kth vertex (encoded bitwise)
     int pn[k+1]; // pn[k] contains the initial list of possibilities for kth vertex (encoded bitwise)
-    pl[0] = (1 << k) - 1;
-    pn[0] = (1 << k) - 1;
+    
+    // Initialize all possibilities
+    for (int j = 0; j <= k; j++) {
+        pn[j] = (1 << k) - 1;
+    }
+
+    // Only compute orbits and remove possibilities if k is greater than orbit_cutoff
+    if (k > orbit_cutoff) {
+        // Compute orbits
+        std::vector<int> orbits = compute_and_print_orbits(k);
+        // Remove possibilities before starting
+        remove_possibilities(k, pn, orbits);
+    }
+
+    for (int j = 0; j <= k; j++) {
+        pl[j] = pn[j];
+    }
     i = 0;
     int last_x = 0;
     int last_y = 0;
@@ -685,4 +716,89 @@ void SymmetryBreaker::print_tracking_stats() {
     }
     std::cout << "\n";
     std::cout.flush();
+}
+
+std::vector<int> SymmetryBreaker::compute_and_print_orbits(int k) {
+    auto start = std::chrono::high_resolution_clock::now();
+    nauty_calls++;  // Increment counter
+
+    std::vector<char> g6 = convert_assignment_to_graph6(k);
+    if (g6.empty()) return std::vector<int>();
+
+    int n = k;
+    int m = SETWORDSNEEDED(n);
+    nauty_check(WORDSIZE, m, n, NAUTYVERSIONID);
+
+    std::vector<graph> g(m * n);
+    EMPTYGRAPH(g.data(), m, n);
+
+    int pos = 0;
+    for (int j = 1; j < n; ++j) {
+        for (int i = 0; i < j; ++i) {
+            if (g6[pos] == '1') {
+                ADDONEEDGE(g.data(), i, j, m);
+            }
+            ++pos;
+        }
+    }
+
+    std::vector<int> orbits(n);
+    for (int i = 0; i < n; ++i) {
+        lab[i] = i;
+        ptn[i] = 1;
+    }
+    ptn[n-1] = 0;
+
+    densenauty(g.data(), lab, ptn, orbits.data(), &options, &stats, m, n, NULL);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    nauty_time += std::chrono::duration<double>(end - start).count();
+
+    return orbits;
+}
+
+std::vector<char> SymmetryBreaker::convert_assignment_to_graph6(int k) {
+    std::vector<char> g6;
+    g6.reserve(k * (k - 1) / 2);
+
+    for (int j = 1; j < k; ++j) {
+        for (int i = 0; i < j; ++i) {
+            g6.push_back((assign[j*(j-1)/2 + i] == l_True) ? '1' : '0');
+        }
+    }
+
+    return g6;
+}
+
+void SymmetryBreaker::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
+    if (k <= 0 || k > MAXORDER || orbits.size() != static_cast<size_t>(k)) {
+        return;
+    }
+
+    // Step 1: Create orbit masks for efficient operations
+    std::vector<int> orbit_masks(k, 0);
+    std::vector<int> orbit_mins(k, k);
+    
+    // Build orbit masks and find minimum vertices in one pass
+    for (int i = 0; i < k; i++) {
+        int orbit_id = orbits[i];
+        orbit_masks[orbit_id] |= (1 << i);
+        orbit_mins[orbit_id] = std::min(orbit_mins[orbit_id], i);
+    }
+
+    // Step 2: Apply restrictions based on orbit structure
+    for (int i = 0; i < k; i++) {
+        int orbit_id = orbits[i];
+        int min_vertex = orbit_mins[orbit_id];
+        
+        // Only restrict mappings for non-minimal vertices in their orbit
+        if (i > min_vertex) {
+            // Can't map to vertices lower than the orbit's minimum
+            int forbidden_mask = (1 << min_vertex) - 1;  // All bits < min_vertex
+            // Also can't map to vertices in same orbit that are lower than current vertex
+            forbidden_mask |= ((1 << i) - 1) & orbit_masks[orbit_id];
+            
+            pn[i] &= ~forbidden_mask;  // Remove forbidden mappings
+        }
+    }
 }

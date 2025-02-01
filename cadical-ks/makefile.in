@@ -9,8 +9,15 @@
 
 CXX=@CXX@
 CXXFLAGS=@CXXFLAGS@
+CC:=$(shell which gcc 2>/dev/null || which clang 2>/dev/null || echo gcc)
+CFLAGS:=-O2 -Wall
 
 LIBS=@LIBS@
+
+# Fallback to gcc and g++ if @CC@ and @CXX@ are not replaced
+CXX ?= g++
+# Fallback to default CXXFLAGS if @CXXFLAGS@ is not replaced
+CXXFLAGS ?= -std=c++11 -O2
 
 ############################################################################
 #    It is usually not necessary to change anything below this line!       #
@@ -22,18 +29,31 @@ SUB=$(subst ../src/,,$(SRC))
 LIB=$(filter-out $(APP),$(SUB))
 OBJ=$(LIB:.cpp=.o)
 DIR=../$(shell pwd|sed -e 's,.*/,,')
-COMPILE=$(CXX) $(CXXFLAGS) -I$(DIR)
+COMPILE_CXX=$(CXX) $(CXXFLAGS) -I$(DIR)
+COMPILE_C=$(CC) $(CFLAGS) -I$(DIR)
+
+# Nauty object files (expanded list)
+NAUTY_OBJS = ../../nauty2_8_8/nauty.o ../../nauty2_8_8/nautil.o ../../nauty2_8_8/naugraph.o \
+             ../../nauty2_8_8/schreier.o ../../nauty2_8_8/naurng.o ../../nauty2_8_8/gtools.o \
+             ../../nauty2_8_8/nautinv.o ../../nauty2_8_8/nautycliquer.o ../../nauty2_8_8/gutil1.o \
+             ../../nauty2_8_8/gutil2.o ../../nauty2_8_8/gtnauty.o ../../nauty2_8_8/addedgeg.o
+
+NAUTY_PATH = ../../nauty2_8_8
+LABELG = $(NAUTY_PATH)/labelg
 
 #--------------------------------------------------------------------------#
 
-all: libcadical.a cadical-ks cadical mobical
+all: libcadical.a cadical-ks cadical mobical $(LABELG)
 
 #--------------------------------------------------------------------------#
 
-.SUFFIXES: .cpp .o
+.SUFFIXES: .cpp .o .c
 
 %.o: ../src/%.cpp ../src/*.hpp makefile
-	$(COMPILE) -c $<
+	$(COMPILE_CXX) -c $<
+
+%.o: ../../nauty2_8_8/%.c
+	$(COMPILE_C) -c $< -o $@
 
 #--------------------------------------------------------------------------#
 
@@ -41,16 +61,19 @@ all: libcadical.a cadical-ks cadical mobical
 # tester 'mobical') and the library are the main build targets.
 
 cadical-ks: cadical-ks.o libcadical.a makefile
-	$(COMPILE) -o $@ $< -L. -lcadical $(LIBS)
+	$(COMPILE_CXX) -o $@ $< -L. -lcadical $(LDFLAGS) $(LIBS)
 
 cadical: cadical.o libcadical.a makefile
-	$(COMPILE) -o $@ $< -L. -lcadical $(LIBS)
+	$(COMPILE_CXX) -o $@ $< -L. -lcadical $(LDFLAGS) $(LIBS)
 
-mobical: mobical.o libcadical.a makefile $(LIBS)
-	$(COMPILE) -o $@ $< -L. -lcadical
+mobical: mobical.o libcadical.a makefile
+	$(COMPILE_CXX) -o $@ $< -L. -lcadical $(LDFLAGS) $(LIBS)
 
-libcadical.a: $(OBJ) makefile
-	ar rc $@ $(OBJ)
+libcadical.a: $(OBJ) $(NAUTY_OBJS) $(LABELG) makefile
+	ar rc $@ $(OBJ) $(NAUTY_OBJS)
+
+../../nauty2_8_8/%.o: ../../nauty2_8_8/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 #--------------------------------------------------------------------------#
 
@@ -75,7 +98,7 @@ ipasir.o: ../src/ipasir.h ../src/ccadical.h
 #--------------------------------------------------------------------------#
 
 analyze: all
-	$(COMPILE) --analyze ../src/*.cpp
+	$(COMPILE_CXX) --analyze ../src/*.cpp
 
 format:
 	clang-format -i ../*/*.[ch]pp
@@ -86,6 +109,7 @@ format:
 clean:
 	rm -f *.o *.a cadical mobical makefile build.hpp
 	rm -f *.gcda *.gcno *.gcov gmon.out
+	$(MAKE) -C $(NAUTY_PATH) clean
 
 test: all
 	CADICALBUILD="$(DIR)" $(MAKE) -j1 -C ../test
@@ -93,3 +117,8 @@ test: all
 #--------------------------------------------------------------------------#
 
 .PHONY: all always analyze clean test update format
+
+$(LABELG): $(NAUTY_OBJS)
+	$(MAKE) -C $(NAUTY_PATH) labelg
+
+$(info CC is set to $(CC))

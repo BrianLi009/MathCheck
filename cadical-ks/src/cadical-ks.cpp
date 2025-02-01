@@ -393,6 +393,7 @@ int App::main (int argc, char **argv) {
 #endif
   bool witness = true, less = false;
   const char *dimacs_name, *err;
+  int orbit_cutoff = -1;  // Default -1 means don't use orbit-based pruning
 
   for (int i = 1; i < argc; i++) {
     if (!strcmp (argv[i], "-h") || !strcmp (argv[i], "--help") ||
@@ -518,6 +519,17 @@ int App::main (int argc, char **argv) {
         order = stoi(argv[i]);
         std::cout << "c order = " << order << endl;
       }
+    } else if (!strcmp (argv[i], "--orbit")) {
+      if (++i == argc)
+        APPERR ("argument to '--orbit' missing");
+      else if (orbit_cutoff != -1)
+        APPERR ("multiple argument '--orbit %d' and '--orbit %s'", orbit_cutoff, argv[i]);
+      else if (!parse_int_str (argv[i], orbit_cutoff))
+        APPERR ("invalid argument in '--orbit %s'", argv[i]);
+      else if (orbit_cutoff < 0)
+        APPERR ("invalid orbit cutoff");
+      else
+        std::cout << "c orbit cutoff = " << orbit_cutoff << endl;
     } else if (!strcmp (argv[i], "--unembeddable-check")) {
       if (++i == argc)
         APPERR ("argument to '--unembeddable-check' missing");
@@ -923,6 +935,11 @@ int App::main (int argc, char **argv) {
     solver->section ("solving");
 
     SymmetryBreaker se(solver, order, unembeddable_check);
+
+    // Set orbit cutoff if specified
+    if (orbit_cutoff >= 0) {
+      se.setOrbitCutoff(orbit_cutoff);
+    }
 
     max_var = solver->active ();
     //std::cout << "c Nof vars: " << max_var << std::endl;
