@@ -28,6 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "utils/System.h"
 
 #define MAXORDER 39
+#define MAXM ((MAXN + WORDSIZE - 1)/WORDSIZE)  // Define MAXM for proper graph array size
 
 FILE* exhaustfile = NULL;
 FILE* canonicaloutfile = NULL;
@@ -236,6 +237,18 @@ Solver::Solver() :
         }
 #endif
     }
+
+    // Initialize nauty options properly
+    options.getcanon = TRUE;
+    options.defaultptn = TRUE;
+    options.userautomproc = NULL;
+    options.tc_level = 0;
+    options.mininvarlevel = 0;
+    options.maxinvarlevel = 1;
+    options.invararg = 0;
+    options.dispatch = &dispatch_graph;
+    options.schreier = FALSE;
+    options.cartesian = FALSE;
 }
 
 
@@ -643,6 +656,11 @@ void Solver::remove_possibilities(int k, int pn[], const std::vector<int>& orbit
 // Modify the existing canonicity checking code to use orbit-based pruning
 // Find where the permutation possibilities are initialized and add:
 bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test) {
+    if (k > MAXN) {
+        fprintf(stderr, "Error: Graph size exceeds MAXN\n");
+        exit(1);
+    }
+    
     int pl[k]; // pl[k] contains the current list of possibilities for kth vertex (encoded bitwise)
     int pn[k+1]; // pn[k] contains the initial list of possibilities for kth vertex (encoded bitwise)
     pl[0] = (1 << k) - 1;

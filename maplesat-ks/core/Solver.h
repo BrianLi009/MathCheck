@@ -38,6 +38,8 @@ namespace Minisat {
 //=================================================================================================
 // Solver -- the main class:
 
+#define MAXN 20  // Increase from default to handle larger graphs
+
 class Solver {
 public:
 
@@ -200,9 +202,9 @@ public:
     // Add nauty-related members
     DEFAULTOPTIONS_GRAPH(options);
     statsblk stats;
-    setword workspace[100];
+    setword workspace[2*MAXN];  // Increase workspace size
     int lab[MAXN], ptn[MAXN], orbits[MAXN];
-    graph g[MAXN*MAXN];
+    graph g[MAXN*MAXM];  // Use MAXM for proper graph array size
     
     // Add orbit-related members
     int orbit_cutoff = 0;  // Default value of 0 means no cutoff
