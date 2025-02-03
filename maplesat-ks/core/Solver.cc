@@ -239,7 +239,7 @@ Solver::Solver() :
     }
 
     // Initialize nauty options properly
-    options.getcanon = TRUE;
+    options.getcanon = FALSE;  // Change from TRUE to FALSE
     options.defaultptn = TRUE;
     options.userautomproc = NULL;
     options.tc_level = 0;
