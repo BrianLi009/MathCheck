@@ -27,10 +27,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Dimacs.h"
 #include "utils/System.h"
 
-// Update include paths for nauty
-#include "../nauty2_8_8/nauty.h"
-#include "../nauty2_8_8/naugroup.h"
-
 #define MAXORDER 39
 
 FILE* exhaustfile = NULL;
