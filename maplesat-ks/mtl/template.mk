@@ -19,7 +19,7 @@ RCOBJS     = $(addsuffix r,  $(COBJS))
 
 # Add nauty paths at the top
 NAUTY_DIR ?= ../../nauty2_8_8
-NAUTY_LIB = $(NAUTY_DIR)/nauty.a $(NAUTY_DIR)/traces.a $(NAUTY_DIR)/nausparse.a
+NAUTY_LIB = $(NAUTY_DIR)/nauty.a
 
 # Add nauty include path to CFLAGS
 CFLAGS += -I$(NAUTY_DIR)
