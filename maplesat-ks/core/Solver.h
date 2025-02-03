@@ -27,6 +27,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Alg.h"
 #include "utils/Options.h"
 #include "core/SolverTypes.h"
+#include "nauty.h"
+#include "naugroup.h"
 
 const int firstReduceDB = 2000;
 const int incReduceDB = 300;
@@ -194,6 +196,26 @@ public:
 #ifdef UNEMBED_SUBGRAPH_CHECK
     bool has_gub_subgraph(int k, int* P, int * p, int g);
 #endif
+
+    // Add nauty-related members
+    DEFAULTOPTIONS_GRAPH(options);
+    statsblk stats;
+    setword workspace[100];
+    int lab[MAXN], ptn[MAXN], orbits[MAXN];
+    graph g[MAXN*MAXN];
+    
+    // Add orbit-related members
+    int orbit_cutoff = 0;  // Default value of 0 means no cutoff
+    long nauty_calls = 0;
+    double nauty_time = 0;
+
+    // Add new helper functions
+    std::vector<int> compute_and_print_orbits(int k);
+    std::vector<char> convert_assignment_to_graph6(int k);
+    void remove_possibilities(int k, int pn[], const std::vector<int>& orbits);
+
+    // Add setter for orbit cutoff
+    void setOrbitCutoff(int cutoff) { orbit_cutoff = cutoff; }
 
 protected:
 

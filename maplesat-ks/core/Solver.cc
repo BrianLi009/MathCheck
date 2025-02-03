@@ -19,12 +19,17 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 
 #include <math.h>
+#include <chrono>
 
 #include "mtl/Sort.h"
 #include "core/Solver.h"
 #include "simp/SimpSolver.h"
 #include "core/Dimacs.h"
 #include "utils/System.h"
+
+// Update include paths for nauty
+#include "../nauty2_8_8/nauty.h"
+#include "../nauty2_8_8/naugroup.h"
 
 #define MAXORDER 39
 
@@ -550,12 +555,97 @@ Lit Solver::pickBranchLit()
 // The kth entry estimates the number of permuations needed to show canonicity in order (k+1)
 long perm_cutoff[MAXORDER] = {0, 0, 0, 0, 0, 0, 20, 50, 125, 313, 783, 1958, 4895, 12238, 30595, 76488, 191220, 478050, 1195125, 2987813, 7469533, 18673833, 46684583};
 
-// Returns true when the k-vertex subgraph (with adjacency matrix M) is canonical
-// M is determined by the current assignment to the first k*(k-1)/2 variables
-// If M is noncanonical, then p, x, and y will be updated so that
-// * p will be a permutation of the rows of M so that row[i] -> row[p[i]] generates a matrix smaller than M (and therefore demonstrates the noncanonicity of M)
-// * (x,y) will be the indices of the first entry in the permutation of M demonstrating that the matrix is indeed lex-smaller than M
-// * i will be the maximum defined index defined in p
+// Add orbit computation function
+std::vector<int> Solver::compute_and_print_orbits(int k) {
+    auto start = std::chrono::high_resolution_clock::now();
+    nauty_calls++;  // Increment counter
+
+    std::vector<char> g6 = convert_assignment_to_graph6(k);
+    if (g6.empty()) return std::vector<int>();
+
+    int n = k;
+    int m = SETWORDSNEEDED(n);
+    nauty_check(WORDSIZE, m, n, NAUTYVERSIONID);
+
+    std::vector<graph> g(m * n);
+    EMPTYGRAPH(g.data(), m, n);
+
+    int pos = 0;
+    for (int j = 1; j < n; ++j) {
+        for (int i = 0; i < j; ++i) {
+            if (g6[pos] == '1') {
+                ADDONEEDGE(g.data(), i, j, m);
+            }
+            ++pos;
+        }
+    }
+
+    std::vector<int> orbits(n);
+    for (int i = 0; i < n; ++i) {
+        lab[i] = i;
+        ptn[i] = 1;
+    }
+    ptn[n-1] = 0;
+
+    densenauty(g.data(), lab, ptn, orbits.data(), &options, &stats, m, n, NULL);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    nauty_time += std::chrono::duration<double>(end - start).count();
+
+    return orbits;
+}
+
+// Add helper function to convert assignment to graph6 format
+std::vector<char> Solver::convert_assignment_to_graph6(int k) {
+    std::vector<char> g6;
+    g6.reserve(k * (k - 1) / 2);
+
+    for (int j = 1; j < k; ++j) {
+        for (int i = 0; i < j; ++i) {
+            int var_idx = j*(j-1)/2 + i;
+            g6.push_back((value(var_idx) == l_True) ? '1' : '0');
+        }
+    }
+
+    return g6;
+}
+
+// Add function to remove invalid permutation possibilities based on orbits
+void Solver::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
+    if (k <= 0 || k > MAXN || orbits.size() != static_cast<size_t>(k)) {
+        return;
+    }
+
+    // Step 1: Create orbit masks for efficient operations
+    std::vector<int> orbit_masks(k, 0);
+    std::vector<int> orbit_mins(k, k);
+    
+    // Build orbit masks and find minimum vertices in one pass
+    for (int i = 0; i < k; i++) {
+        int orbit_id = orbits[i];
+        orbit_masks[orbit_id] |= (1 << i);
+        orbit_mins[orbit_id] = std::min(orbit_mins[orbit_id], i);
+    }
+
+    // Step 2: Apply restrictions based on orbit structure
+    for (int i = 0; i < k; i++) {
+        int orbit_id = orbits[i];
+        int min_vertex = orbit_mins[orbit_id];
+        
+        // Only restrict mappings for non-minimal vertices in their orbit
+        if (i > min_vertex) {
+            // Can't map to vertices lower than the orbit's minimum
+            int forbidden_mask = (1 << min_vertex) - 1;  // All bits < min_vertex
+            // Also can't map to vertices in same orbit that are lower than current vertex
+            forbidden_mask |= ((1 << i) - 1) & orbit_masks[orbit_id];
+            
+            pn[i] &= ~forbidden_mask;  // Remove forbidden mappings
+        }
+    }
+}
+
+// Modify the existing canonicity checking code to use orbit-based pruning
+// Find where the permutation possibilities are initialized and add:
 bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test) {
     int pl[k]; // pl[k] contains the current list of possibilities for kth vertex (encoded bitwise)
     int pn[k+1]; // pn[k] contains the initial list of possibilities for kth vertex (encoded bitwise)
@@ -571,6 +661,14 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
     // If pseudo-test enabled then stop test if it is taking over 10 times longer than average
     if(opt_pseudo_test && k >= 7) {
         limit = 10*perm_cutoff[k-1];
+    }
+
+    // Only compute orbits and remove possibilities if k is greater than orbit_cutoff
+    if (k > orbit_cutoff) {
+        // Compute orbits
+        std::vector<int> orbits = compute_and_print_orbits(k);
+        // Remove possibilities before starting
+        remove_possibilities(k, pn, orbits);
     }
 
     while(np < limit) {
