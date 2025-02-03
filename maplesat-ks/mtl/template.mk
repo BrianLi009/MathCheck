@@ -71,8 +71,20 @@ lib$(LIB)_profile.a:	$(filter-out */Main.op, $(PCOBJS))
 lib$(LIB)_debug.a:	$(filter-out */Main.od, $(DCOBJS))
 lib$(LIB)_release.a:	$(filter-out */Main.or, $(RCOBJS))
 
-## Build rule
-%.o %.op %.od %.or:	%.cc
+## Build rules
+%.o: %.cc
+	@echo Compiling: $(subst $(MROOT)/,,$@)
+	@$(CXX) $(CFLAGS) -c -o $@ $<
+
+%.op: %.cc
+	@echo Compiling: $(subst $(MROOT)/,,$@)
+	@$(CXX) $(CFLAGS) -c -o $@ $<
+
+%.od: %.cc
+	@echo Compiling: $(subst $(MROOT)/,,$@)
+	@$(CXX) $(CFLAGS) -c -o $@ $<
+
+%.or: %.cc
 	@echo Compiling: $(subst $(MROOT)/,,$@)
 	@$(CXX) $(CFLAGS) -c -o $@ $<
 
