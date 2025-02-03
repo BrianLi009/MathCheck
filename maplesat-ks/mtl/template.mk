@@ -27,6 +27,10 @@ COPTIMIZE ?= -O3
 CFLAGS    += -I$(MROOT) -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS -I/usr/include/x86_64-linux-gnu/nauty/ -I/usr/include/nauty/
 LFLAGS    += -lz -lnauty
 
+# Add nauty paths at the top
+NAUTY_DIR ?= ../../nauty2_8_8
+NAUTY_LIB = $(NAUTY_DIR)/nauty.a $(NAUTY_DIR)/traces.a $(NAUTY_DIR)/nausparse.a
+
 .PHONY : s p d r rs clean 
 
 s:	$(EXEC)
@@ -72,9 +76,25 @@ lib$(LIB)_release.a:	$(filter-out */Main.or, $(RCOBJS))
 	@$(CXX) $(CFLAGS) -c -o $@ $<
 
 ## Linking rules (standard/profile/debug/release)
-$(EXEC) $(EXEC)_profile $(EXEC)_debug $(EXEC)_release $(EXEC)_static:
-	@echo Linking: "$@ ( $(foreach f,$^,$(subst $(MROOT)/,,$f)) )"
-	@$(CXX) $^ $(LFLAGS) -o $@
+$(EXEC): $(COBJS)
+	$(ECHO) Linking: $(EXEC)
+	$(VERB) $(CXX) $(COBJS) $(LFLAGS) $(NAUTY_LIB) -o $(EXEC)
+
+$(EXEC)_profile:	$(PCOBJS)
+	$(ECHO) Linking: $(EXEC)_profile
+	$(VERB) $(CXX) $(PCOBJS) $(LFLAGS) -o $(EXEC)_profile
+
+$(EXEC)_debug:	$(DCOBJS)
+	$(ECHO) Linking: $(EXEC)_debug
+	$(VERB) $(CXX) $(DCOBJS) $(LFLAGS) -o $(EXEC)_debug
+
+$(EXEC)_release:	$(RCOBJS)
+	$(ECHO) Linking: $(EXEC)_release
+	$(VERB) $(CXX) $(RCOBJS) $(LFLAGS) -o $(EXEC)_release
+
+$(EXEC)_static: $(COBJS)
+	$(ECHO) Linking: $@
+	$(VERB) $(CXX) --static $(COBJS) $(LFLAGS) $(NAUTY_LIB) -o $@
 
 ## Library rules (standard/profile/debug/release)
 lib$(LIB)_standard.a lib$(LIB)_profile.a lib$(LIB)_release.a lib$(LIB)_debug.a:
@@ -102,6 +122,9 @@ depend.mk: $(CSRCS) $(CHDRS)
 		  cat $(MROOT)/$${dir}/depend.mk >> depend.mk; \
 	      fi; \
 	  done
+
+# Add nauty include path to CFLAGS
+CFLAGS += -I$(NAUTY_DIR)
 
 -include $(MROOT)/mtl/config.mk
 -include depend.mk
