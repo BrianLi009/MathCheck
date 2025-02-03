@@ -27,8 +27,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Alg.h"
 #include "utils/Options.h"
 #include "core/SolverTypes.h"
-#include "nauty.h"
-#include "naugroup.h"
+#include "../nauty2_8_8/nauty.h"
+#include "../nauty2_8_8/naugroup.h"
 
 const int firstReduceDB = 2000;
 const int incReduceDB = 300;
