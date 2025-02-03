@@ -29,6 +29,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/SolverTypes.h"
 #include "../nauty2_8_8/nauty.h"
 #include "../nauty2_8_8/naugroup.h"
+#include <vector>
 
 const int firstReduceDB = 2000;
 const int incReduceDB = 300;
