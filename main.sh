@@ -155,7 +155,8 @@ lex_opt=""
 # Generate Instance
 ./generate-instance.sh $order $color_pct $definition "$lex_opt"
 f=constraints_${order}_${color_pct}_${definition}
-cp constraints_${order}_${color_pct}_${definition} $dir_name
+[ "$solver_lex_greatest" = true ] && f=${f}_lex_greatest
+cp $f $dir_name
 
 # Construct solver options
 solver_opts=""
