@@ -91,11 +91,11 @@ def matrix_lex(M1, M2):
 		for j in range(i):
 			if M1[i][j] != M2[i][j]:
 				if lex_greatest:
-					# For lex-greatest: return True if M1 is lex-larger
-					return M1[i][j] == 1 and M2[i][j] == 0
-				else:
-					# For lex-least: return True if M1 is lex-smaller
+					# For lex-greatest: return True if M1 is lex-smaller
 					return M1[i][j] == 0 and M2[i][j] == 1
+				else:
+					# For lex-least: return True if M1 is lex-larger
+					return M1[i][j] == 1 and M2[i][j] == 0
 	return False
 
 # Extend given permutation to a full permutation of {0, ..., n-1}
