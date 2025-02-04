@@ -90,19 +90,11 @@ SymmetryBreaker::~SymmetryBreaker () {
         printf("Number of solutions   : %ld\n", sol_count);
         printf("Canonical subgraphs   : %-12" PRIu64 "   (%.0f /sec)\n", canon, canon/canontime);
         for(int i=2; i<n; i++) {
-#ifdef PERM_STATS
-            printf("          order %2d    : %-12" PRIu64 "   (%.0f /sec) %.0f avg. perms\n", i+1, canonarr[i], canonarr[i]/canontimearr[i], canon_np[i]/(float)(canonarr[i] > 0 ? canonarr[i] : 1));
-#else
             printf("          order %2d    : %-12" PRIu64 "   (%.0f /sec)\n", i+1, canonarr[i], canonarr[i]/canontimearr[i]);
-#endif
         }
         printf("Noncanonical subgraphs: %-12" PRIu64 "   (%.0f /sec)\n", noncanon, noncanon/noncanontime);
         for(int i=2; i<n; i++) {
-#ifdef PERM_STATS
-            printf("          order %2d    : %-12" PRIu64 "   (%.0f /sec) %.0f avg. perms\n", i+1, noncanonarr[i], noncanonarr[i]/noncanontimearr[i], noncanon_np[i]/(float)(noncanonarr[i] > 0 ? noncanonarr[i] : 1));
-#else
             printf("          order %2d    : %-12" PRIu64 "   (%.0f /sec)\n", i+1, noncanonarr[i], noncanonarr[i]/noncanontimearr[i]);
-#endif
         }
         printf("Canonicity checking   : %g s\n", canontime);
         printf("Noncanonicity checking: %g s\n", noncanontime);
@@ -113,19 +105,6 @@ SymmetryBreaker::~SymmetryBreaker () {
                 printf("        graph #%2d     : %-12" PRIu64 "\n", g, muscounts[g]);
             }
             printf("Total unembed. graphs : %ld\n", muscount);
-        }
-        if (solver->tracking) {
-            printf("\nPermutation Statistics:\n");
-            for(int i=2; i<n; i++) {
-                if (subgraph_count[i] > 0) {
-                    printf("Order %2d: avg perms = %.1f, max perms = %ld, total perms = %ld\n",
-                        i+1,
-                        (double)total_perms[i] / subgraph_count[i],
-                        max_perms[i],
-                        total_perms[i]);
-                }
-            }
-            printf("\n");
         }
     }
 }
@@ -507,22 +486,6 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
                 }
                 i--;
                 if(i==-1) {
-                    // Update tracking stats before returning
-                    if (solver->tracking) {
-                        total_perms[k-1] += np;
-                        if (np > max_perms[k-1]) {
-                            max_perms[k-1] = np;
-                        }
-                        subgraph_count[k-1]++;
-                        permutation_counts[k-1].push_back(np);
-                        
-                        double current_time = CaDiCaL::absolute_process_time();
-                        double time_since_checkpoint = current_time - last_time_checkpoint;
-                        if (time_since_checkpoint >= TIME_PRINT_INTERVAL) {
-                            print_tracking_stats();
-                            last_time_checkpoint = current_time;
-                        }
-                    }
                     return true;
                 }
             }
@@ -568,22 +531,6 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
             }
             if((solver->lex_greatest ? assign[j] == l_False && assign[pj] == l_True 
                                    : assign[j] == l_True && assign[pj] == l_False)) {
-                // Update tracking stats before returning
-                if (solver->tracking) {
-                    total_perms[k-1] += np;
-                    if (np > max_perms[k-1]) {
-                        max_perms[k-1] = np;
-                    }
-                    subgraph_count[k-1]++;
-                    permutation_counts[k-1].push_back(np);
-                    
-                    double current_time = CaDiCaL::absolute_process_time();
-                    double time_since_checkpoint = current_time - last_time_checkpoint;
-                    if (time_since_checkpoint >= TIME_PRINT_INTERVAL) {
-                        print_tracking_stats();
-                        last_time_checkpoint = current_time;
-                    }
-                }
                 return false;
             }
 
@@ -605,23 +552,6 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
             np++;  // Count this as a complete permutation check
             // Remove p[i] as a possibility from the ith vertex
             pl[i] = pl[i] & ~(1 << p[i]);
-        }
-    }
-
-    // Update tracking stats before final return
-    if (solver->tracking) {
-        total_perms[k-1] += np;
-        if (np > max_perms[k-1]) {
-            max_perms[k-1] = np;
-        }
-        subgraph_count[k-1]++;
-        permutation_counts[k-1].push_back(np);
-        
-        double current_time = CaDiCaL::absolute_process_time();
-        double time_since_checkpoint = current_time - last_time_checkpoint;
-        if (time_since_checkpoint >= TIME_PRINT_INTERVAL) {
-            print_tracking_stats();
-            last_time_checkpoint = current_time;
         }
     }
     return true;
@@ -688,34 +618,6 @@ bool SymmetryBreaker::has_mus_subgraph(int k, int* P, int* p, int g) {
             pl[i] = pl[i] & ~(1 << p[i]);
         }
     }
-}
-
-void SymmetryBreaker::print_tracking_stats() {
-    std::cout << "\nIntermediate Permutation Statistics:\n";
-    for(int i=2; i<n; i++) {
-        if (subgraph_count[i] > 0) {
-            // Calculate median
-            std::sort(permutation_counts[i].begin(), permutation_counts[i].end());
-            double median = (permutation_counts[i].size() % 2 == 0) ? 
-                (permutation_counts[i][permutation_counts[i].size()/2 - 1] + permutation_counts[i][permutation_counts[i].size()/2]) / 2.0 : 
-                permutation_counts[i][permutation_counts[i].size()/2];
-
-            // Calculate 25th and 75th percentiles
-            double p25 = permutation_counts[i][(int)(0.25 * (permutation_counts[i].size() - 1))];
-            double p75 = permutation_counts[i][(int)(0.75 * (permutation_counts[i].size() - 1))];
-
-            std::cout << "Order " << std::setw(2) << i+1 
-                     << ": avg perms = " << std::fixed << std::setprecision(1) 
-                     << (double)total_perms[i] / subgraph_count[i]
-                     << ", max perms = " << max_perms[i]
-                     << ", median perms = " << median
-                     << ", 25th percentile = " << p25
-                     << ", 75th percentile = " << p75
-                     << ", total perms = " << total_perms[i] << "\n";
-        }
-    }
-    std::cout << "\n";
-    std::cout.flush();
 }
 
 std::vector<int> SymmetryBreaker::compute_and_print_orbits(int k) {

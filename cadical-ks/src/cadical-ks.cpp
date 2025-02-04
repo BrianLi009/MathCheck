@@ -565,10 +565,6 @@ int App::main (int argc, char **argv) {
       solver->minclause = false;
     } else if (!strcmp (argv[i], "--minclause")) {
       solver->minclause = true;
-    } else if (!strcmp (argv[i], "--no-tracking")) {
-      solver->tracking = false;
-    } else if (!strcmp (argv[i], "--tracking")) {
-      solver->tracking = true;
     }
 #ifndef __WIN32
     else if (!strcmp (argv[i], "-t")) {
