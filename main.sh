@@ -148,8 +148,12 @@ dir_name="${order}-${color_pct}-${definition}-${mcts_sims}-${cutoff_criteria}-${
 
 mkdir $dir_name
 
+# Convert solver_lex_greatest to lex_opt for generate-instance.sh
+lex_opt=""
+[ "$solver_lex_greatest" = true ] && lex_opt="lex-greatest"
+
 # Generate Instance
-./generate-instance.sh $order $color_pct $definition $solver_lex_greatest
+./generate-instance.sh $order $color_pct $definition "$lex_opt"
 f=constraints_${order}_${color_pct}_${definition}
 cp constraints_${order}_${color_pct}_${definition} $dir_name
 
