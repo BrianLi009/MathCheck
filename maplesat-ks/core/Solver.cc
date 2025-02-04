@@ -95,6 +95,7 @@ static IntOption     opt_max_exhaustive_var (_cat, "max-exhaustive-var", "Only p
 //static BoolOption    opt_fixed_card     (_cat, "fixed-card", "Assume a fixed number of true variables in solution and only use negative literals in exhaustive blocking clauses", false);
 //static BoolOption    opt_trust_blocking (_cat, "trust-blocking", "Write proof with trusted blocking clauses", false);
 static IntOption     opt_order          (_cat, "order", "Number of vertices in the KS system searching for", 0, IntRange(0, MAXORDER));
+static IntOption     opt_orbit          (_cat, "orbit", "Orbit cutoff value for canonicity checking (0=disabled)", 0, IntRange(0, MAXORDER));
 //static IntOption     opt_start_col      (_cat, "start-col", "Starting column for which to test for canonicity", 2, IntRange(0, MAXORDER));
 #ifdef CANON_CHECK_OPTIONS
 static IntOption     opt_inc_col        (_cat, "inc-col", "Check for canonicity every inc_col columns", 1, IntRange(1, MAXORDER));
@@ -236,6 +237,12 @@ Solver::Solver() :
             guboutfile = fopen(guboutstring, "w");
         }
 #endif
+    }
+    
+    // Add orbit cutoff initialization here
+    if(opt_orbit > 0)
+    {   orbit_cutoff = opt_orbit;
+        opt_orbit = 0;
     }
 
     // Initialize nauty options properly
