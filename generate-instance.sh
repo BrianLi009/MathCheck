@@ -11,20 +11,23 @@ Description:
     5. We also applied the cubic isomorphism blocking clauses
 
 Usage:
-    ./generate-instance.sh n m [o] [lex-greatest]
+    ./generate-instance.sh n [lex-greatest]
 
 Options:
     <n>: the order of the instance/number of vertices in the graph
-    <m>: (optional) additional parameter
-    <o>: (optional) definition to use (1 or 2)
     lex-greatest: (optional) use lex-greatest ordering instead of lex-smallest
     
 " && exit
 
 n=$1 #order
-c=${2:-0.5} #ratio of color-1 vertices to block
-o=${3:-1} #assume using definition 1, can use definition 2 as well
-lex_opt=${4:-""} #lex-greatest option
+c=0.5 #default ratio of color-1 vertices to block
+o=1 #default to using definition 1
+lex_opt="" #default to lex-smallest
+
+# Check if second argument is lex-greatest
+if [ "$2" = "lex-greatest" ]; then
+    lex_opt="lex-greatest"
+fi
 
 base_name="constraints_${n}_${c}_${o}"
 file_name="$base_name"
