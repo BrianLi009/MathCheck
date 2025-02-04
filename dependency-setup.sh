@@ -61,6 +61,7 @@ build_dependency() {
 build_dependency drat-trim drat-trim "make -f Makefile"
 build_dependency cadical-ks build/cadical-ks "./configure && make"
 build_dependency maplesat-ks simp/maplesat_static "make clean && make"
+build_dependency nauty2_8_8 nauty "./configure && make"
 
 # More robust submodule handling
 echo "Updating git submodules..."
@@ -81,6 +82,9 @@ clean_artifacts() {
     
     # Clean march_cu
     (cd gen_cubes/march_cu && make clean 2>/dev/null || true)
+    
+    # Clean nauty
+    (cd nauty2_8_8 && [ -f Makefile ] && make clean 2>/dev/null || true)
     
     echo "Cleanup completed"
 }
