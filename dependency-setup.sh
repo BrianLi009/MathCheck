@@ -107,10 +107,11 @@ build_dependency() {
 }
 
 # Build dependencies only if targets don't exist or force rebuild is requested
+# Build nauty first as it's required by cadical and maplesat
+build_dependency nauty2_8_8 nauty "./configure && make"
 build_dependency drat-trim drat-trim "make -f Makefile"
 build_dependency cadical-ks build/cadical-ks "./configure && make"
 build_dependency maplesat-ks simp/maplesat_static "make clean && make"
-build_dependency nauty2_8_8 nauty "./configure && make"
 
 # More robust submodule handling
 echo "Updating git submodules..."
