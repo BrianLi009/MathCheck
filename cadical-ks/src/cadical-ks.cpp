@@ -537,7 +537,7 @@ int App::main (int argc, char **argv) {
         APPERR ("multiple argument '--unembeddable-check %d' and '--unembeddable-check %s'", order, argv[i]);
       else if (!parse_int_str (argv[i], unembeddable_check))
         APPERR ("invalid argument in '--unembeddable-check %s'", argv[i]);
-      else if (unembeddable_check < 0 || unembeddable_check > 17)
+      else if (unembeddable_check < 0 || unembeddable_check > 13)
         APPERR ("invalid unembeddable-check");
       else {
         unembeddable_check = stoi(argv[i]);

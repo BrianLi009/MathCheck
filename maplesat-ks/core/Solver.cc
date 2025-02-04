@@ -110,12 +110,12 @@ static BoolOption    opt_minclause      (_cat, "minclause",   "Minimize learned 
 static BoolOption    opt_lex_greatest   (_cat, "lex-greatest", "Use lex-greatest instead of lex-least for canonicity checking", false);
 #ifdef UNEMBED_SUBGRAPH_CHECK
 static StringOption  opt_gub_out        (_cat, "unembeddable-out", "File to output unembeddable subgraphs found during search");
-static IntOption     opt_check_gub      (_cat, "unembeddable-check", "Number of minimal unembeddable subgraphs to check for", 0, IntRange(0, 17));
+static IntOption     opt_check_gub      (_cat, "unembeddable-check", "Number of minimal unembeddable subgraphs to check for", 0, IntRange(0, 13));
 #else
 #define opt_check_gub 0
 #endif
 #ifdef OPT_START_GUB
-static IntOption     opt_start_gub      (_cat, "unembeddable-check-start", "Starting unembeddable subgraphs to check for", 0, IntRange(0, 17));
+static IntOption     opt_start_gub      (_cat, "unembeddable-check-start", "Starting unembeddable subgraphs to check for", 0, IntRange(0, 13));
 #endif
 static IntOption     opt_max_conflicts  (_cat, "max-conflicts", "Limit the number of conflicts (0=unlimited)", 0, IntRange(0, INT32_MAX));
 static IntOption     opt_max_proof_size (_cat, "max-proof-size", "File size limit (in MiB) of the generated proof (0=unlimited)", 0, IntRange(0, INT32_MAX));
