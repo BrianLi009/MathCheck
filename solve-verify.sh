@@ -85,5 +85,8 @@ $cmd | tee $f.log
 if ! grep -q "UNSAT" "$f.log" || [ "$skip_verify" = true ]; then
 	echo "instance not solved, no need to verify unless skipping verification"
 else
-	./proof-module.sh $n $f $f.verify
+	# Pass lex-greatest flag to proof-module.sh if needed
+	lex_opt=""
+	[ "$lex_order" = "greatest" ] && lex_opt="-lex-greatest"
+	./proof-module.sh $n $f $f.verify "" $lex_opt
 fi

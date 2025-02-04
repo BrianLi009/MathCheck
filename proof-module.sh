@@ -4,6 +4,7 @@ n=$1 #order
 f=$2 #input file
 o=$3 #output .verify file
 m=$4 #verification mode
+lex_opt=$5 #lex-greatest option
 
 # Verify DRAT proof
 if [ "$m" = "f" ]; then
@@ -19,7 +20,10 @@ then
 fi
 # Verify trusted clauses
 if [ -f "$f.perm" ]; then
-	grep 't' $f.drat | ./drat-trim/check-perm.py $n $f.perm| tee $f.permcheck
+	# Pass lex-greatest option to check-perm.py if provided
+	check_perm_cmd="grep 't' $f.drat | ./drat-trim/check-perm.py $n $f.perm"
+	[ -n "$lex_opt" ] && check_perm_cmd="$check_perm_cmd $lex_opt"
+	eval "$check_perm_cmd" | tee $f.permcheck
 	if ! grep "VERIFIED" -q $f.permcheck
 	then
 		echo "ERROR: Trusted clauses not verified"
