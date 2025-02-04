@@ -20,8 +20,46 @@ function display_help() {
     exit
 }
 
-# Check if help is requested
+# Improved clean function
+clean_artifacts() {
+    echo "Cleaning all artifacts..."
+    
+    # Clean drat-trim
+    if [ -d "drat-trim" ]; then
+        echo "Cleaning drat-trim..."
+        (cd drat-trim && make clean -f Makefile 2>/dev/null || true)
+    fi
+    
+    # Clean cadical-ks
+    if [ -d "cadical-ks" ]; then
+        echo "Cleaning cadical-ks..."
+        (cd cadical-ks && make clean 2>/dev/null || true)
+    fi
+    
+    # Clean maplesat-ks
+    if [ -d "maplesat-ks" ]; then
+        echo "Cleaning maplesat-ks..."
+        (cd maplesat-ks && make clean 2>/dev/null || true)
+    fi
+    
+    # Clean march_cu
+    if [ -d "gen_cubes/march_cu" ]; then
+        echo "Cleaning march_cu..."
+        (cd gen_cubes/march_cu && make clean 2>/dev/null || true)
+    fi
+    
+    # Clean nauty
+    if [ -d "nauty2_8_8" ]; then
+        echo "Cleaning nauty..."
+        (cd nauty2_8_8 && make clean 2>/dev/null || true)
+    fi
+    
+    echo "Cleanup completed"
+}
+
+# Check for help and clean flags first
 [ "$1" = "-h" -o "$1" = "--help" ] && display_help
+[ "$1" = "--clean" ] && { clean_artifacts; exit; }
 
 # Add -x flag for verbose output if needed
 [ "$1" = "-x" ] && set -x
@@ -77,30 +115,5 @@ build_dependency nauty2_8_8 nauty "./configure && make"
 # More robust submodule handling
 echo "Updating git submodules..."
 git submodule update --init --recursive
-
-# New clean function
-clean_artifacts() {
-    echo "Cleaning all artifacts..."
-    
-    # Clean drat-trim
-    (cd drat-trim && make clean -f Makefile 2>/dev/null || true)
-    
-    # Clean cadical-ks
-    (cd cadical-ks && [ -f Makefile ] && make clean 2>/dev/null || true)
-    
-    # Clean maplesat-ks
-    (cd maplesat-ks && make clean 2>/dev/null || true)
-    
-    # Clean march_cu
-    (cd gen_cubes/march_cu && make clean 2>/dev/null || true)
-    
-    # Clean nauty
-    (cd nauty2_8_8 && [ -f Makefile ] && make clean 2>/dev/null || true)
-    
-    echo "Cleanup completed"
-}
-
-# Handle clean mode
-[ "$1" = "--clean" ] && { clean_artifacts; exit; }
 
 echo "Dependency setup completed successfully"
