@@ -58,24 +58,24 @@ cmd="$cmd -o $f_dir.simp1 -e $f_dir.ext -n -c $m"
 echo "simplifying for $m conflicts"
 
 # Execute CaDiCaL command
-if [ "$s" != "true" ]; then
-  $cmd | tee "$f_dir".simplog
-  echo "verifying the simplification now..."
-  if grep -q "exit 20" "$f_dir".simplog; then
-    # Pass lex-greatest flag to proof-module.sh if needed
-    lex_opt=""
-    [ "$lex_order" = "greatest" ] && lex_opt="-lex-greatest"
-    ./proof-module.sh $o $f_dir $f_dir.verify "" $lex_opt
-  else
-    echo "CaDiCaL returns UNKNOWN, using forward proof checking..."
-    # Pass lex-greatest flag to proof-module.sh if needed
-    lex_opt=""
-    [ "$lex_order" = "greatest" ] && lex_opt="-lex-greatest"
-    ./proof-module.sh $o $f_dir $f_dir.verify "f" $lex_opt
-  fi
+if [ "$s" = true ]; then
+    echo "skipping generation of DRAT file and verification"
+    $cmd | tee "$f_dir".simplog
 else
-  echo "skipping generation of DRAT file"
-  $cmd | tee "$f_dir".simplog
+    $cmd | tee "$f_dir".simplog
+    echo "verifying the simplification now..."
+    if grep -q "exit 20" "$f_dir".simplog; then
+        # Pass lex-greatest flag to proof-module.sh if needed
+        lex_opt=""
+        [ "$lex_order" = "greatest" ] && lex_opt="-lex-greatest"
+        ./proof-module.sh $o $f_dir $f_dir.verify "" $lex_opt
+    else
+        echo "CaDiCaL returns UNKNOWN, using forward proof checking..."
+        # Pass lex-greatest flag to proof-module.sh if needed
+        lex_opt=""
+        [ "$lex_order" = "greatest" ] && lex_opt="-lex-greatest"
+        ./proof-module.sh $o $f_dir $f_dir.verify "f" $lex_opt
+    fi
 fi
 
 # Output final simplified instance

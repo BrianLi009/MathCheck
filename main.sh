@@ -149,7 +149,7 @@ dir_name="${order}-${color_pct}-${definition}-${mcts_sims}-${cutoff_criteria}-${
 mkdir $dir_name
 
 # Generate Instance
-./generate-instance.sh $order $color_pct $definition
+./generate-instance.sh $order $color_pct $definition $solver_lex_greatest
 f=constraints_${order}_${color_pct}_${definition}
 cp constraints_${order}_${color_pct}_${definition} $dir_name
 
@@ -168,7 +168,7 @@ case $mode in
         echo "No cubing, just solve"
         
         echo "Simplifying $f for 10000 conflicts using CaDiCaL+CAS"
-        ./simplification/simplify-by-conflicts.sh ${dir_name}/constraints_${order}_${color_pct}_${definition} $order 10000
+        ./simplification/simplify-by-conflicts.sh $solver_opts ${dir_name}/constraints_${order}_${color_pct}_${definition} $order 10000
 
         echo "Solving $f using MapleSAT+CAS"
         ./solve-verify.sh $solver_opts $order ${dir_name}/constraints_${order}_${color_pct}_${definition}.simp

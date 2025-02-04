@@ -24,10 +24,10 @@ def run_command(command):
         else:
             print("Continue cubing this subproblem...")
             command = f"cube('{file_to_cube}', 'N', 0, {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, 'True', '{solver_optsg}')"
-            queue.put(command)
+            eval(command)
 
     except Exception as e:
-        print(f"Failed to run command due to: {str(e)}")
+        print(f"Error in process {process_id}: {str(e)}")
 
 def run_cube_command(command):
     print(command)
@@ -43,70 +43,85 @@ def remove_related_files(new_file):
 
 def worker(queue):
     while True:
-        args = queue.get()
-        if args is None:
+        command = queue.get()
+        if command is None:
             break
-        if args.startswith("./solve-verify"):
-            run_command(args)
-        else:
-            run_cube_command(args)
+        run_command(command)
         queue.task_done()
 
-def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, extension="False", solver_opts=""):
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
-        if cube != "N":
-            subprocess.run(f"./gen_cubes/apply.sh {original_file} {cube} {index} | ./simplification/simplify-by-conflicts.sh -s - {order} 10000", shell=True, stdout=temp_file, stderr=subprocess.DEVNULL)
-            file_to_cube = temp_file.name
+def cube(file_name, mode, d, m, order, numMCTS, queue, cutoff, cutoffv, dg, simplify, solver_opts):
+    if mode == "N":
+        if cutoff == "d":
+            if d >= cutoffv:
+                command = f"./solve-verify.sh {solver_opts} {order} {file_name}"
+                queue.put(command)
+                return
         else:
-            subprocess.run(f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000", shell=True, stdout=temp_file, stderr=subprocess.DEVNULL)
-            file_to_cube = temp_file.name
+            if m >= cutoffv:
+                command = f"./solve-verify.sh {solver_opts} {order} {file_name}"
+                queue.put(command)
+                return
 
-        temp_file.seek(0)
-        if "c exit 20" in temp_file.read():
-            print("the cube is UNSAT")
-            return
+    # Create temporary files for cubing
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+    temp_file.close()
+    temp_file_name = temp_file.name
 
-    var_removed = subprocess.run(f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_cube} | awk '$0<={m}' | sort -u | wc -l", shell=True, capture_output=True, text=True).stdout.strip()
-    var_removed = int(var_removed)
+    # Run march_cu
+    march_command = f"./gen_cubes/march_cu/march_cu {file_name} -o {temp_file_name}"
+    process = subprocess.Popen(march_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    stdout, stderr = process.communicate()
 
-    if extension == "True":
-        cutoffv = var_removed + 40
-
-    print(f'{var_removed} variables removed from the cube')
-
-    if (cutoff == 'd' and d >= cutoffv) or (cutoff == 'v' and var_removed >= cutoffv):
-        if solveaftercubeg == 'True':
-            command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
-            queue.put(command)
+    if stderr:
+        print(f"Error in march_cu: {stderr.decode()}")
         return
 
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_output:
-        subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o - -order {order} -prod -numMCTSSims {numMCTS}", shell=True, stdout=temp_output, stderr=subprocess.DEVNULL)
-        
-        d += 1
-        if cube != "N":
-            next_cube = f'{cube}{index}'
-            subprocess.run(f'''sed -E "s/^a (.*)/$(head -n {index} {cube} | tail -n 1 | sed -E 's/(.*) 0/\\1/') \\1/" {temp_output.name} > {next_cube}''', shell=True)
-        else:
-            next_cube = f'{original_file}0'
-            os.rename(temp_output.name, next_cube)
+    # Process march_cu output
+    with open(temp_file_name, 'r') as f:
+        lines = f.readlines()
 
-    os.unlink(file_to_cube)
+    for line in lines:
+        if line.startswith('a'):
+            # Create new file with cube
+            new_file = f"{file_name}.{line[2:-1].replace(' ', '')}"
+            with open(new_file, 'w') as f:
+                f.write(f"p cnf {m} {d}\n")
+                f.write(line[2:])
 
-    command1 = f"cube('{original_file}', '{next_cube}', 1, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, 'False', '{solver_opts}')"
-    command2 = f"cube('{original_file}', '{next_cube}', 2, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, 'False', '{solver_opts}')"
-    queue.put(command1)
-    queue.put(command2)
+            # Simplify if needed
+            if simplify == "True":
+                simp_command = f"./simplification/simplify-by-conflicts.sh {solver_opts} {new_file} {order} 10000"
+                process = subprocess.Popen(simp_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                stdout, stderr = process.communicate()
 
-def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True', solver_opts=""):
-    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, solver_optsg
-    orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, solver_optsg = (
-        order, numMCTS, cutoff, cutoffv, 0, int(int(order)*(int(order)-1)/2), 
-        solveaftercube, file_name_solve, solver_opts
-    )
-    
-    queue = multiprocessing.JoinableQueue()
+                if stderr:
+                    print(f"Error in simplification: {stderr.decode()}")
+                    continue
+
+            # Recursive cube call
+            cube(f"{new_file}.simp" if simplify == "True" else new_file, "N", d+1, m, order, numMCTS, queue, cutoff, cutoffv, dg, simplify, solver_opts)
+
+    os.unlink(temp_file_name)
+
+def main(*args):
+    if len(args) < 5:
+        print("Usage: python parallel-solve.py order file_name numMCTS cutoff cutoffv [simplify] [solver_opts]")
+        return
+
+    global mg, orderg, numMCTSg, cutoffg, cutoffvg, dg, solver_optsg
+    mg = int(args[0])
+    orderg = args[0]
+    numMCTSg = args[2]
+    cutoffg = args[3]
+    cutoffvg = int(args[4])
+    dg = 0
+    solver_optsg = args[6] if len(args) > 6 else ""  # Get solver options if provided
+
+    file_name_solve = args[1]
+    simplify = args[5] if len(args) > 5 else "True"
+
     num_worker_processes = multiprocessing.cpu_count()
+    queue = multiprocessing.JoinableQueue()
 
     with multiprocessing.Pool(num_worker_processes) as pool:
         pool.apply_async(worker, (queue,))
@@ -116,12 +131,12 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercub
 
         if first_line.startswith('p cnf'):
             print("input file is a CNF file")
-            cube(file_name_solve, "N", 0, mg, order, numMCTS, queue, cutoff, int(cutoffv), 0, "False", solver_opts)
+            cube(file_name_solve, "N", 0, mg, orderg, numMCTSg, queue, cutoffg, cutoffvg, 0, simplify, solver_optsg)
         else:
             print("input file contains name of multiple CNF file, solving them first")
             instance_lst = [first_line] + [line.strip() for line in file]
             for instance in instance_lst:
-                command = f"./solve-verify.sh {solver_opts} {order} {instance}"
+                command = f"./solve-verify.sh {solver_optsg} {orderg} {instance}"
                 queue.put(command)
 
     queue.join()
