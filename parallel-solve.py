@@ -34,7 +34,7 @@ def run_cube_command(command):
     eval(command)
 
 def remove_related_files(new_file):
-    extensions = ['.simp', '.perm', '.nonembed', '.drat', '.exhaust', '.log']
+    extensions = ['.simp', '.perm', '.nonembed', '.drat']
     for ext in extensions:
         try:
             os.remove(new_file + ext)
@@ -89,9 +89,9 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             subprocess.run(f'''sed -E "s/^a (.*)/$(head -n {index} {cube} | tail -n 1 | sed -E 's/(.*) 0/\\1/') \\1/" {temp_output.name} > {next_cube}''', shell=True)
         else:
             next_cube = f'{original_file}0'
-            os.rename(temp_output.name, next_cube)
+            subprocess.run(f"cp {temp_output.name} {next_cube}", shell=True)
 
-    os.unlink(file_to_cube)
+    os.unlink(temp_output.name)
 
     command1 = f"cube('{original_file}', '{next_cube}', 1, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, 'False', '{solver_opts}')"
     command2 = f"cube('{original_file}', '{next_cube}', 2, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, 'False', '{solver_opts}')"
@@ -99,8 +99,25 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     queue.put(command2)
 
 def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True', solver_opts=""):
+    # Convert arguments if they're passed with flag format
+    if isinstance(numMCTS, str) and numMCTS.startswith('--numMCTS'):
+        numMCTS = int(numMCTS.split(' ')[1])
+    if isinstance(cutoff, str) and cutoff.startswith('--cutoff'):
+        cutoff = cutoff.split(' ')[1]
+    if isinstance(cutoffv, str) and cutoffv.startswith('--cutoffv'):
+        cutoffv = int(cutoffv.split(' ')[1])
+    if isinstance(solveaftercube, str) and solveaftercube.startswith('--solveaftercube'):
+        solveaftercube = solveaftercube.split(' ')[1]
+
+    # Combine remaining args into solver_opts
+    if isinstance(solver_opts, (list, tuple)):
+        solver_opts = ' '.join(str(x) for x in solver_opts)
+
     global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, solver_optsg
-    orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, solver_optsg = order, numMCTS, cutoff, cutoffv, 0, int(int(order)*(int(order)-1)/2), solveaftercube, file_name_solve, solver_opts
+    orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, solver_optsg = (
+        order, numMCTS, cutoff, cutoffv, 0, int(int(order)*(int(order)-1)/2), 
+        solveaftercube, file_name_solve, solver_opts
+    )
     
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
@@ -128,4 +145,39 @@ def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercub
 
 if __name__ == "__main__":
     import sys
-    main(*sys.argv[1:])
+    args = sys.argv[1:]
+    
+    # Parse named arguments
+    parsed_args = {}
+    i = 0
+    while i < len(args):
+        if args[i].startswith('--'):
+            if i + 1 < len(args) and not args[i + 1].startswith('--'):
+                parsed_args[args[i]] = args[i + 1]
+                i += 2
+            else:
+                parsed_args[args[i]] = args[i]
+                i += 1
+        else:
+            if 'order' not in parsed_args:
+                parsed_args['order'] = args[i]
+            elif 'file_name_solve' not in parsed_args:
+                parsed_args['file_name_solve'] = args[i]
+            i += 1
+
+    # Extract main arguments
+    main_args = [
+        parsed_args.get('order'),
+        parsed_args.get('file_name_solve'),
+        parsed_args.get('--numMCTS', 2),
+        parsed_args.get('--cutoff', 'd'),
+        parsed_args.get('--cutoffv', 5),
+        parsed_args.get('--solveaftercube', 'True')
+    ]
+    
+    # Collect remaining args as solver_opts
+    solver_opts = [arg for arg in args if arg.startswith('--') and 
+                  arg not in ('--numMCTS', '--cutoff', '--cutoffv', '--solveaftercube')]
+    
+    main_args.append(solver_opts)
+    main(*main_args)

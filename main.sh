@@ -160,12 +160,12 @@ cp $f $dir_name
 
 # Construct solver options
 solver_opts=""
-[ "$solver_skip_verify" = true ] && solver_opts="$solver_opts -s"
-[ "$solver_use_cadical" = true ] && solver_opts="$solver_opts -c"
-[ "$solver_disable_pseudo" = true ] && solver_opts="$solver_opts -p"
-[ "$solver_lex_greatest" = true ] && solver_opts="$solver_opts -l"
-[ -n "$solver_orbit_val" ] && solver_opts="$solver_opts -o $solver_orbit_val"
-[ "$solver_disable_unembeddable" = true ] && solver_opts="$solver_opts -u"
+[ "$solver_skip_verify" = true ] && solver_opts="$solver_opts --skip-verify"
+[ "$solver_use_cadical" = true ] && solver_opts="$solver_opts --cadical"
+[ "$solver_disable_pseudo" = true ] && solver_opts="$solver_opts --no-pseudo"
+[ "$solver_lex_greatest" = true ] && solver_opts="$solver_opts --lex-greatest"
+[ -n "$solver_orbit_val" ] && solver_opts="$solver_opts --orbit $solver_orbit_val"
+[ "$solver_disable_unembeddable" = true ] && solver_opts="$solver_opts --no-unembeddable"
 
 # Solve Based on Mode
 case $mode in
@@ -180,11 +180,15 @@ case $mode in
         ;;
     "single")
         echo "Cubing and solving in parallel on local machine"
-        python parallel-solve.py $order ${dir_name}/${f} $mcts_sims $cutoff_criteria $cutoff_value "$solver_opts"
+        cmd="python3 parallel-solve.py $order ${dir_name}/${f} --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value $solver_opts"
+        echo "Executing command: $cmd"
+        $cmd
         ;;
     "multi")
         echo "Cubing and solving in parallel on Compute Canada"
-        python parallel-solve.py $order ${dir_name}/${f} $mcts_sims $cutoff_criteria $cutoff_value False "$solver_opts"
+        cmd="python3 parallel-solve.py $order ${dir_name}/${f} --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value --solveaftercube False $solver_opts"
+        echo "Executing command: $cmd"
+        $cmd
         found_files=()
 
         # Populate the array with the names of files found by the find command
@@ -223,7 +227,7 @@ case $mode in
 
 module load python/3.10
 
-python parallel-solve.py $order $output_file $mcts_sims $cutoff_criteria $cutoff_value "$solver_opts"
+python3 parallel-solve.py $order $output_file $mcts_sims $cutoff_criteria $cutoff_value "$solver_opts"
 
 EOF
             
