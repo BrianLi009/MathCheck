@@ -27,6 +27,14 @@ Options:
     -n, --nodes=INT        Number of nodes for multi mode (default: 1)
     -h, --help            Show this help message
 
+Solver Options:
+    --skip-verify, -S      Skip verification step
+    --cadical, -C          Use CaDiCal solver (default: MapleSAT)
+    --no-pseudo, -P        Disable pseudo check
+    --lex-greatest, -L     Use lex-greatest ordering (default: lex-smallest)
+    --orbit=VALUE, -O=VALUE Set orbit value
+    --no-unembeddable, -U  Disable unembeddable check
+
 Examples:
     ./main.sh -m=single 10
     ./main.sh --mode=single --color=0.6 --def=2 --sims=3 10
@@ -43,6 +51,13 @@ mcts_sims=2
 cutoff_criteria="d"
 cutoff_value=5
 num_nodes=1
+# Add new solver-related defaults
+solver_skip_verify=false
+solver_use_cadical=false
+solver_disable_pseudo=false
+solver_lex_greatest=false
+solver_orbit_val=""
+solver_disable_unembeddable=false
 
 # Parse long and short options
 while [ $# -gt 0 ]; do
@@ -67,6 +82,24 @@ while [ $# -gt 0 ]; do
             ;;
         --nodes=*|-n=*)
             num_nodes="${1#*=}"
+            ;;
+        --skip-verify|-S)
+            solver_skip_verify=true
+            ;;
+        --cadical|-C)
+            solver_use_cadical=true
+            ;;
+        --no-pseudo|-P)
+            solver_disable_pseudo=true
+            ;;
+        --lex-greatest|-L)
+            solver_lex_greatest=true
+            ;;
+        --orbit=*|-O=*)
+            solver_orbit_val="${1#*=}"
+            ;;
+        --no-unembeddable|-U)
+            solver_disable_unembeddable=true
             ;;
         -h|--help)
             show_help
@@ -120,6 +153,15 @@ mkdir $dir_name
 f=constraints_${order}_${color_pct}_${definition}
 cp constraints_${order}_${color_pct}_${definition} $dir_name
 
+# Construct solver options
+solver_opts=""
+[ "$solver_skip_verify" = true ] && solver_opts="$solver_opts -s"
+[ "$solver_use_cadical" = true ] && solver_opts="$solver_opts -c"
+[ "$solver_disable_pseudo" = true ] && solver_opts="$solver_opts -p"
+[ "$solver_lex_greatest" = true ] && solver_opts="$solver_opts -l"
+[ -n "$solver_orbit_val" ] && solver_opts="$solver_opts -o $solver_orbit_val"
+[ "$solver_disable_unembeddable" = true ] && solver_opts="$solver_opts -u"
+
 # Solve Based on Mode
 case $mode in
     "none")
@@ -129,15 +171,15 @@ case $mode in
         ./simplification/simplify-by-conflicts.sh ${dir_name}/constraints_${order}_${color_pct}_${definition} $order 10000
 
         echo "Solving $f using MapleSAT+CAS"
-        ./solve-verify.sh $order ${dir_name}/constraints_${order}_${color_pct}_${definition}.simp
+        ./solve-verify.sh $solver_opts $order ${dir_name}/constraints_${order}_${color_pct}_${definition}.simp
         ;;
     "single")
         echo "Cubing and solving in parallel on local machine"
-        python parallel-solve.py $order ${dir_name}/constraints_${order}_${color_pct}_${definition} $mcts_sims $cutoff_criteria $cutoff_value
+        python parallel-solve.py $order ${dir_name}/constraints_${order}_${color_pct}_${definition} $mcts_sims $cutoff_criteria $cutoff_value "$solver_opts"
         ;;
     "multi")
         echo "Cubing and solving in parallel on Compute Canada"
-        python parallel-solve.py $order ${dir_name}/constraints_${order}_${color_pct}_${definition} $mcts_sims $cutoff_criteria $cutoff_value False
+        python parallel-solve.py $order ${dir_name}/constraints_${order}_${color_pct}_${definition} $mcts_sims $cutoff_criteria $cutoff_value False "$solver_opts"
         found_files=()
 
         # Populate the array with the names of files found by the find command
@@ -176,7 +218,7 @@ case $mode in
 
 module load python/3.10
 
-python parallel-solve.py $order $output_file $mcts_sims $cutoff_criteria $cutoff_value
+python parallel-solve.py $order $output_file $mcts_sims $cutoff_criteria $cutoff_value "$solver_opts"
 
 EOF
             

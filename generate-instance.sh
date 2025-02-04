@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ "$1" = "-h" -o "$1" = "--help" -o "$#" -lt 1 -o "$#" -gt 3 ] && echo "
+[ "$1" = "-h" -o "$1" = "--help" -o "$#" -lt 1 -o "$#" -gt 4 ] && echo "
 Description:
     Updated on 2023-01-11
     This script call the python file generate.py in gen_instance to generate the SAT encoding for a Kochen Specker candidates. Such candidate satisfies the following condition:
@@ -11,27 +11,34 @@ Description:
     5. We also applied the cubic isomorphism blocking clauses
 
 Usage:
-    ./generate-instance.sh n m
+    ./generate-instance.sh n m [o] [lex-greatest]
 
 Options:
     <n>: the order of the instance/number of vertices in the graph
     <m>: (optional) additional parameter
+    <o>: (optional) definition to use (1 or 2)
+    lex-greatest: (optional) use lex-greatest ordering instead of lex-smallest
     
 " && exit
 
 n=$1 #order
 c=${2:-0.5} #ratio of color-1 vertices to block
 o=${3:-1} #assume using definition 1, can use definition 2 as well
+lex_opt=${4:-""} #lex-greatest option
 
-if [ -f constraints_$n_$c_$o ]
+base_name="constraints_${n}_${c}_${o}"
+file_name="$base_name"
+[ "$lex_opt" = "lex-greatest" ] && file_name="${base_name}_lex_greatest"
+
+if [ -f "$file_name" ]
 then
     echo "instance already generated"
 else
     if [ $o -eq 1 ]
     then
-        python3 gen_instance/generate.py $n $c #generate the instance of order n
+        python3 gen_instance/generate.py $n $c "$lex_opt" #generate the instance of order n
     else
         echo "using extended definition of KS system..."
-        python3 gen_instance/generate-def2.py $n $c #generate the instance of order n
+        python3 gen_instance/generate-def2.py $n $c "$lex_opt" #generate the instance of order n
     fi
 fi
