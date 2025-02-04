@@ -54,9 +54,10 @@ def generate(n, block, lex_greatest=False):
     """
     # Choose which cubic implementation to use
     cubic_impl = cubic_lex_greatest if lex_greatest else cubic
+    print(f"Using {'lex-greatest' if lex_greatest else 'lex-least'} ordering for isomorphism blocking")
     var_count, c_count = cubic_impl(n, count, cnf_file)
     clause_count += c_count
-    print ("isomorphism blocking applied")
+    print("isomorphism blocking applied")
     firstline = 'p cnf ' + str(var_count) + ' ' + str(clause_count)
     subprocess.call(["./gen_instance/append.sh", cnf_file, cnf_file+"_new", firstline])
 
