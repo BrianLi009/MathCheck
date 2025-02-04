@@ -1,12 +1,20 @@
 #!/bin/bash
 
 s=false
+pseudo_check=true
+lex_order="smallest"
+orbit_val=""
+unembeddable=true
 
 # Option parsing
 #if the s flag is enabled, DRAT file will still be generated but verification will be skipped
-while getopts ":s" opt; do
+while getopts ":spluo:" opt; do
   case $opt in
     s) s=true ;;
+    p) pseudo_check=false ;;
+    l) lex_order="greatest" ;;
+    u) unembeddable=false ;;
+    o) orbit_val="$OPTARG" ;;
     \?) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
   esac
 done
@@ -16,7 +24,12 @@ shift $((OPTIND -1))
 # Ensure parameters are specified on the command-line
 if [ -z "$3" ]; then
   echo "Need filename, order, and the number of conflicts for which to simplify"
-  echo "if the s flag is enabled, DRAT file will still be generated but verification will be skipped"
+  echo "Options:"
+  echo "  -s: Skip DRAT verification"
+  echo "  -p: Disable pseudo check"
+  echo "  -l: Use lex-greatest ordering"
+  echo "  -u: Disable unembeddable check"
+  echo "  -o VALUE: Set orbit value"
   exit
 fi
 
@@ -31,24 +44,38 @@ mkdir -p log
 f_dir=$f
 f_base=$(basename "$f")
 
+# Construct base CaDiCaL command
+cmd="./cadical-ks/build/cadical-ks"
+[ "$s" != "true" ] && cmd="$cmd $f_dir $f_dir.drat" || cmd="$cmd $f_dir"
+cmd="$cmd --order $o"
+[ "$unembeddable" = true ] && cmd="$cmd --unembeddable-check 13"
+[ "$pseudo_check" = false ] && cmd="$cmd --no-pseudo-check"
+[ "$lex_order" = "greatest" ] && cmd="$cmd --lex-greatest"
+[ -n "$orbit_val" ] && cmd="$cmd --orbit $orbit_val"
+cmd="$cmd -o $f_dir.simp1 -e $f_dir.ext -n -c $m"
+
 # Simplify m seconds
 echo "simplifying for $m conflicts"
 
-
-# Check if "exit 20" is in the log
+# Execute CaDiCaL command
 if [ "$s" != "true" ]; then
-  ./cadical-ks/build/cadical-ks "$f_dir" "$f_dir.drat" --order $o --unembeddable-check 17 -o "$f_dir".simp1 -e "$f_dir".ext -n -c $m | tee "$f_dir".simplog
+  $cmd | tee "$f_dir".simplog
   echo "verifying the simplification now..."
   if grep -q "exit 20" "$f_dir".simplog; then
-    echo "CaDiCaL returns UNSAT, using backward proof checking..."
-    ./drat-trim/drat-trim "$f_dir" "$f_dir.drat" | tee "$f_dir".verify
+    # Pass lex-greatest flag to proof-module.sh if needed
+    lex_opt=""
+    [ "$lex_order" = "greatest" ] && lex_opt="-lex-greatest"
+    ./proof-module.sh $o $f_dir $f_dir.verify "" $lex_opt
   else
     echo "CaDiCaL returns UNKNOWN, using forward proof checking..."
-    ./drat-trim/drat-trim "$f_dir" "$f_dir.drat" -f | tee "$f_dir".verify
+    # Pass lex-greatest flag to proof-module.sh if needed
+    lex_opt=""
+    [ "$lex_order" = "greatest" ] && lex_opt="-lex-greatest"
+    ./proof-module.sh $o $f_dir $f_dir.verify "f" $lex_opt
   fi
 else
   echo "skipping generation of DRAT file"
-  ./cadical-ks/build/cadical-ks "$f_dir" --order $o --unembeddable-check 17 -o "$f_dir".simp1 -e "$f_dir".ext -n -c $m | tee "$f_dir".simplog
+  $cmd | tee "$f_dir".simplog
 fi
 
 # Output final simplified instance
