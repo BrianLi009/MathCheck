@@ -15,6 +15,7 @@ function display_help() {
         -h, --help      Show this help
         -x              Enable verbose mode
         --clean         Remove all built artifacts
+        --force        Force rebuild all dependencies
     "
     exit
 }
@@ -24,6 +25,10 @@ function display_help() {
 
 # Add -x flag for verbose output if needed
 [ "$1" = "-x" ] && set -x
+
+# Check if force rebuild is requested
+force_rebuild=false
+[ "$1" = "--force" ] && force_rebuild=true
 
 echo "Prerequisite: Checking for pip and make..."
 command -v pip3 >/dev/null 2>&1 || { echo "pip3 not found. Aborting."; exit 1; }
@@ -46,18 +51,24 @@ else
     pip3 install z3-solver
 fi
 
-# Modified build_dependency function
+# Modified build_dependency function with target existence check
 build_dependency() {
     local dir="$1"
     local target="$2"
     local build_cmd="${3:-make}"
     
-    echo "Building ${dir}..."
-    (cd "$dir" || exit 1
-     # Add -f flag to make clean to ignore missing files
-     [ -f "$target" ] || { eval "make clean -f Makefile 2>/dev/null || true; $build_cmd" && echo "Build successful"; })
+    if [ ! -f "$dir/$target" ] || [ "$force_rebuild" = true ]; then
+        echo "Building ${dir}..."
+        (cd "$dir" || exit 1
+         # Add -f flag to make clean to ignore missing files
+         make clean -f Makefile 2>/dev/null || true
+         eval "$build_cmd" && echo "Build successful")
+    else
+        echo "Target $dir/$target already exists, skipping build"
+    fi
 }
 
+# Build dependencies only if targets don't exist or force rebuild is requested
 build_dependency drat-trim drat-trim "make -f Makefile"
 build_dependency cadical-ks build/cadical-ks "./configure && make"
 build_dependency maplesat-ks simp/maplesat_static "make clean && make"
