@@ -89,7 +89,7 @@ else
     pip3 install z3-solver
 fi
 
-# Modified build_dependency function with target existence check
+# Modified build_dependency function with better target existence check
 build_dependency() {
     local dir="$1"
     local target="$2"
@@ -108,7 +108,7 @@ build_dependency() {
 
 # Build dependencies only if targets don't exist or force rebuild is requested
 # Build nauty first as it's required by cadical and maplesat
-build_dependency nauty2_8_8 nauty "./configure && make"
+build_dependency nauty2_8_8 "dreadnaut" "./configure && make"  # Changed target to actual binary
 build_dependency drat-trim drat-trim "make -f Makefile"
 build_dependency cadical-ks build/cadical-ks "./configure && make"
 build_dependency maplesat-ks simp/maplesat_static "make clean && make"
