@@ -16,7 +16,6 @@ if verbose: sys.argv.remove("-v")
 
 lex_greatest = "-lex-greatest" in sys.argv
 if lex_greatest: sys.argv.remove("-lex-greatest")
-
 # Return inverse of permutation
 def inv(p):
 	p_inv = ['*' for i in range(n)]
@@ -111,7 +110,6 @@ def extend_perm(p):
 
 if len(sys.argv) <= 2:
 	print("Need order and filename of permutation witnesses on the command-line (and clauses to check on standard input)")
-	print("Optional flags: -v for verbose output, -lex-greatest for lex-greatest ordering")
 	quit()
 
 n = int(sys.argv[1])
@@ -200,11 +198,11 @@ for perm in fileinput.input(permfile):
 
 	M1 = to_matrix(line)
 	M2 = to_matrix_perm(line, perm)
-
+	
 	if lex_greatest:
-		lex = matrix_lex(M2, M1)
+		lex = matrix_lex(M1, M2) #lex-greatest
 	else:
-		lex = matrix_lex(M1, M2)
+		lex = matrix_lex(M2, M1) #lex-smallest
 
 	if not(lex) or verbose:
 		print(origperm, perm, line, lex)
