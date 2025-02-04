@@ -173,18 +173,18 @@ case $mode in
         echo "No cubing, just solve"
         
         echo "Simplifying $f for 10000 conflicts using CaDiCaL+CAS"
-        ./simplification/simplify-by-conflicts.sh $solver_opts ${dir_name}/constraints_${order}_${color_pct}_${definition} $order 10000
+        ./simplification/simplify-by-conflicts.sh $solver_opts ${dir_name}/${f} $order 10000
 
         echo "Solving $f using MapleSAT+CAS"
-        ./solve-verify.sh $solver_opts $order ${dir_name}/constraints_${order}_${color_pct}_${definition}.simp
+        ./solve-verify.sh $solver_opts $order ${dir_name}/${f}.simp
         ;;
     "single")
         echo "Cubing and solving in parallel on local machine"
-        python parallel-solve.py $order ${dir_name}/constraints_${order}_${color_pct}_${definition} $mcts_sims $cutoff_criteria $cutoff_value "$solver_opts"
+        python parallel-solve.py $order ${dir_name}/${f} $mcts_sims $cutoff_criteria $cutoff_value "$solver_opts"
         ;;
     "multi")
         echo "Cubing and solving in parallel on Compute Canada"
-        python parallel-solve.py $order ${dir_name}/constraints_${order}_${color_pct}_${definition} $mcts_sims $cutoff_criteria $cutoff_value False "$solver_opts"
+        python parallel-solve.py $order ${dir_name}/${f} $mcts_sims $cutoff_criteria $cutoff_value False "$solver_opts"
         found_files=()
 
         # Populate the array with the names of files found by the find command
