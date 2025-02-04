@@ -81,9 +81,11 @@ echo "Executing command: $cmd"
 # Execute solver command
 $cmd | tee $f.log
 
-# Verify unless skipped or not UNSAT
-if ! grep -q "UNSAT" "$f.log" || [ "$skip_verify" = true ]; then
-	echo "instance not solved, no need to verify unless skipping verification"
+# Check if UNSAT was found
+if ! grep -q "UNSAT" "$f.log"; then
+	echo "Instance not solved (SAT/UNKNOWN) - no verification needed"
+elif [ "$skip_verify" = true ]; then
+	echo "Verification step skipped due to -s flag"
 else
 	# Pass lex-greatest flag to proof-module.sh if needed
 	lex_opt=""
