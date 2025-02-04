@@ -745,15 +745,17 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
             const int px = MAX(p[x], p[y]);
             const int py = MIN(p[x], p[y]);
             const int pj = px*(px-1)/2 + py;
-            if(assigns[j] == l_False && assigns[pj] == l_True) {
-                // Permutation produces a larger matrix; stop considering
+            if((lex_greatest ? assigns[j] == l_True && assigns[pj] == l_False 
+                            : assigns[j] == l_False && assigns[pj] == l_True)) {
+                // Permutation produces a larger/smaller matrix; stop considering
                 break;
             }
-            if(assigns[j] == l_True && assigns[pj] == l_False) {
+            if((lex_greatest ? assigns[j] == l_False && assigns[pj] == l_True 
+                            : assigns[j] == l_True && assigns[pj] == l_False)) {
 #ifdef PERM_STATS
                 noncanon_np[k-1] += np;
 #endif
-                // Permutation produces a smaller matrix; M is not canonical
+                // Permutation produces a smaller/larger matrix; M is not canonical
                 return false;
             }
 
@@ -1006,10 +1008,15 @@ void Solver::callbackFunction(bool complete, vec<vec<Lit> >& out_learnts) {
 
                 if(opt_minclause) {
                     // Generate a blocking clause smaller than the naive blocking clause
-                    out_learnts[0].push(~mkLit(x*(x-1)/2+y));
                     const int px = MAX(p[x], p[y]);
                     const int py = MIN(p[x], p[y]);
-                    out_learnts[0].push(mkLit(px*(px-1)/2+py));
+                    if(lex_greatest) {
+                        out_learnts[0].push(~mkLit(px*(px-1)/2+py));
+                        out_learnts[0].push(mkLit(x*(x-1)/2+y));
+                    } else {
+                        out_learnts[0].push(~mkLit(x*(x-1)/2+y));
+                        out_learnts[0].push(mkLit(px*(px-1)/2+py));
+                    }
                     for(int ii=0; ii < x+1; ii++) {
                         for(int jj=0; jj < ii; jj++) {
                             if(ii==x && jj==y) {
@@ -1019,10 +1026,18 @@ void Solver::callbackFunction(bool complete, vec<vec<Lit> >& out_learnts) {
                             const int pjj = MIN(p[ii], p[jj]);
                             if(ii==pii && jj==pjj) {
                                 continue;
-                            } else if(assigns[ii*(ii-1)/2+jj] == l_True) {
-                                out_learnts[0].push(~mkLit(ii*(ii-1)/2+jj));
-                            } else if (assigns[pii*(pii-1)/2+pjj] == l_False) {
-                                out_learnts[0].push(mkLit(pii*(pii-1)/2+pjj));
+                            } else if(lex_greatest) {
+                                if(assigns[pii*(pii-1)/2+pjj] == l_True) {
+                                    out_learnts[0].push(~mkLit(pii*(pii-1)/2+pjj));
+                                } else if (assigns[ii*(ii-1)/2+jj] == l_False) {
+                                    out_learnts[0].push(mkLit(ii*(ii-1)/2+jj));
+                                }
+                            } else {
+                                if(assigns[ii*(ii-1)/2+jj] == l_True) {
+                                    out_learnts[0].push(~mkLit(ii*(ii-1)/2+jj));
+                                } else if (assigns[pii*(pii-1)/2+pjj] == l_False) {
+                                    out_learnts[0].push(mkLit(pii*(pii-1)/2+pjj));
+                                }
                             }
                         }
                     }
