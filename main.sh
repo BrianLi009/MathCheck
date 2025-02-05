@@ -158,14 +158,23 @@ f=constraints_${order}_${color_pct}_${definition}
 [ "$solver_lex_greatest" = true ] && f=${f}_lex_greatest
 cp $f $dir_name
 
-# Construct solver options
-solver_opts=""
-[ "$solver_skip_verify" = true ] && solver_opts="$solver_opts --skip-verify"
-[ "$solver_use_cadical" = true ] && solver_opts="$solver_opts --cadical"
-[ "$solver_disable_pseudo" = true ] && solver_opts="$solver_opts --no-pseudo"
-[ "$solver_lex_greatest" = true ] && solver_opts="$solver_opts --lex-greatest"
-[ -n "$solver_orbit_val" ] && solver_opts="$solver_opts --orbit $solver_orbit_val"
-[ "$solver_disable_unembeddable" = true ] && solver_opts="$solver_opts --no-unembeddable"
+# Calculate number of edge variables
+edge_vars=$((order * (order-1) / 2))
+
+# Construct solver options string
+solver_opts_str=""
+# Skip verification (-s)
+[ "$solver_skip_verify" = true ] && solver_opts_str="$solver_opts_str -s"
+# Use CaDiCaL solver (-c)
+[ "$solver_use_cadical" = true ] && solver_opts_str="$solver_opts_str -c"
+# Disable pseudo check (-p)
+[ "$solver_disable_pseudo" = true ] && solver_opts_str="$solver_opts_str -p"
+# Use lex-greatest ordering (-l)
+[ "$solver_lex_greatest" = true ] && solver_opts_str="$solver_opts_str -l"
+# Set orbit value (-o)
+[ -n "$solver_orbit_val" ] && solver_opts_str="$solver_opts_str -o $solver_orbit_val"
+# Disable unembeddable check (-u)
+[ "$solver_disable_unembeddable" = true ] && solver_opts_str="$solver_opts_str -u"
 
 # Solve Based on Mode
 case $mode in
@@ -173,20 +182,20 @@ case $mode in
         echo "No cubing, just solve"
         
         echo "Simplifying $f for 10000 conflicts using CaDiCaL+CAS"
-        ./simplification/simplify-by-conflicts.sh $solver_opts ${dir_name}/${f} $order 10000
+        ./simplification/simplify-by-conflicts.sh $solver_opts_str ${dir_name}/${f} $order 10000
 
         echo "Solving $f using MapleSAT+CAS"
-        ./solve-verify.sh $solver_opts $order ${dir_name}/${f}.simp
+        ./solve-verify.sh $solver_opts_str $order ${dir_name}/${f}.simp
         ;;
     "single")
         echo "Cubing and solving in parallel on local machine"
-        cmd="python3 parallel-solve.py $order ${dir_name}/${f} --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value $solver_opts"
+        cmd="python3 parallel-solve.py $order ${dir_name}/${f} -m $edge_vars --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value --solver-options=\"$solver_opts_str\""
         echo "Executing command: $cmd"
-        $cmd
+        eval $cmd
         ;;
     "multi")
         echo "Cubing and solving in parallel on Compute Canada"
-        cmd="python3 parallel-solve.py $order ${dir_name}/${f} --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value --solveaftercube False $solver_opts"
+        cmd="python3 parallel-solve.py $order ${dir_name}/${f} -m $edge_vars --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value --solveaftercube False --solver-options=\"$solver_opts_str\""
         echo "Executing command: $cmd"
         $cmd
         found_files=()
@@ -227,7 +236,7 @@ case $mode in
 
 module load python/3.10
 
-python3 parallel-solve.py $order $output_file $mcts_sims $cutoff_criteria $cutoff_value "$solver_opts"
+python3 parallel-solve.py $order $output_file $mcts_sims $cutoff_criteria $cutoff_value "$solver_opts_str"
 
 EOF
             

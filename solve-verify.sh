@@ -60,7 +60,7 @@ f=$2  # instance file name
 
 # Construct solver command based on options
 if [ "$solver" = "cadical" ]; then
-	cmd="./cadical-ks/build/cadical-ks $f $f.drat --order $n"
+	cmd="./cadical-ks/build/cadical-ks $f $f.drat --no-binary --order $n"
 	[ "$unembeddable" = true ] && cmd="$cmd --unembeddable-check 13"
 	[ "$pseudo_check" = false ] && cmd="$cmd --no-pseudo-check"
 	[ "$lex_order" = "greatest" ] && cmd="$cmd --lex-greatest"

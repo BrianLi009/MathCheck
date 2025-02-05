@@ -2,7 +2,9 @@ import subprocess
 import multiprocessing
 import os
 import queue
-import tempfile
+import argparse
+
+remove_file = True
 
 def run_command(command):
     process_id = os.getpid()
@@ -19,165 +21,252 @@ def run_command(command):
 
         if "UNSAT" in stdout.decode():
             print("solved")
-            remove_related_files(file_to_cube)
             process.terminate()
         else:
             print("Continue cubing this subproblem...")
-            command = f"cube('{file_to_cube}', 'N', 0, {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, 'True', '{solver_optsg}')"
+            command = f"cube('{file_to_cube}', 'N', 0, {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, 'True')"
             queue.put(command)
 
     except Exception as e:
         print(f"Failed to run command due to: {str(e)}")
 
 def run_cube_command(command):
-    print(command)
+    print (command)
     eval(command)
 
-def remove_related_files(new_file):
-    extensions = ['.simp', '.perm', '.nonembed', '.drat']
-    for ext in extensions:
+def remove_related_files(files_to_remove):
+    global remove_file
+    if not remove_file:
+        return
+        
+    for file in files_to_remove:
         try:
-            os.remove(new_file + ext)
-        except OSError:
-            pass
+            os.remove(file)
+            print(f"Removed: {file}")
+        except OSError as e:
+            print(f"Error: {e.strerror}. File: {file}")
 
+def rename_file(filename):
+    # Remove .simp from file name
+    
+    if filename.endswith('.simp'):
+        filename = filename[:-5]
+    
+    return filename
+    
 def worker(queue):
     while True:
         args = queue.get()
         if args is None:
+            queue.task_done()
             break
-        if args.startswith("./solve-verify"):
+        if args.startswith("./solve"):
             run_command(args)
         else:
             run_cube_command(args)
         queue.task_done()
 
-def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, extension="False", solver_opts=""):
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
-        if cube != "N":
-            subprocess.run(f"./gen_cubes/apply.sh {original_file} {cube} {index} | ./simplification/simplify-by-conflicts.sh -s - {order} 10000", shell=True, stdout=temp_file, stderr=subprocess.DEVNULL)
-            file_to_cube = temp_file.name
+def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, extension="False"):
+    global solving_mode_g, cubing_mode_g, solver_options_g
+    
+    if cube != "N":
+        if solving_mode_g == "satcas":
+            command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh -s {cube}{index}.cnf {order} 10000"
         else:
-            subprocess.run(f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000", shell=True, stdout=temp_file, stderr=subprocess.DEVNULL)
-            file_to_cube = temp_file.name
+            command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh -s {cube}{index}.cnf {order} 10000"
+        file_to_cube = f"{cube}{index}.cnf.simp"
+        simplog_file = f"{cube}{index}.cnf.simplog"
+        file_to_check = f"{cube}{index}.cnf.ext"
+    else:
+        if solving_mode_g == "satcas":
+            command = f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000"
+        else:
+            command = f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000"
+        file_to_cube = f"{original_file}.simp"
+        simplog_file = f"{original_file}.simplog"
+        file_to_check = f"{original_file}.ext"
+    subprocess.run(command, shell=True)
+    # Remove the cube file after it's been used
+    #remove_related_files([cube])
 
-        temp_file.seek(0)
-        if "c exit 20" in temp_file.read():
+    # Check if the output contains "c exit 20"
+    with open(simplog_file, "r") as file:
+        if "c exit 20" in file.read():
             print("the cube is UNSAT")
+            if cube != "N":
+                files_to_remove = [f'{cube}{index}.cnf', file_to_cube, file_to_check]
+                #remove_related_files(files_to_remove)
+            return
+    
+    command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_check} | awk '$0<={m}' | sort | uniq | wc -l"
+    result = subprocess.run(command, shell=True, text=True, capture_output=True)
+    var_removed = int(result.stdout.strip())
+    if extension == "True":
+        if cutoff == 'v':
+            cutoffv = var_removed * 2
+        else:
+            cutoffv = cutoffv * 2
+
+    print (f'{var_removed} variables removed from the cube')
+
+    if cutoff == 'd':
+        if d >= cutoffv:
+            if solveaftercubeg == 'True':
+                files_to_remove = [f'{cube}{index}.cnf']
+                remove_related_files(files_to_remove)
+                # Pass through all solver options (including -s if verification should be skipped)
+                solver_opts = solver_options_g if solver_options_g else ""
+                command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
+                queue.put(command)
+            return
+    if cutoff == 'v':
+        if var_removed >= cutoffv:
+            if solveaftercubeg == 'True':
+                files_to_remove = [f'{cube}{index}.cnf']
+                remove_related_files(files_to_remove)
+                # Pass through all solver options (including -s if verification should be skipped)
+                solver_opts = solver_options_g if solver_options_g else ""
+                command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
+                queue.put(command)
             return
 
-    var_removed = subprocess.run(f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_cube} | awk '$0<={m}' | sort -u | wc -l", shell=True, capture_output=True, text=True).stdout.strip()
-    var_removed = int(var_removed)
+    # Select cubing method based on cubing_mode
+    if cubing_mode_g == "march":
+        subprocess.run(f"./march/march_cu {file_to_cube} -d 1 -m {m} -o {file_to_cube}.temp", shell=True)
+    else:  # ams mode
+        subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.temp -prod -numMCTSSims {numMCTS}", shell=True)
+        #subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.temp -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
 
-    if extension == "True":
-        cutoffv = var_removed + 40
-
-    print(f'{var_removed} variables removed from the cube')
-
-    if (cutoff == 'd' and d >= cutoffv) or (cutoff == 'v' and var_removed >= cutoffv):
-        if solveaftercubeg == 'True':
-            command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
-            queue.put(command)
-        return
-
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_output:
-        subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o - -order {order} -prod -numMCTSSims {numMCTS}", shell=True, stdout=temp_output, stderr=subprocess.DEVNULL)
-        
-        d += 1
-        if cube != "N":
-            next_cube = f'{cube}{index}'
-            subprocess.run(f'''sed -E "s/^a (.*)/$(head -n {index} {cube} | tail -n 1 | sed -E 's/(.*) 0/\\1/') \\1/" {temp_output.name} > {next_cube}''', shell=True)
-        else:
-            next_cube = f'{original_file}0'
-            subprocess.run(f"cp {temp_output.name} {next_cube}", shell=True)
-
-    os.unlink(temp_output.name)
-
-    command1 = f"cube('{original_file}', '{next_cube}', 1, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, 'False', '{solver_opts}')"
-    command2 = f"cube('{original_file}', '{next_cube}', 2, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d}, 'False', '{solver_opts}')"
+    #output {file_to_cube}.temp with the cubes
+    d += 1
+    if cube != "N":
+        subprocess.run(f'''sed -E "s/^a (.*)/$(head -n {index} {cube} | tail -n 1 | sed -E 's/(.*) 0/\\1/') \\1/" {file_to_cube}.temp > {cube}{index}''', shell=True)
+        next_cube = f'{cube}{index}'
+    else:
+        subprocess.run(f'mv {file_to_cube}.temp {original_file}0', shell=True)
+        next_cube = f'{original_file}0'
+    if cube != "N":
+        files_to_remove = [
+            f'{cube}{index}.cnf',
+            f'{file_to_cube}.temp',
+            file_to_cube,
+            file_to_check
+        ]
+        remove_related_files(files_to_remove)
+    else:
+        files_to_remove = [file_to_cube, file_to_check]
+        remove_related_files(files_to_remove)
+    command1 = f"cube('{original_file}', '{next_cube}', 1, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
+    command2 = f"cube('{original_file}', '{next_cube}', 2, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True', solver_opts=""):
-    # Convert arguments if they're passed with flag format
-    if isinstance(numMCTS, str) and numMCTS.startswith('--numMCTS'):
-        numMCTS = int(numMCTS.split(' ')[1])
-    if isinstance(cutoff, str) and cutoff.startswith('--cutoff'):
-        cutoff = cutoff.split(' ')[1]
-    if isinstance(cutoffv, str) and cutoffv.startswith('--cutoffv'):
-        cutoffv = int(cutoffv.split(' ')[1])
-    if isinstance(solveaftercube, str) and solveaftercube.startswith('--solveaftercube'):
-        solveaftercube = solveaftercube.split(' ')[1]
+def main(order, file_name_solve, m, solving_mode="other", cubing_mode="ams", numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True', timeout=3600, solver_options=""):
+    """
+    Parameters:
+    - order: the order of the graph (required for satcas mode)
+    - file_name_solve: input file name
+    - m: number of variables to consider for cubing (required)
+    - solving_mode: 'satcas' (cadical simplification with cas, maplesat solving with cas) 
+                   or 'other' (cadical simplification no cas, maplesat solving no cas)
+    - cubing_mode: 'ams' (alpha-zero-general, default) or 'march' (march_cu)
+    - numMCTS: number of MCTS simulations (only used with ams mode)
+    - cutoff: 'd' for depth-based or 'v' for variable-based
+    - cutoffv: cutoff value
+    - solveaftercube: whether to solve after cubing
+    - timeout: timeout in seconds (default: 1 hour)
+    - solver_options: additional options to pass to solve-verify.sh
+    """
+    # Validate input parameters
+    if solving_mode not in ["satcas", "other"]:
+        raise ValueError("solving_mode must be either 'satcas' or 'other'")
+    if cubing_mode not in ["march", "ams"]:
+        raise ValueError("cubing_mode must be either 'march' or 'ams'")
+    if m is None:
+        raise ValueError("m parameter must be specified")
+    if solving_mode == "satcas" and order is None:
+        raise ValueError("order parameter must be specified when using satcas mode")
 
-    # Combine remaining args into solver_opts
-    if isinstance(solver_opts, (list, tuple)):
-        solver_opts = ' '.join(str(x) for x in solver_opts)
+    d = 0
+    cutoffv = int(cutoffv)
+    m = int(m)
 
-    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, solver_optsg
-    orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, solver_optsg = (
-        order, numMCTS, cutoff, cutoffv, 0, int(int(order)*(int(order)-1)/2), 
-        solveaftercube, file_name_solve, solver_opts
-    )
-    
+    # Update global variables
+    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, solving_mode_g, cubing_mode_g, timeout_g, solver_options_g
+    orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg = order, numMCTS, cutoff, cutoffv, d, m, solveaftercube, file_name_solve
+    solving_mode_g = solving_mode
+    cubing_mode_g = cubing_mode
+    timeout_g = timeout
+    solver_options_g = solver_options
+
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
 
-    with multiprocessing.Pool(num_worker_processes) as pool:
-        pool.apply_async(worker, (queue,))
+    # Start worker processes
+    processes = [multiprocessing.Process(target=worker, args=(queue,)) for _ in range(num_worker_processes)]
+    for p in processes:
+        p.start()
 
+    #file_name_solve is a file where each line is a filename to solve
     with open(file_name_solve, 'r') as file:
-        first_line = file.readline().strip()
+        first_line = file.readline().strip()  # Read the first line and strip whitespace
 
+        # Check if the first line starts with 'p cnf'
         if first_line.startswith('p cnf'):
             print("input file is a CNF file")
-            cube(file_name_solve, "N", 0, mg, order, numMCTS, queue, cutoff, int(cutoffv), 0, "False", solver_opts)
+            cube(file_name_solve, "N", 0, m, order, numMCTS, queue, cutoff, cutoffv, d)
         else:
             print("input file contains name of multiple CNF file, solving them first")
+            # Prepend the already read first line to the list of subsequent lines
             instance_lst = [first_line] + [line.strip() for line in file]
             for instance in instance_lst:
-                command = f"./solve-verify.sh {solver_opts} {order} {instance}"
+                if solving_mode_g == "satcas":
+                    command = f"./solve.sh {order} -maplesat {timeout_g} -cas {instance}"
+                else:
+                    command = f"./solve.sh {order} -maplesat {timeout_g} {instance}"
                 queue.put(command)
 
+    # Wait for all tasks to be completed
     queue.join()
 
-    for _ in range(num_worker_processes):
+    # Stop workers
+    for _ in processes:
         queue.put(None)
+    for p in processes:
+        p.join()
 
 if __name__ == "__main__":
-    import sys
-    args = sys.argv[1:]
-    
-    # Parse named arguments
-    parsed_args = {}
-    i = 0
-    while i < len(args):
-        if args[i].startswith('--'):
-            if i + 1 < len(args) and not args[i + 1].startswith('--'):
-                parsed_args[args[i]] = args[i + 1]
-                i += 2
-            else:
-                parsed_args[args[i]] = args[i]
-                i += 1
-        else:
-            if 'order' not in parsed_args:
-                parsed_args['order'] = args[i]
-            elif 'file_name_solve' not in parsed_args:
-                parsed_args['file_name_solve'] = args[i]
-            i += 1
+    parser = argparse.ArgumentParser(
+        epilog='Example usage: python3 parallel-solve.py 17 instances/ks_17.cnf -m 136 --solver-options="-c -l -o 42"'
+    )
+    parser.add_argument('order', type=int, nargs='?', default=None, 
+                        help='Order of the graph (required for satcas mode)')
+    parser.add_argument('file_name_solve', help='Input file name')
+    parser.add_argument('-m', type=int, required=True,
+                        help='Number of variables to consider for cubing')
+    parser.add_argument('--solving-mode', choices=['satcas', 'other'], default='other',
+                        help='Solving mode: satcas (cadical+cas) or other (default)')
+    parser.add_argument('--cubing-mode', choices=['march', 'ams'], default='ams',
+                        help='Cubing mode: ams (alpha-zero-general, default) or march')
+    parser.add_argument('--numMCTS', type=int, default=2,
+                        help='Number of MCTS simulations (only for ams mode)')
+    parser.add_argument('--cutoff', choices=['d', 'v'], default='d',
+                        help='Cutoff type: d (depth-based) or v (variable-based)')
+    parser.add_argument('--cutoffv', type=int, default=5,
+                        help='Cutoff value')
+    parser.add_argument('--solveaftercube', choices=['True', 'False'], default='True',
+                        help='Whether to solve after cubing')
+    parser.add_argument('--timeout', type=int, default=3600,
+                        help='Timeout in seconds (default: 3600)')
+    parser.add_argument('--solver-options', type=str, default="",
+                        help='Additional options to pass to solve-verify.sh')
 
-    # Extract main arguments
-    main_args = [
-        parsed_args.get('order'),
-        parsed_args.get('file_name_solve'),
-        parsed_args.get('--numMCTS', 2),
-        parsed_args.get('--cutoff', 'd'),
-        parsed_args.get('--cutoffv', 5),
-        parsed_args.get('--solveaftercube', 'True')
-    ]
+    args = parser.parse_args()
     
-    # Collect remaining args as solver_opts
-    solver_opts = [arg for arg in args if arg.startswith('--') and 
-                  arg not in ('--numMCTS', '--cutoff', '--cutoffv', '--solveaftercube')]
-    
-    main_args.append(solver_opts)
-    main(*main_args)
+    # Additional validation
+    if args.solving_mode == "satcas" and args.order is None:
+        parser.error("order parameter is required when using satcas mode")
+
+    main(args.order, args.file_name_solve, args.m, args.solving_mode, args.cubing_mode,
+         args.numMCTS, args.cutoff, args.cutoffv, args.solveaftercube, args.timeout,
+         args.solver_options)
