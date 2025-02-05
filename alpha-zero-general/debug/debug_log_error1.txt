@@ -1,0 +1,1 @@
+Not found in debug_log.txt: [-79, -92, 47], [82, 71, 50]Not found in debug_log.txt: [-67, 106, 79, -111], [99, 105, 119]Current line is: [-67, 106, 79, -111], [86, 99, 105], 27

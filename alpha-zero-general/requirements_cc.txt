@@ -1,0 +1,7 @@
+coloredlogs==15.0.1
+matplotlib==3.8.0
+numpy==1.24.3
+tqdm==4.66.1
+wandb==0.15.10
+python-sat
+networkx==3.1

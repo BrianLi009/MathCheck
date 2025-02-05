@@ -1,0 +1,26 @@
+*.pyc
+.DS_Store
+
+/temp/
+/.project
+/.pydevproject
+
+# checkpoint
+checkpoints/
+
+# For PyCharm users
+.idea/
+
+# Project specific
+wandb/
+8803/
+*.out
+cubing_outputs/
+exptResults/
+*.simp
+arena_cubes.txt
+*.cubes
+*.cnf
+*.pkl
+
+ams_env/
