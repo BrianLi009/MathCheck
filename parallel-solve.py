@@ -130,7 +130,14 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             if solveaftercubeg == 'True':
                 files_to_remove = [f'{cube}{index}.cnf']
                 remove_related_files(files_to_remove)
-                solver_opts = (solver_options_g + " -P") if solver_options_g else "-P"
+                # Fix: Only add -P if solver_options_g is not empty
+                solver_opts = solver_options_g.strip()
+                print(f"Debug: Base solver options: '{solver_opts}'")
+                if solver_opts:
+                    solver_opts = f"{solver_opts} -p"  # Use -p instead of -P
+                else:
+                    solver_opts = "-p"  # Use -p instead of -P
+                print(f"Debug: Final solver options: '{solver_opts}'")
                 command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
                 print(f"Debug: Depth cutoff reached, adding solve task to queue: {command}")
                 queue.put(command)
@@ -142,7 +149,14 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             if solveaftercubeg == 'True':
                 files_to_remove = [f'{cube}{index}.cnf']
                 remove_related_files(files_to_remove)
-                solver_opts = (solver_options_g + " -P") if solver_options_g else "-P"
+                # Fix: Only add -P if solver_options_g is not empty
+                solver_opts = solver_options_g.strip()
+                print(f"Debug: Base solver options: '{solver_opts}'")
+                if solver_opts:
+                    solver_opts = f"{solver_opts} -p"  # Use -p instead of -P
+                else:
+                    solver_opts = "-p"  # Use -p instead of -P
+                print(f"Debug: Final solver options: '{solver_opts}'")
                 command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
                 print(f"Debug: Variable cutoff reached, adding solve task to queue: {command}")
                 queue.put(command)
