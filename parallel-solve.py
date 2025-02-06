@@ -70,18 +70,12 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     global solving_mode_g, cubing_mode_g, solver_options_g
     
     if cube != "N":
-        if solving_mode_g == "satcas":
-            command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh -s {cube}{index}.cnf {order} 10000"
-        else:
-            command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh -s {cube}{index}.cnf {order} 10000"
+        command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh -s {cube}{index}.cnf {order} 10000"
         file_to_cube = f"{cube}{index}.cnf.simp"
         simplog_file = f"{cube}{index}.cnf.simplog"
         file_to_check = f"{cube}{index}.cnf.ext"
     else:
-        if solving_mode_g == "satcas":
-            command = f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000"
-        else:
-            command = f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000"
+        command = f"./simplification/simplify-by-conflicts.sh -s {original_file} {order} 10000"
         file_to_cube = f"{original_file}.simp"
         simplog_file = f"{original_file}.simplog"
         file_to_check = f"{original_file}.ext"
@@ -161,14 +155,12 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, m, solving_mode="other", cubing_mode="ams", numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True', timeout=3600, solver_options=""):
+def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True', timeout=3600, solver_options=""):
     """
     Parameters:
-    - order: the order of the graph (required for satcas mode)
+    - order: the order of the graph
     - file_name_solve: input file name
     - m: number of variables to consider for cubing (required)
-    - solving_mode: 'satcas' (cadical simplification with cas, maplesat solving with cas) 
-                   or 'other' (cadical simplification no cas, maplesat solving no cas)
     - cubing_mode: 'ams' (alpha-zero-general, default) or 'march' (march_cu)
     - numMCTS: number of MCTS simulations (only used with ams mode)
     - cutoff: 'd' for depth-based or 'v' for variable-based
@@ -178,23 +170,18 @@ def main(order, file_name_solve, m, solving_mode="other", cubing_mode="ams", num
     - solver_options: additional options to pass to solve-verify.sh
     """
     # Validate input parameters
-    if solving_mode not in ["satcas", "other"]:
-        raise ValueError("solving_mode must be either 'satcas' or 'other'")
     if cubing_mode not in ["march", "ams"]:
         raise ValueError("cubing_mode must be either 'march' or 'ams'")
     if m is None:
         raise ValueError("m parameter must be specified")
-    if solving_mode == "satcas" and order is None:
-        raise ValueError("order parameter must be specified when using satcas mode")
 
     d = 0
     cutoffv = int(cutoffv)
     m = int(m)
 
     # Update global variables
-    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, solving_mode_g, cubing_mode_g, timeout_g, solver_options_g
+    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, cubing_mode_g, timeout_g, solver_options_g
     orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg = order, numMCTS, cutoff, cutoffv, d, m, solveaftercube, file_name_solve
-    solving_mode_g = solving_mode
     cubing_mode_g = cubing_mode
     timeout_g = timeout
     solver_options_g = solver_options
@@ -238,13 +225,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         epilog='Example usage: python3 parallel-solve.py 17 instances/ks_17.cnf -m 136 --solver-options="-c -l -o 42"'
     )
-    parser.add_argument('order', type=int, nargs='?', default=None, 
-                        help='Order of the graph (required for satcas mode)')
+    parser.add_argument('order', type=int, help='Order of the graph')
     parser.add_argument('file_name_solve', help='Input file name')
     parser.add_argument('-m', type=int, required=True,
                         help='Number of variables to consider for cubing')
-    parser.add_argument('--solving-mode', choices=['satcas', 'other'], default='other',
-                        help='Solving mode: satcas (cadical+cas) or other (default)')
     parser.add_argument('--cubing-mode', choices=['march', 'ams'], default='ams',
                         help='Cubing mode: ams (alpha-zero-general, default) or march')
     parser.add_argument('--numMCTS', type=int, default=2,
@@ -261,11 +245,7 @@ if __name__ == "__main__":
                         help='Additional options to pass to solve-verify.sh')
 
     args = parser.parse_args()
-    
-    # Additional validation
-    if args.solving_mode == "satcas" and args.order is None:
-        parser.error("order parameter is required when using satcas mode")
 
-    main(args.order, args.file_name_solve, args.m, args.solving_mode, args.cubing_mode,
+    main(args.order, args.file_name_solve, args.m, args.cubing_mode,
          args.numMCTS, args.cutoff, args.cutoffv, args.solveaftercube, args.timeout,
          args.solver_options)
