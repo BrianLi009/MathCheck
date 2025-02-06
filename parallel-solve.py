@@ -108,8 +108,8 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             if solveaftercubeg == 'True':
                 files_to_remove = [f'{cube}{index}.cnf']
                 remove_related_files(files_to_remove)
-                # Pass through all solver options (including -s if verification should be skipped)
-                solver_opts = solver_options_g if solver_options_g else ""
+                # Add -P to solver options to enable proof size limit
+                solver_opts = (solver_options_g + " -P") if solver_options_g else "-P"
                 command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
                 queue.put(command)
             return
@@ -118,8 +118,8 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             if solveaftercubeg == 'True':
                 files_to_remove = [f'{cube}{index}.cnf']
                 remove_related_files(files_to_remove)
-                # Pass through all solver options (including -s if verification should be skipped)
-                solver_opts = solver_options_g if solver_options_g else ""
+                # Add -P to solver options to enable proof size limit
+                solver_opts = (solver_options_g + " -P") if solver_options_g else "-P"
                 command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
                 queue.put(command)
             return
@@ -205,8 +205,8 @@ def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cu
             # Prepend the already read first line to the list of subsequent lines
             instance_lst = [first_line] + [line.strip() for line in file]
             for instance in instance_lst:
-                # Pass through all solver options (including -s if verification should be skipped)
-                solver_opts = solver_options_g if solver_options_g else ""
+                # Add -P to solver options to enable proof size limit
+                solver_opts = (solver_options_g + " -P") if solver_options_g else "-P"
                 command = f"./solve-verify.sh {solver_opts} {order} {instance}"
                 queue.put(command)
 
