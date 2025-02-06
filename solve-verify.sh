@@ -7,9 +7,10 @@ lex_order="smallest"
 orbit_val=""
 unembeddable=true
 skip_verify=false
+proof_size=false
 
 # Parse command line options
-while getopts "scpluo:h" opt; do
+while getopts "scpluo:Ph" opt; do
 	case $opt in
 		s) skip_verify=true ;;
 		c) solver="cadical" ;;
@@ -17,6 +18,7 @@ while getopts "scpluo:h" opt; do
 		l) lex_order="greatest" ;;
 		o) orbit_val="$OPTARG" ;;
 		u) unembeddable=false ;;
+		P) proof_size=true ;;
 		h) echo "
 Description:
     Script for solving and generating drat proof for instance
@@ -35,6 +37,7 @@ Options:
     -l: Use lex-greatest ordering (default: lex-smallest)
     -o VALUE: Set orbit value (required if -o is used)
     -u: Disable unembeddable check (default: enabled)
+    -P: Enable proof size limit
     -h: Show this help message
 
 Example:
@@ -77,10 +80,8 @@ else
 	[ "$lex_order" = "greatest" ] && cmd="$cmd -lex-greatest"
 	[ -n "$orbit_val" ] && cmd="$cmd -orbit=$orbit_val"
 	cmd="$cmd -perm-out=$f.perm -exhaustive=$f.exhaust"
-	# Add proof size parameter for single/multi modes
-	if [[ "$f" =~ .*"single".* ]] || [[ "$f" =~ .*"multi".* ]]; then
-		cmd="$cmd -max-proof-size=7168"
-	fi
+	# Add proof size parameter if enabled
+	[ "$proof_size" = true ] && cmd="$cmd -max-proof-size=7168"
 fi
 
 # Print the command
