@@ -220,10 +220,9 @@ def main(order, file_name_solve, m, solving_mode="other", cubing_mode="ams", num
             # Prepend the already read first line to the list of subsequent lines
             instance_lst = [first_line] + [line.strip() for line in file]
             for instance in instance_lst:
-                if solving_mode_g == "satcas":
-                    command = f"./solve.sh {order} -maplesat {timeout_g} -cas {instance}"
-                else:
-                    command = f"./solve.sh {order} -maplesat {timeout_g} {instance}"
+                # Pass through all solver options (including -s if verification should be skipped)
+                solver_opts = solver_options_g if solver_options_g else ""
+                command = f"./solve-verify.sh {solver_opts} {order} {instance}"
                 queue.put(command)
 
     # Wait for all tasks to be completed
