@@ -130,13 +130,13 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             if solveaftercubeg == 'True':
                 files_to_remove = [f'{cube}{index}.cnf']
                 remove_related_files(files_to_remove)
-                # Always add -P when called from parallel-solve.py
+                # Fix: Use -P instead of -p
                 solver_opts = solver_options_g.strip()
                 print(f"Debug: Base solver options: '{solver_opts}'")
                 if solver_opts:
-                    solver_opts = f"{solver_opts} -P"
+                    solver_opts = f"{solver_opts} -P"  # Use -P instead of -p
                 else:
-                    solver_opts = "-P"
+                    solver_opts = "-P"  # Use -P instead of -p
                 print(f"Debug: Final solver options: '{solver_opts}'")
                 command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
                 print(f"Debug: Depth cutoff reached, adding solve task to queue: {command}")
@@ -149,13 +149,13 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             if solveaftercubeg == 'True':
                 files_to_remove = [f'{cube}{index}.cnf']
                 remove_related_files(files_to_remove)
-                # Fix: Only add -P if solver_options_g is not empty
+                # Fix: Use -P instead of -p
                 solver_opts = solver_options_g.strip()
                 print(f"Debug: Base solver options: '{solver_opts}'")
                 if solver_opts:
-                    solver_opts = f"{solver_opts} -p"  # Use -p instead of -P
+                    solver_opts = f"{solver_opts} -P"  # Use -P instead of -p
                 else:
-                    solver_opts = "-p"  # Use -p instead of -P
+                    solver_opts = "-P"  # Use -P instead of -p
                 print(f"Debug: Final solver options: '{solver_opts}'")
                 command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
                 print(f"Debug: Variable cutoff reached, adding solve task to queue: {command}")
