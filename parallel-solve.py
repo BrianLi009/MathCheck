@@ -161,7 +161,7 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     queue.put(command2)
 
 def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True', timeout=3600, solver_options=""):
-    print(f"Debug: Main parameters - order:{order}, file:{file_name_solve}, m:{m}, mode:{cubing_mode}, numMCTS:{numMCTS}, cutoff:{cutoff}, cutoffv:{cutoffv}, solver_options:{solver_options}")
+    print(f"Debug: Main parameters - order:{order}, file:{file_name_solve}, m:{m}, mode:{cubing_mode}, numMCTS:{numMCTS}, cutoff:{cutoff}, cutoffv:{cutoffv}, solver_options:'{solver_options}'")
     
     # Validate input parameters
     if cubing_mode not in ["march", "ams"]:
@@ -177,7 +177,8 @@ def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cu
     global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, cubing_mode_g, solver_options_g
     orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg = order, numMCTS, cutoff, cutoffv, d, m, solveaftercube, file_name_solve
     cubing_mode_g = cubing_mode
-    solver_options_g = solver_options
+    # Strip any extra whitespace from solver options
+    solver_options_g = solver_options.strip()
 
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
@@ -236,10 +237,15 @@ if __name__ == "__main__":
     parser.add_argument('--solveaftercube', choices=['True', 'False'], default='True',
                         help='Whether to solve after cubing')
     parser.add_argument('--solver-options', type=str, default="",
-                        help='Additional options to pass to solve-verify.sh')
+                        help='Additional options to pass to solve-verify.sh (e.g., -c -l -o 42)')
 
     args = parser.parse_args()
+    
+    # Strip any surrounding quotes from solver options
+    solver_options = args.solver_options
+    if solver_options and solver_options[0] in ['"', "'"] and solver_options[-1] in ['"', "'"]:
+        solver_options = solver_options[1:-1]
 
     main(args.order, args.file_name_solve, args.m, args.cubing_mode,
          args.numMCTS, args.cutoff, args.cutoffv, args.solveaftercube,
-         args.solver_options)
+         solver_options)
