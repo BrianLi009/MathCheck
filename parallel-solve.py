@@ -241,10 +241,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     
-    # Strip any surrounding quotes from solver options
+    # Clean up solver options - remove any quotes and extra spaces
     solver_options = args.solver_options
-    if solver_options and solver_options[0] in ['"', "'"] and solver_options[-1] in ['"', "'"]:
-        solver_options = solver_options[1:-1]
+    if solver_options:
+        # Remove any surrounding quotes
+        solver_options = solver_options.strip('"\'')
+        # Ensure there's exactly one space between options
+        solver_options = ' '.join(solver_options.split())
+        print(f"Debug: Cleaned solver options: '{solver_options}'")
 
     main(args.order, args.file_name_solve, args.m, args.cubing_mode,
          args.numMCTS, args.cutoff, args.cutoffv, args.solveaftercube,
