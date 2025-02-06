@@ -8,7 +8,7 @@ remove_file = True
 
 def run_command(command):
     process_id = os.getpid()
-    print(f"Process {process_id}: Executing command: {command}")
+    print(f"Debug: Process {process_id}: Executing command: {command}")
 
     file_to_cube = command.split()[-1]
 
@@ -20,18 +20,19 @@ def run_command(command):
             print(f"Error executing command: {stderr.decode()}")
 
         if "UNSAT" in stdout.decode():
-            print("solved")
+            print("Debug: UNSAT found, terminating process")
             process.terminate()
         else:
-            print("Continue cubing this subproblem...")
+            print("Debug: Continue cubing this subproblem...")
             command = f"cube('{file_to_cube}', 'N', 0, {mg}, '{orderg}', {numMCTSg}, queue, '{cutoffg}', {cutoffvg}, {dg}, 'True')"
+            print(f"Debug: Adding to queue: {command}")
             queue.put(command)
 
     except Exception as e:
         print(f"Failed to run command due to: {str(e)}")
 
 def run_cube_command(command):
-    print (command)
+    print(f"Debug: Executing cube command: {command}")
     eval(command)
 
 def remove_related_files(files_to_remove):
@@ -69,6 +70,8 @@ def worker(queue):
 def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, extension="False"):
     global cubing_mode_g, solver_options_g
     
+    print(f"Debug: Cube parameters - file:{original_file}, cube:{cube}, index:{index}, m:{m}, order:{order}, numMCTS:{numMCTS}, cutoff:{cutoff}, cutoffv:{cutoffv}, d:{d}")
+    
     if cube != "N":
         command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh -s {cube}{index}.cnf {order} 10000"
         file_to_cube = f"{cube}{index}.cnf.simp"
@@ -79,6 +82,8 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
         file_to_cube = f"{original_file}.simp"
         simplog_file = f"{original_file}.simplog"
         file_to_check = f"{original_file}.ext"
+    
+    print(f"Debug: Executing command: {command}")
     subprocess.run(command, shell=True)
     # Remove the cube file after it's been used
     #remove_related_files([cube])
@@ -156,18 +161,8 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     queue.put(command2)
 
 def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True', timeout=3600, solver_options=""):
-    """
-    Parameters:
-    - order: the order of the graph
-    - file_name_solve: input file name
-    - m: number of variables to consider for cubing (required)
-    - cubing_mode: 'ams' (alpha-zero-general, default) or 'march' (march_cu)
-    - numMCTS: number of MCTS simulations (only used with ams mode)
-    - cutoff: 'd' for depth-based or 'v' for variable-based
-    - cutoffv: cutoff value
-    - solveaftercube: whether to solve after cubing
-    - solver_options: additional options to pass to solve-verify.sh
-    """
+    print(f"Debug: Main parameters - order:{order}, file:{file_name_solve}, m:{m}, mode:{cubing_mode}, numMCTS:{numMCTS}, cutoff:{cutoff}, cutoffv:{cutoffv}, solver_options:{solver_options}")
+    
     # Validate input parameters
     if cubing_mode not in ["march", "ams"]:
         raise ValueError("cubing_mode must be either 'march' or 'ams'")
@@ -186,6 +181,7 @@ def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cu
 
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
+    print(f"Debug: Starting {num_worker_processes} worker processes")
 
     # Start worker processes
     processes = [multiprocessing.Process(target=worker, args=(queue,)) for _ in range(num_worker_processes)]
@@ -195,19 +191,21 @@ def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cu
     #file_name_solve is a file where each line is a filename to solve
     with open(file_name_solve, 'r') as file:
         first_line = file.readline().strip()  # Read the first line and strip whitespace
+        print(f"Debug: First line of input file: {first_line}")
 
         # Check if the first line starts with 'p cnf'
         if first_line.startswith('p cnf'):
-            print("input file is a CNF file")
+            print("Debug: Input file is a CNF file")
             cube(file_name_solve, "N", 0, m, order, numMCTS, queue, cutoff, cutoffv, d)
         else:
-            print("input file contains name of multiple CNF file, solving them first")
+            print("Debug: Input file contains multiple CNF files")
             # Prepend the already read first line to the list of subsequent lines
             instance_lst = [first_line] + [line.strip() for line in file]
             for instance in instance_lst:
                 # Add -P to solver options to enable proof size limit
                 solver_opts = (solver_options_g + " -P") if solver_options_g else "-P"
                 command = f"./solve-verify.sh {solver_opts} {order} {instance}"
+                print(f"Debug: Adding to queue: {command}")
                 queue.put(command)
 
     # Wait for all tasks to be completed
