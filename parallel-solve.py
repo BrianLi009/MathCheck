@@ -100,16 +100,14 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     
     print(f"Debug: Executing command: {command}")
     subprocess.run(command, shell=True)
-    # Remove the cube file after it's been used
-    #remove_related_files([cube])
 
     # Check if the output contains "c exit 20"
     with open(simplog_file, "r") as file:
         if "c exit 20" in file.read():
-            print("the cube is UNSAT")
+            print("Debug: Found 'c exit 20' in simplog - the cube is UNSAT")
             if cube != "N":
                 files_to_remove = [f'{cube}{index}.cnf', file_to_cube, file_to_check]
-                #remove_related_files(files_to_remove)
+                print(f"Debug: Cleaning up files for UNSAT cube: {files_to_remove}")
             return
     
     command = f"sed -E 's/.* 0 [-]*([0-9]*) 0$/\\1/' < {file_to_check} | awk '$0<={m}' | sort | uniq | wc -l"
@@ -118,40 +116,47 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     if extension == "True":
         if cutoff == 'v':
             cutoffv = var_removed * 1.6
+            print(f"Debug: Extension enabled, adjusting variable cutoff to: {cutoffv}")
         else:
             cutoffv = cutoffv * 1.6
+            print(f"Debug: Extension enabled, adjusting depth cutoff to: {cutoffv}")
 
-    print (f'{var_removed} variables removed from the cube')
+    print(f"Debug: {var_removed} variables removed from the cube")
 
     if cutoff == 'd':
+        print(f"Debug: Using depth-based cutoff. Current depth: {d}, Cutoff value: {cutoffv}")
         if d >= cutoffv:
+            print(f"Debug: Reached depth cutoff ({d} >= {cutoffv})")
             if solveaftercubeg == 'True':
                 files_to_remove = [f'{cube}{index}.cnf']
                 remove_related_files(files_to_remove)
-                # Add -P to solver options to enable proof size limit
                 solver_opts = (solver_options_g + " -P") if solver_options_g else "-P"
                 command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
+                print(f"Debug: Depth cutoff reached, adding solve task to queue: {command}")
                 queue.put(command)
             return
     if cutoff == 'v':
+        print(f"Debug: Using variable-based cutoff. Variables removed: {var_removed}, Cutoff value: {cutoffv}")
         if var_removed >= cutoffv:
+            print(f"Debug: Reached variable cutoff ({var_removed} >= {cutoffv})")
             if solveaftercubeg == 'True':
                 files_to_remove = [f'{cube}{index}.cnf']
                 remove_related_files(files_to_remove)
-                # Add -P to solver options to enable proof size limit
                 solver_opts = (solver_options_g + " -P") if solver_options_g else "-P"
                 command = f"./solve-verify.sh {solver_opts} {order} {file_to_cube}"
+                print(f"Debug: Variable cutoff reached, adding solve task to queue: {command}")
                 queue.put(command)
             return
 
+    print(f"Debug: Cutoff not reached, continuing with cubing")
     # Select cubing method based on cubing_mode
     if cubing_mode_g == "march":
+        print(f"Debug: Using march cubing mode")
         subprocess.run(f"./march/march_cu {file_to_cube} -d 1 -m {m} -o {file_to_cube}.temp", shell=True)
     else:  # ams mode
+        print(f"Debug: Using ams cubing mode")
         subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.temp -prod -numMCTSSims {numMCTS}", shell=True)
-        #subprocess.run(f"python3 -u alpha-zero-general/main.py {file_to_cube} -d 1 -m {m} -o {file_to_cube}.temp -order {order} -prod -numMCTSSims {numMCTS}", shell=True)
 
-    #output {file_to_cube}.temp with the cubes
     d += 1
     if cube != "N":
         subprocess.run(f'''sed -E "s/^a (.*)/$(head -n {index} {cube} | tail -n 1 | sed -E 's/(.*) 0/\\1/') \\1/" {file_to_cube}.temp > {cube}{index}''', shell=True)
@@ -159,6 +164,9 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     else:
         subprocess.run(f'mv {file_to_cube}.temp {original_file}0', shell=True)
         next_cube = f'{original_file}0'
+
+    print(f"Debug: Generated next cube: {next_cube}")
+    
     if cube != "N":
         files_to_remove = [
             f'{cube}{index}.cnf',
@@ -166,12 +174,18 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
             file_to_cube,
             file_to_check
         ]
+        print(f"Debug: Cleaning up intermediate files: {files_to_remove}")
         remove_related_files(files_to_remove)
     else:
         files_to_remove = [file_to_cube, file_to_check]
+        print(f"Debug: Cleaning up intermediate files: {files_to_remove}")
         remove_related_files(files_to_remove)
+
     command1 = f"cube('{original_file}', '{next_cube}', 1, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
     command2 = f"cube('{original_file}', '{next_cube}', 2, {m}, '{order}', {numMCTS}, queue, '{cutoff}', {cutoffv}, {d})"
+    print(f"Debug: Adding new cube tasks to queue:")
+    print(f"Debug: Task 1: {command1}")
+    print(f"Debug: Task 2: {command2}")
     queue.put(command1)
     queue.put(command2)
 
