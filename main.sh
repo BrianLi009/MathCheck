@@ -204,15 +204,15 @@ case $mode in
         ;;
     "single")
         echo "Cubing and solving in parallel on local machine"
-        cmd="python3 parallel-solve.py $order ${dir_name}/${f} -m $edge_vars --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value --solver-options=\"$solver_opts_str\""
+        cmd="python3 parallel-solve.py $order ${dir_name}/${f} -m $edge_vars --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value --solver-options=\"${solver_opts_str}\""
         echo "Executing command: $cmd"
         eval $cmd
         ;;
     "multi")
         echo "Cubing and solving in parallel on Compute Canada"
-        cmd="python3 parallel-solve.py $order ${dir_name}/${f} -m $edge_vars --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value --solveaftercube False --solver-options=\"$solver_opts_str\""
+        cmd="python3 parallel-solve.py $order ${dir_name}/${f} -m $edge_vars --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value --solveaftercube False --solver-options=\"${solver_opts_str}\""
         echo "Executing command: $cmd"
-        $cmd
+        eval $cmd
         found_files=()
 
         # Populate the array with the names of files found by the find command
