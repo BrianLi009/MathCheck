@@ -204,7 +204,8 @@ case $mode in
         ;;
     "single")
         echo "Cubing and solving in parallel on local machine"
-        cmd="python3 parallel-solve.py $order ${dir_name}/${f} -m $edge_vars --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value --solver-options=$solver_opts_str"
+        # Properly escape the solver options
+        cmd="python3 parallel-solve.py $order ${dir_name}/${f} -m $edge_vars --numMCTS $mcts_sims --cutoff $cutoff_criteria --cutoffv $cutoff_value --solver-options='$solver_opts_str'"
         echo "Executing command: $cmd"
         eval $cmd
         ;;
