@@ -152,10 +152,25 @@ mkdir $dir_name
 lex_opt=""
 [ "$solver_lex_greatest" = true ] && lex_opt="lex-greatest"
 
+echo "Debug: solver_lex_greatest = $solver_lex_greatest"
+echo "Debug: lex_opt = $lex_opt"
+
 # Generate Instance
+echo "Debug: Calling generate-instance.sh with params: $order $color_pct $definition $lex_opt"
 ./generate-instance.sh $order $color_pct $definition "$lex_opt"
+
 f=constraints_${order}_${color_pct}_${definition}
 [ "$solver_lex_greatest" = true ] && f=${f}_lex_greatest
+
+echo "Debug: Looking for file: $f"
+if [ -f "$f" ]; then
+    echo "Debug: File $f exists"
+else
+    echo "Debug: File $f does not exist"
+    echo "Debug: Contents of current directory:"
+    ls constraints_*
+fi
+
 cp $f $dir_name
 
 # Calculate number of edge variables
