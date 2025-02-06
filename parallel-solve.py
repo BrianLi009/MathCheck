@@ -97,9 +97,9 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     var_removed = int(result.stdout.strip())
     if extension == "True":
         if cutoff == 'v':
-            cutoffv = var_removed * 2
+            cutoffv = var_removed * 1.6
         else:
-            cutoffv = cutoffv * 2
+            cutoffv = cutoffv * 1.6
 
     print (f'{var_removed} variables removed from the cube')
 
