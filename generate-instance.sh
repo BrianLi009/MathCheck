@@ -11,21 +11,27 @@ Description:
     5. We also applied the cubic isomorphism blocking clauses
 
 Usage:
-    ./generate-instance.sh n [lex-greatest]
+    ./generate-instance.sh n c o [lex-greatest]
 
 Options:
     <n>: the order of the instance/number of vertices in the graph
+    <c>: ratio of color-1 vertices to block
+    <o>: definition used (1 or 2)
     lex-greatest: (optional) use lex-greatest ordering instead of lex-smallest
     
 " && exit
 
 n=$1 #order
-c=0.5 #default ratio of color-1 vertices to block
-o=1 #default to using definition 1
+c=$2 #ratio of color-1 vertices to block
+o=$3 #definition used
 lex_opt="" #default to lex-smallest
 
-# Check if second argument is lex-greatest
-if [ "$2" = "lex-greatest" ]; then
+echo "Debug: Input parameters:"
+echo "n=$n, c=$c, o=$o, \$4=$4"
+
+# Check if fourth argument is lex-greatest
+if [ "$4" = "lex-greatest" ]; then
+    echo "Debug: Setting lex_opt to lex-greatest"
     lex_opt="lex-greatest"
 fi
 
@@ -33,15 +39,20 @@ base_name="constraints_${n}_${c}_${o}"
 file_name="$base_name"
 [ "$lex_opt" = "lex-greatest" ] && file_name="${base_name}_lex_greatest"
 
+echo "Debug: base_name=$base_name"
+echo "Debug: file_name=$file_name"
+
 if [ -f "$file_name" ]
 then
     echo "instance already generated"
 else
     if [ $o -eq 1 ]
     then
+        echo "Debug: Calling generate.py with: $n $c $lex_opt"
         python3 gen_instance/generate.py $n $c "$lex_opt" #generate the instance of order n
     else
         echo "using extended definition of KS system..."
+        echo "Debug: Calling generate-def2.py with: $n $c $lex_opt"
         python3 gen_instance/generate-def2.py $n $c "$lex_opt" #generate the instance of order n
     fi
 fi
