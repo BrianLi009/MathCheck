@@ -3,6 +3,7 @@ import multiprocessing
 import os
 import queue
 import argparse
+import sys
 
 remove_file = True
 
@@ -160,7 +161,7 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     queue.put(command1)
     queue.put(command2)
 
-def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True', timeout=3600, solver_options=""):
+def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cutoffv=5, solveaftercube='True', timeout=sys.maxsize, solver_options=""):
     print(f"Debug: Main parameters - order:{order}, file:{file_name_solve}, m:{m}, mode:{cubing_mode}, numMCTS:{numMCTS}, cutoff:{cutoff}, cutoffv:{cutoffv}, solver_options:'{solver_options}'")
     
     # Validate input parameters
@@ -178,7 +179,7 @@ def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cu
     orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg = order, numMCTS, cutoff, cutoffv, d, m, solveaftercube, file_name_solve
     cubing_mode_g = cubing_mode
     # Strip any extra whitespace from solver options
-    solver_options_g = solver_options.strip()
+    solver_options_g = solver_options
 
     queue = multiprocessing.JoinableQueue()
     num_worker_processes = multiprocessing.cpu_count()
@@ -238,18 +239,18 @@ if __name__ == "__main__":
                         help='Whether to solve after cubing')
     parser.add_argument('--solver-options', type=str, default="",
                         help='Additional options to pass to solve-verify.sh (e.g., -c -l -o 42)')
+    parser.add_argument('--timeout', type=int, default=sys.maxsize,
+                        help='Timeout in seconds (default: maximum possible)')
 
     args = parser.parse_args()
     
-    # Clean up solver options - remove any quotes and extra spaces
+    # Clean up solver options
     solver_options = args.solver_options
     if solver_options:
-        # Remove any surrounding quotes
         solver_options = solver_options.strip('"\'')
-        # Ensure there's exactly one space between options
         solver_options = ' '.join(solver_options.split())
         print(f"Debug: Cleaned solver options: '{solver_options}'")
 
     main(args.order, args.file_name_solve, args.m, args.cubing_mode,
          args.numMCTS, args.cutoff, args.cutoffv, args.solveaftercube,
-         solver_options)
+         args.timeout, solver_options)
