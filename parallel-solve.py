@@ -67,7 +67,7 @@ def worker(queue):
         queue.task_done()
 
 def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutoffv=5, d=0, extension="False"):
-    global solving_mode_g, cubing_mode_g, solver_options_g
+    global cubing_mode_g, solver_options_g
     
     if cube != "N":
         command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh -s {cube}{index}.cnf {order} 10000"
@@ -166,7 +166,6 @@ def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cu
     - cutoff: 'd' for depth-based or 'v' for variable-based
     - cutoffv: cutoff value
     - solveaftercube: whether to solve after cubing
-    - timeout: timeout in seconds (default: 1 hour)
     - solver_options: additional options to pass to solve-verify.sh
     """
     # Validate input parameters
@@ -180,10 +179,9 @@ def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cu
     m = int(m)
 
     # Update global variables
-    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, cubing_mode_g, timeout_g, solver_options_g
+    global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, cubing_mode_g, solver_options_g
     orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg = order, numMCTS, cutoff, cutoffv, d, m, solveaftercube, file_name_solve
     cubing_mode_g = cubing_mode
-    timeout_g = timeout
     solver_options_g = solver_options
 
     queue = multiprocessing.JoinableQueue()
@@ -239,13 +237,11 @@ if __name__ == "__main__":
                         help='Cutoff value')
     parser.add_argument('--solveaftercube', choices=['True', 'False'], default='True',
                         help='Whether to solve after cubing')
-    parser.add_argument('--timeout', type=int, default=3600,
-                        help='Timeout in seconds (default: 3600)')
     parser.add_argument('--solver-options', type=str, default="",
                         help='Additional options to pass to solve-verify.sh')
 
     args = parser.parse_args()
 
     main(args.order, args.file_name_solve, args.m, args.cubing_mode,
-         args.numMCTS, args.cutoff, args.cutoffv, args.solveaftercube, args.timeout,
+         args.numMCTS, args.cutoff, args.cutoffv, args.solveaftercube,
          args.solver_options)
