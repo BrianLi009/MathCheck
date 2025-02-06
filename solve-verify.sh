@@ -31,7 +31,7 @@ Required Arguments:
 Options:
     -s: Skip verification step
     -c: Use CaDiCal solver (default: MapleSAT)
-    -p: Disable pseudo check
+    -p: Disable pseudo check (use -no-pseudo-test)
     -l: Use lex-greatest ordering (default: lex-smallest)
     -o VALUE: Set orbit value (required if -o is used)
     -u: Disable unembeddable check (default: enabled)
@@ -73,7 +73,7 @@ if [ "$solver" = "cadical" ]; then
 else
 	cmd="./maplesat-ks/simp/maplesat_static $f $f.drat -order=$n -no-pre -minclause"
 	[ "$unembeddable" = true ] && cmd="$cmd -unembeddable-check=13"
-	[ "$pseudo_check" = false ] && cmd="$cmd -pseudo-test=false"
+	[ "$pseudo_check" = false ] && cmd="$cmd -no-pseudo-test"
 	[ "$lex_order" = "greatest" ] && cmd="$cmd -lex-greatest"
 	[ -n "$orbit_val" ] && cmd="$cmd -orbit=$orbit_val"
 	cmd="$cmd -perm-out=$f.perm -exhaustive=$f.exhaust"
