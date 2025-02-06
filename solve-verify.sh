@@ -66,6 +66,10 @@ if [ "$solver" = "cadical" ]; then
 	[ "$lex_order" = "greatest" ] && cmd="$cmd --lex-greatest"
 	[ -n "$orbit_val" ] && cmd="$cmd --orbit $orbit_val"
 	cmd="$cmd --perm-out $f.perm"
+	# Add proofsize parameter for single/multi modes
+	if [[ "$f" =~ .*"single".* ]] || [[ "$f" =~ .*"multi".* ]]; then
+		cmd="$cmd --proofsize 7168"
+	fi
 else
 	cmd="./maplesat-ks/simp/maplesat_static $f $f.drat -order=$n -no-pre -minclause"
 	[ "$unembeddable" = true ] && cmd="$cmd -unembeddable-check=13"
@@ -73,6 +77,10 @@ else
 	[ "$lex_order" = "greatest" ] && cmd="$cmd -lex-greatest"
 	[ -n "$orbit_val" ] && cmd="$cmd -orbit=$orbit_val"
 	cmd="$cmd -perm-out=$f.perm -exhaustive=$f.exhaust"
+	# Add proof size parameter for single/multi modes
+	if [[ "$f" =~ .*"single".* ]] || [[ "$f" =~ .*"multi".* ]]; then
+		cmd="$cmd -max-proof-size=7168"
+	fi
 fi
 
 # Print the command
