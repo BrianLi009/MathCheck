@@ -74,13 +74,26 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     print(f"Debug: Cube parameters - file:{original_file}, cube:{cube}, index:{index}, m:{m}, order:{order}, numMCTS:{numMCTS}, cutoff:{cutoff}, cutoffv:{cutoffv}, d:{d}")
     print(f"Debug: Using solver options: '{solver_options_g}'")
     
+    # Extract relevant options for simplify-by-conflicts.sh
+    simplify_opts = []
+    if solver_options_g:
+        opts = solver_options_g.split()
+        for i, opt in enumerate(opts):
+            if opt in ['-s', '-p', '-l', '-u']:  # Single options
+                simplify_opts.append(opt)
+            elif opt == '-o' and i + 1 < len(opts):  # Option with value
+                simplify_opts.extend(['-o', opts[i + 1]])
+    
+    simplify_opts_str = ' '.join(simplify_opts)
+    print(f"Debug: Using simplify options: '{simplify_opts_str}'")
+    
     if cube != "N":
-        command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh {solver_options_g} {cube}{index}.cnf {order} 10000"
+        command = f"./gen_cubes/apply.sh {original_file} {cube} {index} > {cube}{index}.cnf && ./simplification/simplify-by-conflicts.sh {simplify_opts_str} {cube}{index}.cnf {order} 10000"
         file_to_cube = f"{cube}{index}.cnf.simp"
         simplog_file = f"{cube}{index}.cnf.simplog"
         file_to_check = f"{cube}{index}.cnf.ext"
     else:
-        command = f"./simplification/simplify-by-conflicts.sh {solver_options_g} {original_file} {order} 10000"
+        command = f"./simplification/simplify-by-conflicts.sh {simplify_opts_str} {original_file} {order} 10000"
         file_to_cube = f"{original_file}.simp"
         simplog_file = f"{original_file}.simplog"
         file_to_check = f"{original_file}.ext"
