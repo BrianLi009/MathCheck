@@ -38,7 +38,7 @@ namespace Minisat {
 //=================================================================================================
 // Solver -- the main class:
 
-#define MAXN 20  // Increase from default to handle larger graphs
+#define MAXN 40  // Increase from default to handle larger graphs
 
 class Solver {
 public:
