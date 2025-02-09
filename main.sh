@@ -180,8 +180,8 @@ edge_vars=$((order * (order-1) / 2))
 solver_opts_str=""
 # Skip verification (-s)
 [ "$solver_skip_verify" = true ] && solver_opts_str="$solver_opts_str -s"
-# Use CaDiCaL solver (-c)
-[ "$solver_use_cadical" = true ] && solver_opts_str="$solver_opts_str -c"
+# Use CaDiCaL solver (-C)
+[ "$solver_use_cadical" = true ] && solver_opts_str="$solver_opts_str -C"
 # Disable pseudo check (-p)
 [ "$solver_disable_pseudo" = true ] && solver_opts_str="$solver_opts_str -p"
 # Use lex-greatest ordering (-l)
