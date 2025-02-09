@@ -8,14 +8,14 @@ unembeddable=true
 
 # Option parsing
 #if the s flag is enabled, DRAT file will still be generated but verification will be skipped
-while getopts ":spluo:C" opt; do
+while getopts ":spluo:c" opt; do
   case $opt in
     s) s=true ;;
     p) pseudo_check=false ;;
     l) lex_order="greatest" ;;
     u) unembeddable=false ;;
     o) orbit_val="$OPTARG" ;;
-    C) : ;;
+    c) : ;;
     \?) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
   esac
 done
