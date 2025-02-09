@@ -199,7 +199,7 @@ case $mode in
         echo "Simplifying $f for 10000 conflicts using CaDiCaL+CAS"
         ./simplification/simplify-by-conflicts.sh $solver_opts_str ${dir_name}/${f} $order 10000
 
-        echo "Solving $f using MapleSAT+CAS"
+        echo "Solving $f using Conquering Solver"
         ./solve-verify.sh $solver_opts_str $order ${dir_name}/${f}.simp
         ;;
     "single")
