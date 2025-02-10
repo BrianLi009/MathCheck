@@ -88,8 +88,8 @@ int main(int argc, char** argv)
         
         parseOptions(argc, argv, true);
 
-        // Now declare orbit_opt with order as default
-        IntOption    orbit_opt("MAIN", "orbit", "Enable orbit pruning for graphs with order >= N (default: order of graph)", order, IntRange(0, INT32_MAX));
+        // Now declare orbit_opt with order.value() as default
+        IntOption    orbit_opt("MAIN", "orbit", "Enable orbit pruning for graphs with order >= N (default: order of graph)", order.value(), IntRange(0, INT32_MAX));
         
         parseOptions(argc, argv, true);
 
