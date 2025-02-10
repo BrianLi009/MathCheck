@@ -150,7 +150,7 @@ int main(int argc, char** argv)
         signal(SIGXCPU,SIGINT_interrupt);
        
         // Set orbit cutoff (no print statements here)
-        S.orbit_cutoff = (orbit_opt == -1) ? S.nVars() : orbit_opt;
+        S.orbit_cutoff = (orbit_opt == -1) ? order : orbit_opt;
 
         if (!S.simplify()){
             if (S.output != NULL) fprintf(S.output, "0\n"), fclose(S.output);
