@@ -205,6 +205,7 @@ Solver::Solver() :
   , asynch_interrupt   (false)
   , lex_greatest       (opt_lex_greatest)
   , clauses            ()
+  , orbit_cutoff(0)  // Initialize as class member
 {
     if(exhauststring != NULL)
     {   //if(opt_order == 0)
@@ -262,6 +263,10 @@ Solver::Solver() :
 
     // Print orbit cutoff
     printf("c orbit cutoff: %d\n", orbit_cutoff);
+
+    // Set orbit cutoff based on parameters
+    orbit_cutoff = (opt_orbit == -1) ? opt_order : opt_orbit;
+    printf("c orbit cutoff: %d\n", orbit_cutoff);
 }
 
 
@@ -293,12 +298,6 @@ Solver::~Solver()
         guboutfile = NULL;
     }
 #endif
-    printf("Permutation statistics:\n");
-    for(int i = 2; i < nVars(); i++) {
-        if (perm_total[i] > 0) {
-            printf("    Order %2d: %ld perms\n", i+1, perm_total[i]);
-        }
-    }
 }
 
 
