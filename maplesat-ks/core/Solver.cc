@@ -260,10 +260,7 @@ Solver::Solver() :
     options.dispatch = &dispatch_graph;
     options.schreier = FALSE;
     options.cartesian = FALSE;
-
-    // Print orbit cutoff
-    printf("c orbit cutoff: %d\n", orbit_cutoff);
-
+    printf("c order: %d\n", opt_order);
     // Set orbit cutoff based on parameters
     orbit_cutoff = (opt_orbit == -1) ? opt_order : opt_orbit;
     printf("c orbit cutoff: %d\n", orbit_cutoff);
