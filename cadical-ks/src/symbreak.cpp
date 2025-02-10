@@ -466,7 +466,7 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
     }
 
     // Only compute orbits and remove possibilities if k is greater than orbit_cutoff
-    if (k > orbit_cutoff) {
+    if (k >= orbit_cutoff) {
         // Compute orbits and apply initial constraints
         std::vector<int> orbits = compute_and_print_orbits(k);
         remove_possibilities(k, orbit_constraints, orbits);  // Store constraints in orbit_constraints
