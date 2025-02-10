@@ -6,23 +6,26 @@ from neighbor import neighbor
 from mindegree import mindegree
 from noncolorable import noncolorable
 from cubic import cubic
+from cubic_lex_greatest import cubic as cubic_lex_greatest
 from b_b_card import generate_edge_clauses
 import subprocess
 import os
+import argparse
 
-def generate(n, block, lower_bound, upper_bound, nostatic=False):
+def generate(n, block, lower_bound=None, upper_bound=None, nostatic=False, lex_greatest=False):
     """
     n: size of the graph
-    Given n, the function calls each individual constraint-generating function, then write them into a DIMACS file as output
-    The variables are listed in the following order:
-    edges - n choose 2 variables
-    triangles - n choose 3 variables
-    extra variables from cubic
+    block: color ratio to block
+    lower_bound: lower bound for triangle count
+    upper_bound: upper bound for triangle count
+    nostatic: whether to disable isomorphism blocking
+    lex_greatest: whether to use lex-greatest ordering for isomorphism blocking
     """
     cnf_file = "constraints_" + str(n) + "_" + str(block)
     if lower_bound and upper_bound:
         cnf_file += f"_{lower_bound}_{upper_bound}"
     cnf_file += "_nostatic" if nostatic else "_2"
+    cnf_file += "_lex_greatest" if lex_greatest else ""
     
     if os.path.exists(cnf_file):
         print(f"File '{cnf_file}' already exists. Terminating...")
@@ -51,14 +54,16 @@ def generate(n, block, lower_bound, upper_bound, nostatic=False):
     
     # Only call cubic if nostatic is False
     if not nostatic:
-        var_count, c_count = cubic(n, count, cnf_file) #total number of variables
+        cubic_impl = cubic_lex_greatest if lex_greatest else cubic
+        print(f"Using {'lex-greatest' if lex_greatest else 'lex-least'} ordering for isomorphism blocking")
+        var_count, c_count = cubic_impl(n, count, cnf_file) #total number of variables
         clause_count += c_count
         print ("isomorphism blocking applied")
     else:
         var_count = count  # If not calling cubic, use current count as var_count
     
     # Convert triangle dictionary values to sorted list and apply constraints only if bounds are provided
-    if lower_bound and upper_bound:  # Changed from checking sys.argv length
+    if lower_bound and upper_bound:
         tri_vars = [v for k, v in sorted(tri_dict.items())]
         var_count_card, clause_count_card = generate_edge_clauses(tri_vars, int(lower_bound), int(upper_bound), var_count, cnf_file)
         var_count = var_count_card
@@ -69,25 +74,24 @@ def generate(n, block, lower_bound, upper_bound, nostatic=False):
     subprocess.call(["./gen_instance/append.sh", cnf_file, cnf_file+"_new", firstline])
 
 if __name__ == "__main__":
-    # Parse command line arguments
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["nostatic"])
-    except getopt.GetoptError:
-        print('Usage: generate-def2.py <n> <block> [lower_bound upper_bound] [--nostatic]')
-        sys.exit(2)
-
-    nostatic = False
-    for opt, arg in opts:
-        if opt == '--nostatic':
-            nostatic = True
-
-    if len(args) < 2:
-        print('Usage: generate-def2.py <n> <block> [lower_bound upper_bound] [--nostatic]')
-        sys.exit(2)
-
-    n = int(args[0])
-    block = args[1]
-    lower_bound = args[2] if len(args) > 2 else None
-    upper_bound = args[3] if len(args) > 3 else None
+    parser = argparse.ArgumentParser(description='Generate constraints for graph problems.')
+    parser.add_argument('n', type=int, help='Size of the graph')
+    parser.add_argument('block', type=str, help='Block identifier')
+    parser.add_argument('--lower', type=int, help='Lower bound for triangle count')
+    parser.add_argument('--upper', type=int, help='Upper bound for triangle count')
+    parser.add_argument('--nostatic', action='store_true', 
+                      help='Disable isomorphism blocking (default: False)')
+    parser.add_argument('--lex-greatest', action='store_true',
+                      help='Use lex-greatest ordering for isomorphism blocking (default: False)')
     
-    generate(n, block, lower_bound, upper_bound, nostatic)
+    args = parser.parse_args()
+    
+    # Validate argument combinations
+    if args.nostatic and args.lex_greatest:
+        parser.error("Cannot use --lex-greatest with --nostatic")
+    
+    # Validate bounds
+    if (args.lower is None) != (args.upper is None):
+        parser.error("Both lower and upper bounds must be provided together or omitted")
+    
+    generate(args.n, args.block, args.lower, args.upper, args.nostatic, args.lex_greatest)
