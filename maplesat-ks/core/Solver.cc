@@ -56,6 +56,9 @@ double canontimearr[MAXORDER] = {};
 double noncanontimearr[MAXORDER] = {};
 double gubtime = 0;
 
+// Add perm_total array declaration (same as in symbreak.cpp)
+long perm_total[MAXORDER] = {};
+
 using namespace Minisat;
 
 int N = 0; // Number of edge variables
