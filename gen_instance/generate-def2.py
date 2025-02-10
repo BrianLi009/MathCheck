@@ -3,6 +3,7 @@ import sys, getopt
 from squarefree import squarefree
 from triangle_e import triangle
 from neighbor import neighbor
+from mindegree import mindegree
 from noncolorable import noncolorable
 from cubic import cubic
 from b_b_card import generate_edge_clauses
@@ -45,8 +46,8 @@ def generate(n, block, lower_bound, upper_bound, nostatic=False):
     print ("all edges are part of a triangle")
     clause_count += noncolorable(n,  edge_dict, tri_dict, cnf_file, block)
     print ("graph is noncolorable")
-    clause_count += neighbor(n, edge_dict, cnf_file)
-    print ("every vertex has a neightbor")
+    clause_count += mindegree(n, 3, edge_dict, cnf_file)
+    print ("minimum degree of each vertex is 3")
     
     # Only call cubic if nostatic is False
     if not nostatic:
