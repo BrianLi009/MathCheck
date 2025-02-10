@@ -627,37 +627,67 @@ std::vector<char> Solver::convert_assignment_to_graph6(int k) {
 }
 
 // Add function to remove invalid permutation possibilities based on orbits
-void Solver::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
-    if (k <= 0 || k > MAXN || orbits.size() != static_cast<size_t>(k)) {
-        return;
-    }
+void SymmetryBreaker::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
+    if (k > 0 && k <= MAXORDER && orbits.size() == static_cast<size_t>(k)) {
+        // Find the largest orbit
+        int largest_orbit_size = 0;
+        int largest_orbit_id = -1;
+        int first_vertex_largest_orbit = -1;
 
-    // Step 1: Create orbit masks for efficient operations
-    std::vector<int> orbit_masks(k, 0);
-    std::vector<int> orbit_mins(k, k);
-    
-    // Build orbit masks and find minimum vertices in one pass
-    for (int i = 0; i < k; i++) {
-        int orbit_id = orbits[i];
-        orbit_masks[orbit_id] |= (1 << i);
-        orbit_mins[orbit_id] = std::min(orbit_mins[orbit_id], i);
-    }
-
-    // Step 2: Apply restrictions based on orbit structure
-    for (int i = 0; i < k; i++) {
-        int orbit_id = orbits[i];
-        int min_vertex = orbit_mins[orbit_id];
-        
-        // Only restrict mappings for non-minimal vertices in their orbit
-        if (i > min_vertex) {
-            // Can't map to vertices lower than the orbit's minimum
-            int forbidden_mask = (1 << min_vertex) - 1;  // All bits < min_vertex
-            // Also can't map to vertices in same orbit that are lower than current vertex
-            forbidden_mask |= ((1 << i) - 1) & orbit_masks[orbit_id];
-            
-            pn[i] &= ~forbidden_mask;  // Remove forbidden mappings
+        for (int i = 0; i < k; i++) {
+            int orbit_size = 0;
+            for (int j = 0; j < k; j++) {
+                if (orbits[j] == orbits[i]) orbit_size++;
+            }
+            if (orbit_size > largest_orbit_size) {
+                largest_orbit_size = orbit_size;
+                largest_orbit_id = orbits[i];
+                first_vertex_largest_orbit = i;
+            }
         }
+
+        if (largest_orbit_id != -1) {
+            // Process the largest orbit
+            for (int i = 0; i < k; i++) {
+                if (orbits[i] == largest_orbit_id) {
+                    for (int j = 0; j < k; j++) {
+                        if (i != j && orbits[j] == largest_orbit_id) {
+                            pn[i] &= ~(1 << j);
+                        }
+                    }
+                }
+            }
+
+            // std::cout << "Processing other orbits..." << std::endl;
+            // Process other orbits
+            for (int i = 0; i < k; i++) {
+                if (orbits[i] != largest_orbit_id) {
+                    // std::cout << "  Processing vertex " << i << " (orbit " << orbits[i] << ")" << std::endl;
+                    bool is_representative = true;
+                    for (int j = 0; j < i; j++) {
+                        if (orbits[j] == orbits[i]) {
+                            is_representative = false;
+                            // std::cout << "    Not a representative (same orbit as " << j << ")" << std::endl;
+                            break;
+                        }
+                    }
+                    if (!is_representative) {
+                        pn[first_vertex_largest_orbit] &= ~(1 << i);
+                    }
+                }
+            }
+        }
+    } else {
+        // std::cout << "Conditions not met. Skipping orbit processing." << std::endl;
     }
+    
+    // Log final pn values
+    // std::cout << "Final pn values:" << std::endl;
+    // for (int i = 0; i < k; i++) {
+    //     std::cout << "  pn[" << i << "] = " << std::bitset<32>(pn[i]) << std::endl;
+    // }
+    
+    // std::cout << "Exiting remove_possibilities" << std::endl;
 }
 
 // Modify the existing canonicity checking code to use orbit-based pruning
@@ -668,33 +698,42 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
         exit(1);
     }
     
-    int pl[k]; // pl[k] contains the current list of possibilities for kth vertex (encoded bitwise)
-    int pn[k+1]; // pn[k] contains the initial list of possibilities for kth vertex (encoded bitwise)
-    pl[0] = (1 << k) - 1;
-    pn[0] = (1 << k) - 1;
+    int pl[k];  // Current possibilities for each vertex
+    int pn[k+1];  // Working possibilities array
+    int orbit_constraints[k+1];  // Store original constraints from remove_possibilities
+    
+    // Initialize all possibilities
+    for (int j = 0; j <= k; j++) {
+        pn[j] = (1 << k) - 1;
+        orbit_constraints[j] = pn[j];  // Initialize constraints to all possible
+    }
+
+    // Only compute orbits and remove possibilities if k is greater than orbit_cutoff
+    if (k >= orbit_cutoff) {  // Changed from k > orbit_cutoff
+        // Compute orbits and apply initial constraints
+        std::vector<int> orbits = compute_and_print_orbits(k);
+        remove_possibilities(k, orbit_constraints, orbits);  // Store constraints in orbit_constraints
+    }
+
+    // Initialize pl and pn with the constraints
+    for (int j = 0; j <= k; j++) {
+        pl[j] = orbit_constraints[j];
+        pn[j] = orbit_constraints[j];
+    }
+
     i = 0;
     int last_x = 0;
     int last_y = 0;
-
     int np = 1;
     int limit = INT32_MAX;
 
-    // If pseudo-test enabled then stop test if it is taking over 10 times longer than average
     if(opt_pseudo_test && k >= 7) {
         limit = 10*perm_cutoff[k-1];
     }
 
-    // Only compute orbits and remove possibilities if k is greater than orbit_cutoff
-    if (k > orbit_cutoff) {
-        // Compute orbits
-        std::vector<int> orbits = compute_and_print_orbits(k);
-        // Remove possibilities before starting
-        remove_possibilities(k, pn, orbits);
-    }
-
     while(np < limit) {
         // If no possibilities for ith vertex then backtrack
-        if(pl[i]==0) {
+        if(pl[i] == 0) {
             // Backtrack to vertex that has at least two possibilities
             while((pl[i] & (pl[i] - 1)) == 0) {
                 if(last_x > p[i]) {
@@ -702,20 +741,17 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
                     last_y = 0;
                 }
                 i--;
-                if(i==-1) {
-#ifdef PERM_STATS
-                    canon_np[k-1] += np;
-#endif
-                    // No permutations produce a smaller matrix; M is canonical
+                if(i == -1) {
                     return true;
                 }
             }
-            // Remove p[i] as a possibility from the ith vertex
             pl[i] = pl[i] & ~(1 << p[i]);
         }
 
-        p[i] = log2(pl[i] & -pl[i]); // Get index of rightmost high bit
-        pn[i+1] = pn[i] & ~(1 << p[i]); // List of possibilities for (i+1)th vertex
+        p[i] = log2(pl[i] & -pl[i]);  // Get index of rightmost high bit
+        
+        // Update pn[i+1] while preserving orbit constraints
+        pn[i+1] = (pn[i] & ~(1 << p[i])) & orbit_constraints[i+1];
 
         // If pseudo-test enabled then stop shortly after the first row is no longer fixed
         if(i == 0 && p[i] == 1 && opt_pseudo_test && k < n) {
@@ -733,6 +769,8 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
 
         // Determine if the permuted matrix p(M) is lex-smaller than M
         bool lex_result_unknown = false;
+        perm_total[k-1]++;  // increment the permutation count for this order
+
         x = last_x == 0 ? 1 : last_x;
         y = last_y;
         int j;
@@ -747,15 +785,11 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
             const int pj = px*(px-1)/2 + py;
             if((lex_greatest ? assigns[j] == l_True && assigns[pj] == l_False 
                             : assigns[j] == l_False && assigns[pj] == l_True)) {
-                // Permutation produces a larger/smaller matrix; stop considering
+                // Permutation produces a larger matrix; stop considering
                 break;
             }
             if((lex_greatest ? assigns[j] == l_False && assigns[pj] == l_True 
                             : assigns[j] == l_True && assigns[pj] == l_False)) {
-#ifdef PERM_STATS
-                noncanon_np[k-1] += np;
-#endif
-                // Permutation produces a smaller/larger matrix; M is not canonical
                 return false;
             }
 
@@ -774,16 +808,11 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
             pl[i] = pn[i];
         }
         else {
-            np++;
+            np++;  // Count this as a complete permutation check
             // Remove p[i] as a possibility from the ith vertex
             pl[i] = pl[i] & ~(1 << p[i]);
         }
     }
-
-    // Pseudo-test return: Assume matrix is canonical if a noncanonical permutation witness not yet found
-#ifdef PERM_STATS
-    canon_np[k-1] += np;
-#endif
     return true;
 }
 

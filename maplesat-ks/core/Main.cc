@@ -84,6 +84,7 @@ int main(int argc, char** argv)
         IntOption    verb   ("MAIN", "verb",   "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
+        IntOption    orbit_opt("MAIN", "orbit", "Enable orbit pruning for graphs with order >= N (default: order of graph)", -1, IntRange(-1, INT32_MAX));
         
         parseOptions(argc, argv, true);
 
@@ -148,6 +149,19 @@ int main(int argc, char** argv)
         signal(SIGINT, SIGINT_interrupt);
         signal(SIGXCPU,SIGINT_interrupt);
        
+        // Set default orbit cutoff to graph order if not specified
+        if (orbit_opt == -1) {
+            S.orbit_cutoff = S.nVars();  // Assuming nVars() returns graph order
+            if (S.verbosity > 0) {
+                printf("c orbit cutoff automatically set to graph order %d\n", S.orbit_cutoff);
+            }
+        } else {
+            S.orbit_cutoff = orbit_opt;
+            if (S.verbosity > 0) {
+                printf("c orbit cutoff set to %d\n", S.orbit_cutoff);
+            }
+        }
+
         if (!S.simplify()){
             if (S.output != NULL) fprintf(S.output, "0\n"), fclose(S.output);
             if (S.verbosity > 0){
