@@ -162,6 +162,11 @@ int main(int argc, char** argv)
             }
         }
 
+        // Print orbit cutoff before solving
+        if (S.verbosity > 0) {
+            printf("c Using orbit cutoff: %d\n", S.orbit_cutoff);
+        }
+
         if (!S.simplify()){
             if (S.output != NULL) fprintf(S.output, "0\n"), fclose(S.output);
             if (S.verbosity > 0){
