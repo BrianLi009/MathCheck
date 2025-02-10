@@ -290,6 +290,12 @@ Solver::~Solver()
         guboutfile = NULL;
     }
 #endif
+    printf("Permutation statistics:\n");
+    for(int i = 2; i < nVars(); i++) {
+        if (perm_total[i] > 0) {
+            printf("    Order %2d: %ld perms\n", i+1, perm_total[i]);
+        }
+    }
 }
 
 
