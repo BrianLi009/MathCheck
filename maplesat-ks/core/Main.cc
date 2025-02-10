@@ -79,12 +79,11 @@ int main(int argc, char** argv)
         _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
         printf("WARNING: for repeatability, setting FPU to use double precision\n");
 #endif
-        // Declare all options first
+        // Extra options:
+        //
         IntOption    verb   ("MAIN", "verb",   "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
-        IntOption    order  ("MAIN", "order",  "Order of graph.\n", 0, IntRange(0, INT32_MAX));
-        IntOption    orbit_opt("MAIN", "orbit", "Enable orbit pruning for graphs with order >= N (default: order of graph)", -1, IntRange(-1, INT32_MAX));
         
         parseOptions(argc, argv, true);
 
@@ -149,11 +148,6 @@ int main(int argc, char** argv)
         signal(SIGINT, SIGINT_interrupt);
         signal(SIGXCPU,SIGINT_interrupt);
        
-        // Get actual order value from command line option
-        int graph_order = order.value();
-        S.orbit_cutoff = (orbit_opt == -1) ? graph_order : orbit_opt;
-        printf("c orbit cutoff: %d\n", S.orbit_cutoff);
-
         if (!S.simplify()){
             if (S.output != NULL) fprintf(S.output, "0\n"), fclose(S.output);
             if (S.verbosity > 0){
