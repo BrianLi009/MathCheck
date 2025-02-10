@@ -259,6 +259,9 @@ Solver::Solver() :
     options.dispatch = &dispatch_graph;
     options.schreier = FALSE;
     options.cartesian = FALSE;
+
+    // Print orbit cutoff
+    printf("c orbit cutoff: %d\n", orbit_cutoff);
 }
 
 

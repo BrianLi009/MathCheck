@@ -149,19 +149,8 @@ int main(int argc, char** argv)
         signal(SIGINT, SIGINT_interrupt);
         signal(SIGXCPU,SIGINT_interrupt);
        
-        // Set and print orbit cutoff
+        // Set orbit cutoff (no print statements here)
         S.orbit_cutoff = (orbit_opt == -1) ? S.nVars() : orbit_opt;
-        printf("c orbit cutoff: %d\n", S.orbit_cutoff);
-
-        // Print permutation statistics
-        if (S.verbosity > 0) {
-            printf("c Permutation statistics:\n");
-            for(int i = 2; i < S.nVars(); i++) {
-                if (S.perm_total[i] > 0) {
-                    printf("c    Order %2d: %ld perms\n", i+1, S.perm_total[i]);
-                }
-            }
-        }
 
         if (!S.simplify()){
             if (S.output != NULL) fprintf(S.output, "0\n"), fclose(S.output);
