@@ -649,6 +649,11 @@ int App::main (int argc, char **argv) {
       dimacs_specified = true, dimacs_path = argv[i];
   }
 
+  if (orbit_cutoff == -1) {
+    orbit_cutoff = order;
+    std::cout << "c orbit cutoff automatically set to graph order " << order << std::endl;
+  }
+
   /*----------------------------------------------------------------------*/
 
   if (dimacs_specified && dimacs_path && !File::exists (dimacs_path))

@@ -470,21 +470,6 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
         // Compute orbits and apply initial constraints
         std::vector<int> orbits = compute_and_print_orbits(k);
         remove_possibilities(k, orbit_constraints, orbits);  // Store constraints in orbit_constraints
-
-        // Debug print the constraints
-        printf("c Debug: orbit constraints after remove_possibilities:\n");
-        for (int i = 0; i <= k; i++) {
-            printf("c Debug:   constraints[%d] = vertices [", i);
-            for (int j = 0; j < k; j++) {
-                if (orbit_constraints[i] & (1 << j)) {
-                    printf("%d", j);
-                } else {
-                    printf("-");
-                }
-                if (j < k-1) printf(" ");
-            }
-            printf("] (0x%x)\n", orbit_constraints[i]);
-        }
     }
 
     // Initialize pl and pn with the constraints
@@ -542,16 +527,6 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
         // Determine if the permuted matrix p(M) is lex-smaller than M
         bool lex_result_unknown = false;
         perm_total[k-1]++;  // increment the permutation count for this order
-
-        // Only print first 5 permutations and then every 1000th
-        if (perm_total[k-1] <= 5 || perm_total[k-1] % 1000 == 0) {
-            printf("c Debug: Testing permutation #%ld for order %d: [", perm_total[k-1], k);
-            for (int pi = 0; pi <= i; pi++) {
-                printf("%d", p[pi]);
-                if (pi < i) printf(" ");
-            }
-            printf("]\n");
-        }
 
         x = last_x == 0 ? 1 : last_x;
         y = last_y;
