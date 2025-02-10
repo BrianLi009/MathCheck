@@ -149,23 +149,9 @@ int main(int argc, char** argv)
         signal(SIGINT, SIGINT_interrupt);
         signal(SIGXCPU,SIGINT_interrupt);
        
-        // Set default orbit cutoff to graph order if not specified
-        if (orbit_opt == -1) {
-            S.orbit_cutoff = S.nVars();  // Assuming nVars() returns graph order
-            if (S.verbosity > 0) {
-                printf("c orbit cutoff automatically set to graph order %d\n", S.orbit_cutoff);
-            }
-        } else {
-            S.orbit_cutoff = orbit_opt;
-            if (S.verbosity > 0) {
-                printf("c orbit cutoff set to %d\n", S.orbit_cutoff);
-            }
-        }
-
-        // Print orbit cutoff before solving
-        if (S.verbosity > 0) {
-            printf("c Using orbit cutoff: %d\n", S.orbit_cutoff);
-        }
+        // Set and print orbit cutoff
+        S.orbit_cutoff = (orbit_opt == -1) ? S.nVars() : orbit_opt;
+        printf("c orbit cutoff: %d\n", S.orbit_cutoff);
 
         if (!S.simplify()){
             if (S.output != NULL) fprintf(S.output, "0\n"), fclose(S.output);
