@@ -46,8 +46,8 @@ def generate(n, block, lower_bound, upper_bound, nostatic=False):
     print ("all edges are part of a triangle")
     clause_count += noncolorable(n,  edge_dict, tri_dict, cnf_file, block)
     print ("graph is noncolorable")
-    clause_count += mindegree(n, 3, edge_dict, cnf_file)
-    print ("minimum degree of each vertex is 3")
+    clause_count += neighbor(n, edge_dict, cnf_file)
+    print ("every vertex has a neightbor")
     
     # Only call cubic if nostatic is False
     if not nostatic:
