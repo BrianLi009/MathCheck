@@ -632,7 +632,7 @@ std::vector<char> Solver::convert_assignment_to_graph6(int k) {
 }
 
 // Add function to remove invalid permutation possibilities based on orbits
-void SymmetryBreaker::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
+void Solver::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
     if (k <= 0 || k > MAXORDER || orbits.size() != static_cast<size_t>(k)) {
         return;
     }
