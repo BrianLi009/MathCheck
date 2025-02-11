@@ -39,6 +39,9 @@ namespace Minisat {
 // Solver -- the main class:
 
 #define MAXN 40  // Increase from default to handle larger graphs
+#ifndef MAXORDER
+#define MAXORDER 40  // Define MAXORDER before using it
+#endif
 
 class Solver {
 public:
