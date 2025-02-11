@@ -34,6 +34,9 @@ class SymmetryBreaker : public CaDiCaL::ExternalPropagator {
     long long smaller_time = 0;
     long smaller_calls = 0;
     long smaller_clauses_generated = 0;
+    long long larger_time = 0;
+    long larger_calls = 0;
+    long larger_clauses_generated = 0;
     long total_larger_perms = 0;
     long total_smaller_perms = 0;
 
@@ -71,6 +74,7 @@ public:
     void generate_stronger_blocking_clause(int k, const std::vector<int>& partial_assignment, std::vector<int>& blocking_clause);
     
     void generate_blocking_clause_smaller(int k, int p[], int x, int y);
+    void generate_blocking_clause_larger(int k, int p[], int x, int y);
     
     void print_stats();
 

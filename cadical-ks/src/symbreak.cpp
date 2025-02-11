@@ -458,16 +458,13 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
             const int px = MAX(p[x], p[y]);
             const int py = MIN(p[x], p[y]);
             const int pj = px*(px-1)/2 + py;
-            if(assign[j] != assign[pj]) {
-                if((!lex_greatest && assign[j] == l_False && assign[pj] == l_True) ||
-                   (lex_greatest && assign[j] == l_True && assign[pj] == l_False)) {
-                    // P(M) > M for lex-least or P(M) < M for lex-greatest
+            if (assign[j] != assign[pj]) {
+                // Universal condition: Block if P(M) > M
+                if (assign[j] < assign[pj]) {  // l_False < l_True
                     total_larger_perms++;
+                    generate_blocking_clause_smaller(k, p, x, y);
                     break;
-                }
-                if((!lex_greatest && assign[j] == l_True && assign[pj] == l_False) ||
-                   (lex_greatest && assign[j] == l_False && assign[pj] == l_True)) {
-                    // P(M) < M for lex-least or P(M) > M for lex-greatest
+                } else {
                     total_smaller_perms++;
                     generate_blocking_clause_smaller(k, p, x, y);
                     return false;
@@ -511,15 +508,11 @@ void SymmetryBreaker::generate_blocking_clause_smaller(int k, int p[], int x, in
     std::vector<int> clause;
     clause.reserve(3);
     
-    // Adjust the clause generation based on lex_greatest
-    if (!lex_greatest) {
-        clause.push_back(-(x*(x-1)/2+y+1));
-        clause.push_back(p[x]*(p[x]-1)/2+p[y]+1);
-    } else {
-        clause.push_back(x*(x-1)/2+y+1);
-        clause.push_back(-(p[x]*(p[x]-1)/2+p[y]+1));
-    }
+    // Universal clause: (¬x_y ∨ p_x_p_y)
+    clause.push_back(-(x*(x-1)/2+y+1));  // ¬x_y
+    clause.push_back(p[x]*(p[x]-1)/2+p[y]+1);  // p_x_p_y
     
+    // Fix edge condition checks
     for(int ii=0; ii < x+1; ii++) {
         for(int jj=0; jj < ii; jj++) {
             if(ii==x && jj==y) {
@@ -527,14 +520,10 @@ void SymmetryBreaker::generate_blocking_clause_smaller(int k, int p[], int x, in
             }
             const int pii = MAX(p[ii], p[jj]);
             const int pjj = MIN(p[ii], p[jj]);
-            if(ii==pii && jj==pjj) {
-                continue;
-            } else if((!lex_greatest && assign[ii*(ii-1)/2+jj] == l_True) ||
-                     (lex_greatest && assign[ii*(ii-1)/2+jj] == l_False)) {
+            if(assign[ii*(ii-1)/2+jj] == l_True) {
                 clause.push_back(-(ii*(ii-1)/2+jj+1));
                 goto add_clause;
-            } else if((!lex_greatest && assign[pii*(pii-1)/2+pjj] == l_False) ||
-                     (lex_greatest && assign[pii*(pii-1)/2+pjj] == l_True)) {
+            } else if (assign[pii*(pii-1)/2+pjj] == l_False) {
                 clause.push_back(pii*(pii-1)/2+pjj+1);
                 goto add_clause;
             }
@@ -702,48 +691,33 @@ std::vector<char> SymmetryBreaker::convert_assignment_to_graph6(int k) {
 
 
 void SymmetryBreaker::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
-    if (k <= 2) return; // Early exit for small graphs where pruning has minimal impact
-    
-    // Pre-compute orbit statistics to determine if pruning is worthwhile
-    int orbit_count = 0;
-    for (int i = 0; i < k; i++) {
-        orbit_count = std::max(orbit_count, orbits[i] + 1);
-    }
-    if (orbit_count == k) return; // No non-trivial orbits
-    
-    // Current implementation is good but could be optimized by:
-    // 1. Using bitset operations more extensively
-    // 2. Pre-computing orbit masks at initialization
-    // 3. Adding early exit conditions when no pruning is possible
-    
     if (k <= 0 || k > MAXORDER || orbits.size() != static_cast<size_t>(k)) {
         return;
     }
 
     // Step 1: Create orbit masks for efficient operations
     std::vector<int> orbit_masks(k, 0);
-    std::vector<int> orbit_mins(k, k);
-    
-    // Build orbit masks and find minimum vertices in one pass
+    std::vector<int> orbit_key(k, k);  // k is invalid index
     for (int i = 0; i < k; i++) {
         int orbit_id = orbits[i];
         orbit_masks[orbit_id] |= (1 << i);
-        orbit_mins[orbit_id] = std::min(orbit_mins[orbit_id], i);
+        if (lex_greatest) {
+            orbit_key[orbit_id] = std::max(orbit_key[orbit_id], i);  // Track max
+        } else {
+            orbit_key[orbit_id] = std::min(orbit_key[orbit_id], i);  // Existing min
+        }
     }
 
     // Step 2: Apply restrictions based on orbit structure
     for (int i = 0; i < k; i++) {
         int orbit_id = orbits[i];
-        int min_vertex = orbit_mins[orbit_id];
+        int key_vertex = orbit_key[orbit_id];
         
-        // Only restrict mappings for non-minimal vertices in their orbit
-        if (i > min_vertex) {
-            // Can't map to vertices lower than the orbit's minimum
-            int forbidden_mask = (1 << min_vertex) - 1;  // All bits < min_vertex
-            // Also can't map to vertices in same orbit that are lower than current vertex
+        // Universal orbit pruning (works for both modes)
+        if (i > key_vertex) {
+            int forbidden_mask = (1 << key_vertex) - 1;
             forbidden_mask |= ((1 << i) - 1) & orbit_masks[orbit_id];
-            
-            pn[i] &= ~forbidden_mask;  // Remove forbidden mappings
+            pn[i] &= ~forbidden_mask;
         }
     }
 }
