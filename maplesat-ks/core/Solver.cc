@@ -2330,7 +2330,10 @@ lbool Solver::solve_()
         printf("  Total calls         : %-12ld\n", nauty_calls);
         printf("  Total time          : %.2f s\n", nauty_time);
         printf("Permutation Statistics:\n");
-        for(int i=0; i<MAXORDER; i++) {
+        
+        // Only print up to the actual graph order
+        int max_order = n;  // n is the graph order (17 in your case)
+        for(int i=0; i < max_order; i++) {
             if(perms_tried_by_order[i] > 0) {
                 printf("  Order %2d permutations: %-12ld\n", i+1, perms_tried_by_order[i]);
             }
