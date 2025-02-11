@@ -709,6 +709,7 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
     }
 
     while (np < limit) {
+        perms_tried_by_order[k-1]++;
         // Backtracking logic
         while (pl[i] == 0) {
             i--;
@@ -751,9 +752,6 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
             if ((lex_greatest ? assigns[j] == l_False && assigns[pj] == l_True 
                             : assigns[j] == l_True && assigns[pj] == l_False)) {
                 // This is where we've actually tried a permutation
-                if (k-1 >= 0 && k-1 < MAXORDER) {
-                    perms_tried_by_order[k-1]++;
-                }
                 return false;
             }
 
