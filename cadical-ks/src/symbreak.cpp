@@ -11,7 +11,6 @@
 #include <iomanip>
 #include <vector>
 #include <unordered_map>
-#include "unembeddable_graphs.h"
 
 FILE * canonicaloutfile = NULL;
 FILE * noncanonicaloutfile = NULL;
@@ -36,25 +35,17 @@ long noncanon_np[MAXORDER] = {};
 long perms_tried_by_order[MAXORDER] = {};
 bool lex_greatest = false;  // Default to lex-least checking
 
-// Add global variables
-long muscount = 0;
-long muscounts[13] = {};
-double mustime = 0;
-FILE * musoutfile = NULL;
-
-SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int uc) : solver(s) {
+SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int unembeddable_check) : solver(s) {
     if (order == 0) {
         std::cout << "c Need to provide order to use programmatic code" << std::endl;
         return;
     }
-    unembeddable_check = uc; 
-    std::cout << "c Checking for " << unembeddable_check << " unembeddable subgraphs" << std::endl;
-    n = order;
     
     // Initialize parameters from solver's settings
     lex_greatest = solver->lex_greatest;
     
     // Initialize everything first
+    n = order;
     num_edge_vars = n*(n-1)/2;
     assign = new int[num_edge_vars];
     fixed = new bool[num_edge_vars];
@@ -119,17 +110,6 @@ SymmetryBreaker::~SymmetryBreaker () {
         printf("Canonicity checking   : %g s\n", canontime);
         printf("Noncanonicity checking: %g s\n", noncanontime);
         printf("Total canonicity time : %g s\n", canontime+noncanontime);
-
-        // Add MUS statistics
-        if (unembeddable_check > 0) {
-            printf("\nUnembeddable Subgraph Statistics:\n");
-            printf("Total checking time  : %g s\n", mustime);
-            printf("Total found          : %ld\n", muscount);
-            printf("Breakdown by graph type:\n");
-            for(int g=0; g<unembeddable_check; g++) {
-                printf("  Graph %2d: %-12ld\n", g, muscounts[g]);
-            }
-        }
 
         print_stats();
     }
@@ -364,42 +344,6 @@ bool SymmetryBreaker::cb_has_external_clause () {
         partial_assignment_count++;
     }
 
-    // After canonical checks, add MUS checking
-    if (unembeddable_check > 0) {
-        for(int g=0; g<unembeddable_check; g++) {
-            int p[12]; 
-            int P[n];
-            for(int j=0; j<n; j++) P[j] = -1;
-
-            const double before = CaDiCaL::absolute_process_time();
-            bool ret = has_mus_subgraph(n, P, p, g);
-            const double after = CaDiCaL::absolute_process_time();
-            mustime += (after-before);
-
-            if (ret) {
-                muscount++;
-                muscounts[g]++;
-                new_clauses.push_back(std::vector<int>());
-
-                // Generate clause blocking the MUS
-                int c = 0;
-                for(int jj=0; jj<n; jj++) {
-                    for(int ii=0; ii<jj; ii++) {
-                        if(assign[c]==l_True && P[jj] != -1 && P[ii] != -1) {
-                            if((P[ii] < P[jj] && mus[g][P[ii] + P[jj]*(P[jj]-1)/2]) || 
-                               (P[jj] < P[ii] && mus[g][P[jj] + P[ii]*(P[ii]-1)/2])) {
-                                new_clauses.back().push_back(-(c+1));
-                            }
-                        }
-                        c++;
-                    }
-                }
-                solver->add_trusted_clause(new_clauses.back());
-                return true;
-            }
-        }
-    }
-
     // No programmatic clause generated
     return false;
 }
@@ -514,13 +458,16 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
             const int px = MAX(p[x], p[y]);
             const int py = MIN(p[x], p[y]);
             const int pj = px*(px-1)/2 + py;
-            if (assign[j] != assign[pj]) {
-                // Universal condition: Block if P(M) > M
-                if (assign[j] < assign[pj]) {  // l_False < l_True
+            if(assign[j] != assign[pj]) {
+                if((!lex_greatest && assign[j] == l_False && assign[pj] == l_True) ||
+                   (lex_greatest && assign[j] == l_True && assign[pj] == l_False)) {
+                    // P(M) > M for lex-least or P(M) < M for lex-greatest
                     total_larger_perms++;
-                    generate_blocking_clause_smaller(k, p, x, y);
                     break;
-                } else {
+                }
+                if((!lex_greatest && assign[j] == l_True && assign[pj] == l_False) ||
+                   (lex_greatest && assign[j] == l_False && assign[pj] == l_True)) {
+                    // P(M) < M for lex-least or P(M) > M for lex-greatest
                     total_smaller_perms++;
                     generate_blocking_clause_smaller(k, p, x, y);
                     return false;
@@ -564,11 +511,15 @@ void SymmetryBreaker::generate_blocking_clause_smaller(int k, int p[], int x, in
     std::vector<int> clause;
     clause.reserve(3);
     
-    // Universal clause: (¬x_y ∨ p_x_p_y)
-    clause.push_back(-(x*(x-1)/2+y+1));  // ¬x_y
-    clause.push_back(p[x]*(p[x]-1)/2+p[y]+1);  // p_x_p_y
+    // Adjust the clause generation based on lex_greatest
+    if (!lex_greatest) {
+        clause.push_back(-(x*(x-1)/2+y+1));
+        clause.push_back(p[x]*(p[x]-1)/2+p[y]+1);
+    } else {
+        clause.push_back(x*(x-1)/2+y+1);
+        clause.push_back(-(p[x]*(p[x]-1)/2+p[y]+1));
+    }
     
-    // Fix edge condition checks
     for(int ii=0; ii < x+1; ii++) {
         for(int jj=0; jj < ii; jj++) {
             if(ii==x && jj==y) {
@@ -576,10 +527,14 @@ void SymmetryBreaker::generate_blocking_clause_smaller(int k, int p[], int x, in
             }
             const int pii = MAX(p[ii], p[jj]);
             const int pjj = MIN(p[ii], p[jj]);
-            if(assign[ii*(ii-1)/2+jj] == l_True) {
+            if(ii==pii && jj==pjj) {
+                continue;
+            } else if((!lex_greatest && assign[ii*(ii-1)/2+jj] == l_True) ||
+                     (lex_greatest && assign[ii*(ii-1)/2+jj] == l_False)) {
                 clause.push_back(-(ii*(ii-1)/2+jj+1));
                 goto add_clause;
-            } else if (assign[pii*(pii-1)/2+pjj] == l_False) {
+            } else if((!lex_greatest && assign[pii*(pii-1)/2+pjj] == l_False) ||
+                     (lex_greatest && assign[pii*(pii-1)/2+pjj] == l_True)) {
                 clause.push_back(pii*(pii-1)/2+pjj+1);
                 goto add_clause;
             }
@@ -747,33 +702,48 @@ std::vector<char> SymmetryBreaker::convert_assignment_to_graph6(int k) {
 
 
 void SymmetryBreaker::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
+    if (k <= 2) return; // Early exit for small graphs where pruning has minimal impact
+    
+    // Pre-compute orbit statistics to determine if pruning is worthwhile
+    int orbit_count = 0;
+    for (int i = 0; i < k; i++) {
+        orbit_count = std::max(orbit_count, orbits[i] + 1);
+    }
+    if (orbit_count == k) return; // No non-trivial orbits
+    
+    // Current implementation is good but could be optimized by:
+    // 1. Using bitset operations more extensively
+    // 2. Pre-computing orbit masks at initialization
+    // 3. Adding early exit conditions when no pruning is possible
+    
     if (k <= 0 || k > MAXORDER || orbits.size() != static_cast<size_t>(k)) {
         return;
     }
 
     // Step 1: Create orbit masks for efficient operations
     std::vector<int> orbit_masks(k, 0);
-    std::vector<int> orbit_key(k, k);  // k is invalid index
+    std::vector<int> orbit_mins(k, k);
+    
+    // Build orbit masks and find minimum vertices in one pass
     for (int i = 0; i < k; i++) {
         int orbit_id = orbits[i];
         orbit_masks[orbit_id] |= (1 << i);
-        if (lex_greatest) {
-            orbit_key[orbit_id] = std::max(orbit_key[orbit_id], i);  // Track max
-        } else {
-            orbit_key[orbit_id] = std::min(orbit_key[orbit_id], i);  // Existing min
-        }
+        orbit_mins[orbit_id] = std::min(orbit_mins[orbit_id], i);
     }
 
     // Step 2: Apply restrictions based on orbit structure
     for (int i = 0; i < k; i++) {
         int orbit_id = orbits[i];
-        int key_vertex = orbit_key[orbit_id];
+        int min_vertex = orbit_mins[orbit_id];
         
-        // Universal orbit pruning (works for both modes)
-        if (i > key_vertex) {
-            int forbidden_mask = (1 << key_vertex) - 1;
+        // Only restrict mappings for non-minimal vertices in their orbit
+        if (i > min_vertex) {
+            // Can't map to vertices lower than the orbit's minimum
+            int forbidden_mask = (1 << min_vertex) - 1;  // All bits < min_vertex
+            // Also can't map to vertices in same orbit that are lower than current vertex
             forbidden_mask |= ((1 << i) - 1) & orbit_masks[orbit_id];
-            pn[i] &= ~forbidden_mask;
+            
+            pn[i] &= ~forbidden_mask;  // Remove forbidden mappings
         }
     }
 }
@@ -791,67 +761,6 @@ void SymmetryBreaker::setOrbitCutoff(int cutoff) {
     std::cout << "c | Pseudo check    | " << std::setw(11) << (solver->pseudocheck ? "enabled" : "disabled") << " |" << std::endl;
     std::cout << "c | Lex mode        | " << std::setw(11) << (lex_greatest ? "greatest" : "least") << " |" << std::endl;
     std::cout << "c | Edge variables  | " << std::setw(11) << (n*(n-1)/2) << " |" << std::endl;
-    std::cout << "c | Unembed. check  | " << std::setw(11) << (unembeddable_check > 0 ? "enabled" : "disabled") << " |" << std::endl;
     std::cout << "c +-----------------+-------------+" << std::endl;
     std::cout << std::endl;
-}
-
-// Add the has_mus_subgraph function
-bool SymmetryBreaker::has_mus_subgraph(int k, int* P, int* p, int g) {
-    int pl[12]; // pl[k] contains the current list of possibilities for kth vertex (encoded bitwise)
-    int pn[13]; // pn[k] contains the initial list of possibilities for kth vertex (encoded bitwise)
-    pl[0] = (1 << k) - 1;
-    pn[0] = (1 << k) - 1;
-    int i = 0;
-
-    while(1) {
-        // If no possibilities for ith vertex then backtrack
-        if(pl[i]==0) {
-            // Backtrack to vertex that has at least two possibilities
-            while((pl[i] & (pl[i] - 1)) == 0) {
-                i--;
-                if(i==-1) {
-                    // No permutations produce a matrix containing the gth submatrix
-                    return false;
-                }
-            }
-            // Remove p[i] as a possibility from the ith vertex
-            pl[i] = pl[i] & ~(1 << p[i]);
-        }
-
-        p[i] = log2(pl[i] & -pl[i]); // Get index of rightmost high bit
-        pn[i+1] = pn[i] & ~(1 << p[i]); // List of possibilities for (i+1)th vertex
-
-        // Determine if the permuted matrix p(M) is contains the gth submatrix
-        bool result_known = false;
-        for(int j=0; j<i; j++) {
-            if(!mus[g][i*(i-1)/2+j])
-                continue;
-            const int px = MAX(p[i], p[j]);
-            const int py = MIN(p[i], p[j]);
-            const int pj = px*(px-1)/2 + py;
-            if(assign[pj] == l_False) {
-                // Permutation sends a non-edge to a gth submatrix edge; stop considering
-                result_known = true;
-                break;
-            }
-        }
-
-        if(!result_known && ((i == 9 && g < 2) || (i == 10 && g < 7) || i == 11)) {
-            // The complete gth submatrix found in p(M)
-            for(int j=0; j<=i; j++) {
-                P[p[j]] = j;
-            }
-            return true;
-        }
-        if(!result_known) {
-            // Result is unknown; need to define p[i] for another i
-            i++;
-            pl[i] = pn[i];
-        }
-        else {
-            // Remove p[i] as a possibility from the ith vertex
-            pl[i] = pl[i] & ~(1 << p[i]);
-        }
-    }
 }
