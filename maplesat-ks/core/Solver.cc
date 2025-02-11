@@ -2324,6 +2324,18 @@ lbool Solver::solve_()
             printf("Total unembed. graphs : %ld\n", gubcount);
         }
         printf("Proof size            : %ld bytes\n", proofsize);
+        
+        // Add nauty and permutation statistics
+        printf("Nauty Statistics:\n");
+        printf("  Total calls         : %-12ld\n", nauty_calls);
+        printf("  Total time          : %.2f s\n", nauty_time);
+        printf("Permutation Statistics:\n");
+        for(int i=0; i<MAXORDER; i++) {
+            if(perms_tried_by_order[i] > 0) {
+                printf("  Order %2d permutations: %-12ld\n", i+1, perms_tried_by_order[i]);
+            }
+        }
+        printf("=====================================================================================================\n");
     }
 
 
