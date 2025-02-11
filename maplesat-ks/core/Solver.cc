@@ -300,9 +300,6 @@ Solver::~Solver()
         guboutfile = NULL;
     }
 #endif
-    
-    // Print statistics
-    print_stats();
 }
 
 
@@ -712,6 +709,7 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
     }
 
     while (np < limit) {
+        perms_tried_by_order[k-1]++;
         // Backtracking logic
         while (pl[i] == 0) {
             i--;
@@ -735,7 +733,6 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
 
         // Lex comparison logic
         bool lex_result_unknown = false;
-        perms_tried_by_order[k-1]++;
         x = 1;
         y = 0;
         int j;
@@ -2477,17 +2474,4 @@ void Solver::garbageCollect()
         printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n", 
                ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
     to.moveTo(ca);
-}
-
-// Add to print_stats or create similar function
-void Solver::print_stats() {
-    printf("c Canonical subgraphs: %ld\n", canon);
-    printf("c Noncanonical subgraphs: %ld\n", noncanon);
-    printf("c Nauty calls: %ld (%.2fs)\n", nauty_calls, nauty_time);
-    
-    for(int i=0; i<MAXORDER; i++) {
-        if(perms_tried_by_order[i] > 0) {
-            printf("c Order %d permutations: %ld\n", i+1, perms_tried_by_order[i]);
-        }
-    }
 }
