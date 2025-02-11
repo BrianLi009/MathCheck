@@ -646,7 +646,7 @@ int App::main (int argc, char **argv) {
   }
 
   if (orbit_cutoff == -1) {
-    orbit_cutoff = order;
+    orbit_cutoff = order + 1;
     std::cout << "c orbit cutoff automatically set to graph order " << order << std::endl;
   }
 

@@ -244,7 +244,7 @@ Solver::Solver() :
     
     // Add orbit cutoff initialization here
     if(opt_orbit == -1)
-    {   orbit_cutoff = n;
+    {   orbit_cutoff = n + 1;
     } else {
         orbit_cutoff = opt_orbit;
     }
