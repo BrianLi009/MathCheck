@@ -114,7 +114,7 @@ static BoolOption    opt_minclause      (_cat, "minclause",   "Minimize learned 
 static BoolOption    opt_lex_greatest   (_cat, "lex-greatest", "Use lex-greatest instead of lex-least for canonicity checking", false);
 #ifdef UNEMBED_SUBGRAPH_CHECK
 static StringOption  opt_gub_out        (_cat, "unembeddable-out", "File to output unembeddable subgraphs found during search");
-static IntOption     opt_check_gub      (_cat, "unembeddable-check", "Number of minimal unembeddable subgraphs to check for", 0, IntRange(0, 13));
+static IntOption     opt_check_gub      (_cat, "unembeddable-check", "Number of minimal unembeddable subgraphs to check for", 13, IntRange(0, 13));
 #else
 #define opt_check_gub 0
 #endif
