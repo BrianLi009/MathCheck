@@ -59,6 +59,11 @@ double gubtime = 0;
 // Add perm_total array declaration (same as in symbreak.cpp)
 long perm_total[MAXORDER] = {};
 
+// Add in global section with other counters (near top of file)
+long perms_tried_by_order[MAXORDER] = {};
+long nauty_calls = 0;
+double nauty_time = 0.0;
+
 using namespace Minisat;
 
 int N = 0; // Number of edge variables
@@ -292,6 +297,9 @@ Solver::~Solver()
         guboutfile = NULL;
     }
 #endif
+    
+    // Print statistics
+    print_stats();
 }
 
 
@@ -579,8 +587,8 @@ long perm_cutoff[MAXORDER] = {0, 0, 0, 0, 0, 0, 20, 50, 125, 313, 783, 1958, 489
 // Add orbit computation function
 std::vector<int> Solver::compute_and_print_orbits(int k) {
     auto start = std::chrono::high_resolution_clock::now();
-    nauty_calls++;  // Increment counter
-
+    nauty_calls++;  // Track nauty calls
+    
     std::vector<char> g6 = convert_assignment_to_graph6(k);
     if (g6.empty()) return std::vector<int>();
 
@@ -698,8 +706,8 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
     }
 
     while (np < limit) {
-        perm_total[k-1]++;
-
+        perms_tried_by_order[k-1]++;  // Track permutations tried
+        
         // Backtracking logic
         while (pl[i] == 0) {
             i--;
@@ -763,6 +771,9 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
             np++;
         }
     }
+#ifdef PERM_STATS
+    canon_np[k-1] += np;  // Track permutations for canonical
+#endif
     return true;
 }
 
@@ -2446,4 +2457,17 @@ void Solver::garbageCollect()
         printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n", 
                ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
     to.moveTo(ca);
+}
+
+// Add to print_stats or create similar function
+void Solver::print_stats() {
+    printf("c Canonical subgraphs: %ld\n", canon);
+    printf("c Noncanonical subgraphs: %ld\n", noncanon);
+    printf("c Nauty calls: %ld (%.2fs)\n", nauty_calls, nauty_time);
+    
+    for(int i=0; i<MAXORDER; i++) {
+        if(perms_tried_by_order[i] > 0) {
+            printf("c Order %d permutations: %ld\n", i+1, perms_tried_by_order[i]);
+        }
+    }
 }

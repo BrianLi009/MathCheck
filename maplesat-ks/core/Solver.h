@@ -219,6 +219,21 @@ public:
     // Add setter for orbit cutoff
     void setOrbitCutoff(int cutoff) { orbit_cutoff = cutoff; }
 
+    // Add these with other statistics members (around line 161)
+    long canon;
+    long noncanon;
+    double canontime;
+    double noncanontime;
+    long canonarr[MAXORDER];
+    long noncanonarr[MAXORDER];
+    double canontimearr[MAXORDER];
+    double noncanontimearr[MAXORDER];
+#ifdef PERM_STATS
+    long canon_np[MAXORDER];
+    long noncanon_np[MAXORDER];
+#endif
+    long perms_tried_by_order[MAXORDER];
+
 protected:
 
     // Helper structures:
@@ -329,7 +344,7 @@ protected:
     void     removeSatisfied  (vec<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
     void     rebuildOrderHeap ();
 
-    // Maintaining Variable/Clause activity:
+    // Main maintaining Variable/Clause activity:
     //
 #if BRANCHING_HEURISTIC == VSIDS
     void     varDecayActivity ();                      // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
