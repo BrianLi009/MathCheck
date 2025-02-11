@@ -667,124 +667,100 @@ void Solver::remove_possibilities(int k, int pn[], const std::vector<int>& orbit
 // Modify the existing canonicity checking code to use orbit-based pruning
 // Find where the permutation possibilities are initialized and add:
 bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test) {
-    if (k > MAXN) {
-        fprintf(stderr, "Error: Graph size exceeds MAXN\n");
-        exit(1);
-    }
-    
-    int pl[k];  // Current possibilities for each vertex
-    int pn[k+1];  // Working possibilities array
-    int orbit_constraints[k+1];  // Store original constraints from remove_possibilities
-    
-    // Initialize all possibilities
+    // ... existing error checking and initial declarations ...
+
+    int pl[k];  
+    int pn[k+1];
+    int orbit_constraints[k+1];
+
+    // Initialize possibilities with orbit constraints
     for (int j = 0; j <= k; j++) {
         pn[j] = (1 << k) - 1;
-        orbit_constraints[j] = pn[j];  // Initialize constraints to all possible
+        orbit_constraints[j] = pn[j];
     }
 
-    // Only compute orbits and remove possibilities if k is greater than orbit_cutoff
-    if (k >= orbit_cutoff) {  // Changed from k > orbit_cutoff
-        // Compute orbits and apply initial constraints
+    if (k >= orbit_cutoff) {
         std::vector<int> orbits = compute_and_print_orbits(k);
-        remove_possibilities(k, orbit_constraints, orbits);  // Store constraints in orbit_constraints
+        remove_possibilities(k, orbit_constraints, orbits);
     }
 
-    // Initialize pl and pn with the constraints
     for (int j = 0; j <= k; j++) {
         pl[j] = orbit_constraints[j];
         pn[j] = orbit_constraints[j];
     }
 
     i = 0;
-    int last_x = 0;
-    int last_y = 0;
     int np = 1;
     int limit = INT32_MAX;
 
-    if(opt_pseudo_test && k >= 7) {
-        limit = 10*perm_cutoff[k-1];
+    if (opt_pseudo_test && k >= 7) {
+        limit = 10 * perm_cutoff[k-1];
     }
 
-    while(np < limit) {
-        // If no possibilities for ith vertex then backtrack
-        if(pl[i] == 0) {
-            // Backtrack to vertex that has at least two possibilities
-            while((pl[i] & (pl[i] - 1)) == 0) {
-                if(last_x > p[i]) {
-                    last_x = p[i];
-                    last_y = 0;
-                }
-                i--;
-                if(i == -1) {
-                    return true;
-                }
+    while (np < limit) {
+        perm_total[k-1]++;
+
+        // Backtracking logic
+        while (pl[i] == 0) {
+            i--;
+            if (i == -1) {
+                return true;
             }
-            pl[i] = pl[i] & ~(1 << p[i]);
+            pl[i+1] = pn[i+1];
         }
 
-        p[i] = log2(pl[i] & -pl[i]);  // Get index of rightmost high bit
-        
-        // Update pn[i+1] while preserving orbit constraints
-        pn[i+1] = (pn[i] & ~(1 << p[i])) & orbit_constraints[i+1];
+        p[i] = __builtin_ctz(pl[i]);
+        pl[i] &= pl[i] - 1;
 
-        // If pseudo-test enabled then stop shortly after the first row is no longer fixed
-        if(i == 0 && p[i] == 1 && opt_pseudo_test && k < n) {
+        if (i < k - 1) {
+            pl[i+1] = pn[i+1] & ~(1 << p[i]);
+        }
+
+        // Pseudo-test limit update
+        if (i == 0 && p[i] == 1 && opt_pseudo_test && k < n) {
             limit = np + 100;
         }
 
-        // Check if the entry on which to begin lex-checking needs to be updated
-        if(last_x > p[i]) {
-            last_x = p[i];
-            last_y = 0;
-        }
-        if(i == last_x) {
-            last_y = 0;
-        }
-
-        // Determine if the permuted matrix p(M) is lex-smaller than M
+        // Lex comparison logic
         bool lex_result_unknown = false;
-        perm_total[k-1]++;  // increment the permutation count for this order
-
-        x = last_x == 0 ? 1 : last_x;
-        y = last_y;
+        x = 1;
+        y = 0;
         int j;
-        for(j=last_x*(last_x-1)/2+last_y; j<k*(k-1)/2; j++) {
-            if(x > i) {
-                // Unknown if permutation produces a larger or smaller matrix
+        for (j = 0; j < k*(k-1)/2; j++) {
+            if (x > i) {
                 lex_result_unknown = true;
                 break;
             }
             const int px = MAX(p[x], p[y]);
             const int py = MIN(p[x], p[y]);
             const int pj = px*(px-1)/2 + py;
-            if((lex_greatest ? assigns[j] == l_True && assigns[pj] == l_False 
+            
+            if ((lex_greatest ? assigns[j] == l_True && assigns[pj] == l_False 
                             : assigns[j] == l_False && assigns[pj] == l_True)) {
-                // Permutation produces a larger matrix; stop considering
                 break;
             }
-            if((lex_greatest ? assigns[j] == l_False && assigns[pj] == l_True 
+            if ((lex_greatest ? assigns[j] == l_False && assigns[pj] == l_True 
                             : assigns[j] == l_True && assigns[pj] == l_False)) {
                 return false;
             }
 
             y++;
-            if(x==y) {
+            if (x == y) {
                 x++;
                 y = 0;
             }
         }
-        last_x = x;
-        last_y = y;
 
-        if(lex_result_unknown) {
-            // Lex result is unknown; need to define p[i] for another i
+        if (lex_result_unknown) {
             i++;
-            pl[i] = pn[i];
-        }
-        else {
-            np++;  // Count this as a complete permutation check
-            // Remove p[i] as a possibility from the ith vertex
-            pl[i] = pl[i] & ~(1 << p[i]);
+            if (i < k) {
+                pl[i] = pn[i];
+                for (int j = 0; j < i; j++) {
+                    pl[i] &= ~(1 << p[j]);
+                }
+            }
+        } else {
+            np++;
         }
     }
     return true;
