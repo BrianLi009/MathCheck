@@ -235,9 +235,6 @@ public:
     long canon_np[MAXORDER];
     long noncanon_np[MAXORDER];
 #endif
-    long perms_tried_by_order[MAXORDER];
-
-    void print_stats();  // Add this line
 
 protected:
 
