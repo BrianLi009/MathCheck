@@ -64,6 +64,9 @@ long perms_tried_by_order[MAXORDER] = {};
 long nauty_calls = 0;
 double nauty_time = 0.0;
 
+// Add these global variables with existing counters (near top of file)
+long perm_cutoff[MAXORDER] = {0, 0, 0, 0, 0, 0, 20, 50, 125, 313, 783, 1958, 4895, 12238, 30595, 76488, 191220, 478050, 1195125, 2987813, 7469533, 18673833, 46684583};
+
 using namespace Minisat;
 
 int N = 0; // Number of edge variables
@@ -581,9 +584,6 @@ Lit Solver::pickBranchLit()
 #define MAX(X,Y) ((X) > (Y)) ? (X) : (Y)
 #define MIN(X,Y) ((X) > (Y)) ? (Y) : (X)
 
-// The kth entry estimates the number of permuations needed to show canonicity in order (k+1)
-long perm_cutoff[MAXORDER] = {0, 0, 0, 0, 0, 0, 20, 50, 125, 313, 783, 1958, 4895, 12238, 30595, 76488, 191220, 478050, 1195125, 2987813, 7469533, 18673833, 46684583};
-
 // Add orbit computation function
 std::vector<int> Solver::compute_and_print_orbits(int k) {
     auto start = std::chrono::high_resolution_clock::now();
@@ -675,6 +675,12 @@ void Solver::remove_possibilities(int k, int pn[], const std::vector<int>& orbit
 // Modify the existing canonicity checking code to use orbit-based pruning
 // Find where the permutation possibilities are initialized and add:
 bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test) {
+    // Add safety check at start
+    if (k <= 0 || k > MAXORDER) {
+        fprintf(stderr, "Error: Invalid k=%d in is_canonical\n", k);
+        exit(1);
+    }
+
     // ... existing error checking and initial declarations ...
 
     int pl[k];  
@@ -706,7 +712,10 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
     }
 
     while (np < limit) {
-        perms_tried_by_order[k-1]++;  // Track permutations tried
+        // Safe increment with bounds check
+        if (k-1 >= 0 && k-1 < MAXORDER) {
+            perms_tried_by_order[k-1]++;
+        }
         
         // Backtracking logic
         while (pl[i] == 0) {

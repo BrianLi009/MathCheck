@@ -234,6 +234,8 @@ public:
 #endif
     long perms_tried_by_order[MAXORDER];
 
+    void print_stats();  // Add this line
+
 protected:
 
     // Helper structures:
