@@ -120,6 +120,17 @@ SymmetryBreaker::~SymmetryBreaker () {
         printf("Noncanonicity checking: %g s\n", noncanontime);
         printf("Total canonicity time : %g s\n", canontime+noncanontime);
 
+        // Add MUS statistics
+        if (unembeddable_check > 0) {
+            printf("\nUnembeddable Subgraph Statistics:\n");
+            printf("Total checking time  : %g s\n", mustime);
+            printf("Total found          : %ld\n", muscount);
+            printf("Breakdown by graph type:\n");
+            for(int g=0; g<unembeddable_check; g++) {
+                printf("  Graph %2d: %-12ld\n", g, muscounts[g]);
+            }
+        }
+
         print_stats();
     }
 }
@@ -351,6 +362,42 @@ bool SymmetryBreaker::cb_has_external_clause () {
 
         // Increment the partial assignment count
         partial_assignment_count++;
+    }
+
+    // After canonical checks, add MUS checking
+    if (unembeddable_check > 0) {
+        for(int g=0; g<unembeddable_check; g++) {
+            int p[12]; 
+            int P[n];
+            for(int j=0; j<n; j++) P[j] = -1;
+
+            const double before = CaDiCaL::absolute_process_time();
+            bool ret = has_mus_subgraph(n, P, p, g);
+            const double after = CaDiCaL::absolute_process_time();
+            mustime += (after-before);
+
+            if (ret) {
+                muscount++;
+                muscounts[g]++;
+                new_clauses.push_back(std::vector<int>());
+
+                // Generate clause blocking the MUS
+                int c = 0;
+                for(int jj=0; jj<n; jj++) {
+                    for(int ii=0; ii<jj; ii++) {
+                        if(assign[c]==l_True && P[jj] != -1 && P[ii] != -1) {
+                            if((P[ii] < P[jj] && mus[g][P[ii] + P[jj]*(P[jj]-1)/2]) || 
+                               (P[jj] < P[ii] && mus[g][P[jj] + P[ii]*(P[ii]-1)/2])) {
+                                new_clauses.back().push_back(-(c+1));
+                            }
+                        }
+                        c++;
+                    }
+                }
+                solver->add_trusted_clause(new_clauses.back());
+                return true;
+            }
+        }
     }
 
     // No programmatic clause generated
