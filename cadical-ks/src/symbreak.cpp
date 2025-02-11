@@ -1,15 +1,20 @@
 #include "symbreak.hpp"
 #include <iostream>
-#include "unembeddable_graphs.h"
-#include "hash_values.h"
-#include <iomanip>
 #include <algorithm>
+#include "hash_values.h"
+#include "../../nauty2_8_8/nauty.h"
+#include <unordered_set>
+#include <string>
 #include <chrono>
+#include <cstring>
+#include <bitset>
+#include <iomanip>
+#include <vector>
+#include <unordered_map>
 
 FILE * canonicaloutfile = NULL;
 FILE * noncanonicaloutfile = NULL;
 FILE * exhaustfile = NULL;
-FILE * musoutfile = NULL;
 
 // The kth entry estimates the number of permuations needed to show canonicity in order (k+1)
 long perm_cutoff[MAXORDER] = {0, 0, 0, 0, 0, 0, 20, 50, 125, 313, 783, 1958, 4895, 12238, 30595, 76488, 191220, 478050, 1195125, 2987813, 7469533, 18673833, 46684583};
@@ -25,33 +30,23 @@ double noncanontimearr[MAXORDER] = {};
 long canon_np[MAXORDER] = {};
 long noncanon_np[MAXORDER] = {};
 #endif
-long muscount = 0;
-long muscounts[17] = {};
-double mustime = 0;
 
-const double TIME_PRINT_INTERVAL = 10;  // Print every 10 seconds
-double last_time_checkpoint = 0;
+// Add at the top with other global variables
+long perms_tried_by_order[MAXORDER] = {};
+bool lex_greatest = false;  // Default to lex-least checking
 
-std::vector<int> permutation_counts[MAXORDER];
-
-// Replace vector array with simple array for total counts
-long perm_total[MAXORDER] = {};
-
-SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int uc) : solver(s) {
+SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int unembeddable_check) : solver(s) {
     if (order == 0) {
         std::cout << "c Need to provide order to use programmatic code" << std::endl;
         return;
     }
-    if (uc == 0) {
-        std::cout << "c Not checking for unembeddable subgraphs" << std::endl;
-    } else {
-        std::cout << "c Checking for " << uc << " unembeddable subgraphs" << std::endl;
-    }
-    std::cout << "c Pseudo-check is " << (solver->pseudocheck ? "enabled" : "disabled") << std::endl;
     
+    // Initialize parameters from solver's settings
+    lex_greatest = solver->lex_greatest;
+    
+    // Initialize everything first
     n = order;
     num_edge_vars = n*(n-1)/2;
-    unembeddable_check = uc;
     assign = new int[num_edge_vars];
     fixed = new bool[num_edge_vars];
     colsuntouched = new int[n];
@@ -60,6 +55,8 @@ SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int uc) : solve
         assign[i] = l_Undef;
         fixed[i] = false;
     }
+
+    // Rest of initialization
     std::cout << "c Running orderly generation on order " << n << " (" << num_edge_vars << " edge variables)" << std::endl;
     // The root-level of the trail is always there
     current_trail.push_back(std::vector<int>());
@@ -67,6 +64,7 @@ SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int uc) : solve
     for (int i = 0; i < num_edge_vars; i++) {
         solver->add_observed_var(i+1);
     }
+    learned_clauses_count = 0;
 
     // Initialize nauty options
     options.getcanon = FALSE;
@@ -82,6 +80,8 @@ SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int uc) : solve
     options.userlevelproc = NULL;
     options.usernodeproc = NULL;
     options.usercanonproc = NULL;
+
+    // We'll print the parameter table in setOrbitCutoff instead
 }
 
 SymmetryBreaker::~SymmetryBreaker () {
@@ -91,32 +91,27 @@ SymmetryBreaker::~SymmetryBreaker () {
         delete [] colsuntouched;
         delete [] fixed;
         printf("Number of solutions   : %ld\n", sol_count);
-        printf("Canonical subgraphs   : %-12" PRIu64 "   (%.0f /sec)\n", canon, canon/canontime);
+        printf("Canonical subgraphs   : %-12" PRIu64 "   (%.0f /sec)\n", (uint64_t)canon, canon/canontime);
         for(int i=2; i<n; i++) {
-            printf("          order %2d    : %-12" PRIu64 "   (%.0f /sec)\n", i+1, canonarr[i], canonarr[i]/canontimearr[i]);
+#ifdef PERM_STATS
+            printf("          order %2d    : %-12" PRIu64 "   (%.0f /sec) %.0f avg. perms\n", i+1, (uint64_t)canonarr[i], canonarr[i]/canontimearr[i], canon_np[i]/(float)(canonarr[i] > 0 ? canonarr[i] : 1));
+#else
+            printf("          order %2d    : %-12" PRIu64 "   (%.0f /sec)\n", i+1, (uint64_t)canonarr[i], canonarr[i]/canontimearr[i]);
+#endif
         }
-        printf("Noncanonical subgraphs: %-12" PRIu64 "   (%.0f /sec)\n", noncanon, noncanon/noncanontime);
+        printf("Noncanonical subgraphs: %-12" PRIu64 "   (%.0f /sec)\n", (uint64_t)noncanon, noncanon/noncanontime);
         for(int i=2; i<n; i++) {
-            printf("          order %2d    : %-12" PRIu64 "   (%.0f /sec)\n", i+1, noncanonarr[i], noncanonarr[i]/noncanontimearr[i]);
+#ifdef PERM_STATS
+            printf("          order %2d    : %-12" PRIu64 "   (%.0f /sec) %.0f avg. perms\n", i+1, (uint64_t)noncanonarr[i], noncanonarr[i]/noncanontimearr[i], noncanon_np[i]/(float)(noncanonarr[i] > 0 ? noncanonarr[i] : 1));
+#else
+            printf("          order %2d    : %-12" PRIu64 "   (%.0f /sec)\n", i+1, (uint64_t)noncanonarr[i], noncanonarr[i]/noncanontimearr[i]);
+#endif
         }
         printf("Canonicity checking   : %g s\n", canontime);
         printf("Noncanonicity checking: %g s\n", noncanontime);
         printf("Total canonicity time : %g s\n", canontime+noncanontime);
-        if (unembeddable_check > 0) {
-            printf("Unembeddable checking : %g s\n", mustime);
-            for(int g=0; g<unembeddable_check; g++) {
-                printf("        graph #%2d     : %-12" PRIu64 "\n", g, muscounts[g]);
-            }
-            printf("Total unembed. graphs : %ld\n", muscount);
-        }
-        
-        // Add after the other canonicity stats:
-        printf("Permutation statistics:\n");
-        for(int i=2; i<n; i++) {
-            if (perm_total[i] > 0) {
-                printf("    Order %2d: %ld perms\n", i+1, perm_total[i]);
-            }
-        }
+
+        print_stats();
     }
 }
 
@@ -170,9 +165,9 @@ bool SymmetryBreaker::cb_check_found_model (const std::vector<int> & model) {
 #endif
     new_clauses.push_back(clause);
     solver->add_trusted_clause(clause);
-    if(solver->permoutfile != NULL) {
-        fprintf(solver->permoutfile, "Complete solution\n");
-    }
+
+    // Print the adjacency matrix for the current model
+    //print_adjacency_matrix();
 
     return false;
 }
@@ -180,6 +175,8 @@ bool SymmetryBreaker::cb_check_found_model (const std::vector<int> & model) {
 bool SymmetryBreaker::cb_has_external_clause () {
     if(!new_clauses.empty())
         return true;
+
+    static int partial_assignment_count = 0;
 
     long hash = 0;
 
@@ -208,95 +205,98 @@ bool SymmetryBreaker::cb_has_external_clause () {
         }
         colsuntouched[i] = true;
 
-        // Check if current graph hash has been seen
-        if(canonical_hashes[i].find(hash)==canonical_hashes[i].end())
-        {
-            // Found a new subgraph of order i+1 to test for canonicity
-            // Uses a pseudo-check except when i+1 = n (or pseudo-check disabled with --no-pseudo-check)
-            const double before = CaDiCaL::absolute_process_time();
-            // Run canonicity check
-            int p[i+1]; // Permutation on i+1 vertices
-            int x, y;   // These will be the indices of first adjacency matrix entry that demonstrates noncanonicity (when such indices exist)
-            int mi;     // This will be the index of the maximum defined entry of p
-            bool ret = (hash == 0) ? true : is_canonical(i+1, p, x, y, mi, solver->pseudocheck && i < n-1);
-#ifdef VVERBOSE
-            if(!ret) {
-                printf("x: %d y: %d, mi: %d, ", x, y, mi);
-                printf("p^(-1)(x): %d, p^(-1)(y): %d | ", p[x], p[y]);
-                for(int j=0; j<i+1; j++) {
-                    if(j != p[j]) {
-                        printf("%d ", p[j]);
-                    } else printf("* ");
-                }
-                printf("\n");
-            }
-#endif
-            const double after = CaDiCaL::absolute_process_time();
+        // Check if it's a full assignment or if it's time to perform a canonicity check
+        if (i == n - 1 || partial_assignment_count % 1 == 0) {
+            // Check if current graph hash has been seen
+            if(canonical_hashes[i].find(hash)==canonical_hashes[i].end())
+            {
+                // Compute and print orbits only when we need to check canonicity
+                //compute_and_print_orbits(i + 1);
 
-            // If subgraph is canonical
-            if (ret) {
-                canon++;
-                canontime += (after-before);
-                canonarr[i]++;
-                canontimearr[i] += (after-before);
-                canonical_hashes[i].insert(hash);
-
-                if(canonicaloutfile != NULL) {
-                    fprintf(canonicaloutfile, "a ");
-                    for(int j = 0; j < i*(i+1)/2; j++)
-                        fprintf(canonicaloutfile, "%s%d ", assign[j]==l_True ? "" : "-", j+1);
-                    fprintf(canonicaloutfile, "0\n");
-                    fflush(canonicaloutfile);
-                }
+                // Found a new subgraph of order i+1 to test for canonicity
+                // Uses a pseudo-check except when i+1 = n
+                const double before = CaDiCaL::absolute_process_time();
+                // Run canonicity check
+                int p[i+1]; // Permutation on i+1 vertices
+                int x, y;   // These will be the indices of first adjacency matrix entry that demonstrates noncanonicity (when such indices exist)
+                int mi;     // This will be the index of the maximum defined entry of p
+                bool ret = (hash == 0) ? true : is_canonical(i+1, p, x, y, mi, i < n-1);
 #ifdef VVERBOSE
-                int count = 0;
-                int A[n][n] = {};
-                for(int jj=0; jj<n; jj++) {
-                    for(int ii=0; ii<jj; ii++) {
-                        if(assign[count]==l_True) {
-                            A[ii][jj] = 1;
-                            A[jj][ii] = 1;
-                        }
-                        if(assign[count]==l_False) {
-                            A[ii][jj] = -1;
-                            A[jj][ii] = -1;
-                        }
-                        count++;
-                    }
-                }
-                for(int ii=0; ii<n; ii++) {
-                    for(int jj=0; jj<n; jj++) {
-                        printf("%c", A[ii][jj] == 0 ? '?' : A[ii][jj] == -1 ? '0' : '1');
+                if(!ret) {
+                    printf("x: %d y: %d, mi: %d, ", x, y, mi);
+                    printf("p^(-1)(x): %d, p^(-1)(y): %d | ", p[x], p[y]);
+                    for(int j=0; j<i+1; j++) {
+                        if(j != p[j]) {
+                            printf("%d ", p[j]);
+                        } else printf("* ");
                     }
                     printf("\n");
                 }
-                printf("\n");
-                printf("a ");
-                for (int i = 0; i<n*(n-1)/2; i++) {
-                    printf("%s%d ", assign[i] == l_True ? "" : "-", i+1);
-                }
-                printf("\n");
 #endif
-            }
-            // If subgraph is not canonical then block it
-            else {
-                noncanon++;
-                noncanontime += (after-before);
-                noncanonarr[i]++;
-                noncanontimearr[i] += (after-before);
-                new_clauses.push_back(std::vector<int>());
+                const double after = CaDiCaL::absolute_process_time();
 
-                if(solver->minclause) {
+                // If subgraph is canonical
+                if (ret) {
+                    canon++;
+                    canontime += (after-before);
+                    canonarr[i]++;
+                    canontimearr[i] += (after-before);
+                    canonical_hashes[i].insert(hash);
+
+                    //std::cout << "Partial assignment of size " << i+1 << " is canonical" << std::endl;
+
+                    if(canonicaloutfile != NULL) {
+                        fprintf(canonicaloutfile, "a ");
+                        for(int j = 0; j < i*(i+1)/2; j++)
+                            fprintf(canonicaloutfile, "%s%d ", assign[j]==l_True ? "" : "-", j+1);
+                        fprintf(canonicaloutfile, "0\n");
+                        fflush(canonicaloutfile);
+                    }
+#ifdef VVERBOSE
+                    int count = 0;
+                    int A[n][n] = {};
+                    for(int jj=0; jj<n; jj++) {
+                        for(int ii=0; ii<jj; ii++) {
+                            if(assign[count]==l_True) {
+                                A[ii][jj] = 1;
+                                A[jj][ii] = 1;
+                            }
+                            if(assign[count]==l_False) {
+                                A[ii][jj] = -1;
+                                A[jj][ii] = -1;
+                            }
+                            count++;
+                        }
+                    }
+                    for(int ii=0; ii<n; ii++) {
+                        for(int jj=0; jj<n; jj++) {
+                            printf("%c", A[ii][jj] == 0 ? '?' : A[ii][jj] == -1 ? '0' : '1');
+                        }
+                        printf("\n");
+                    }
+                    printf("\n");
+                    printf("a ");
+                    for (int i = 0; i<n*(n-1)/2; i++) {
+                        printf("%s%d ", assign[i] == l_True ? "" : "-", i+1);
+                    }
+                    printf("\n");
+#endif
+                }
+                // If subgraph is not canonical then block it
+                else {
+                    noncanon++;
+                    noncanontime += (after-before);
+                    noncanonarr[i]++;
+                    noncanontimearr[i] += (after-before);
+                    new_clauses.push_back(std::vector<int>());
+
+                    //std::cout << "Partial assignment of size " << i+1 << " is not canonical" << std::endl;
+
                     // Generate a blocking clause smaller than the naive blocking clause
+                    new_clauses.back().push_back(-(x*(x-1)/2+y+1));
                     const int px = MAX(p[x], p[y]);
                     const int py = MIN(p[x], p[y]);
-                    if(solver->lex_greatest) {
-                        new_clauses.back().push_back(-(px*(px-1)/2 + py + 1)); 
-                        new_clauses.back().push_back(x*(x-1)/2 + y + 1);
-                    } else {
-                        new_clauses.back().push_back(-(x*(x-1)/2+y+1));
-                        new_clauses.back().push_back(px*(px-1)/2+py+1);
-                    }
+                    new_clauses.back().push_back(px*(px-1)/2+py+1);
                     for(int ii=0; ii < x+1; ii++) {
                         for(int jj=0; jj < ii; jj++) {
                             if(ii==x && jj==y) {
@@ -306,119 +306,42 @@ bool SymmetryBreaker::cb_has_external_clause () {
                             const int pjj = MIN(p[ii], p[jj]);
                             if(ii==pii && jj==pjj) {
                                 continue;
-                            } else if(solver->lex_greatest) {
-                                if(assign[pii*(pii-1)/2+pjj] == l_True) {
-                                    new_clauses.back().push_back(-(pii*(pii-1)/2+pjj+1));
-                                } else if (assign[ii*(ii-1)/2+jj] == l_False) {
-                                    new_clauses.back().push_back(ii*(ii-1)/2+jj+1);
-                                }
-                            } else {
-                                if(assign[ii*(ii-1)/2+jj] == l_True) {
-                                    new_clauses.back().push_back(-(ii*(ii-1)/2+jj+1));
-                                } else if (assign[pii*(pii-1)/2+pjj] == l_False) {
-                                    new_clauses.back().push_back(pii*(pii-1)/2+pjj+1);
-                                }
+                            } else if(assign[ii*(ii-1)/2+jj] == l_True) {
+                                new_clauses.back().push_back(-(ii*(ii-1)/2+jj+1));
+                            } else if (assign[pii*(pii-1)/2+pjj] == l_False) {
+                                new_clauses.back().push_back(pii*(pii-1)/2+pjj+1);
                             }
                         }
                     }
-                } else {
-                    // Generate the naive blocking clause
-                    for(int jj = 0; jj < i*(i+1)/2; jj++) {
-                        new_clauses.back().push_back((jj+1) * (assign[jj]==l_True ? -1 : 1));
+                    // To generate the naive blocking clause:
+                    /*for(int j = 0; j < i*(i+1)/2; j++)
+                        new_clauses.back().push_back((j+1) * assign[j]==l_True ? -1 : 1);*/
+
+                    solver->add_trusted_clause(new_clauses.back());
+                    learned_clauses_count++;
+
+                    if(noncanonicaloutfile != NULL) {
+                        //fprintf(noncanonicaloutfile, "a ");
+                        const int size = new_clauses.back().size();
+                        for(int j = 0; j < size; j++)
+                            fprintf(noncanonicaloutfile, "%d ", new_clauses.back()[j]);
+                        fprintf(noncanonicaloutfile, "0\n");
+                        fflush(noncanonicaloutfile);
                     }
-                }
-                solver->add_trusted_clause(new_clauses.back());
 
-                if(noncanonicaloutfile != NULL) {
-                    //fprintf(noncanonicaloutfile, "a ");
-                    const int size = new_clauses.back().size();
-                    for(int j = 0; j < size; j++)
-                        fprintf(noncanonicaloutfile, "%d ", new_clauses.back()[j]);
-                    fprintf(noncanonicaloutfile, "0\n");
-                    fflush(noncanonicaloutfile);
-                }
+                    if(solver->permoutfile != NULL) {
+                        for(int j = 0; j <= mi; j++)
+                            fprintf(solver->permoutfile, "%s%d", j == 0 ? "" : " ", p[j]);
+                        fprintf(solver->permoutfile, "\n");
+                    }
 
-                if(solver->permoutfile != NULL) {
-                    for(int j = 0; j <= mi; j++)
-                        fprintf(solver->permoutfile, "%s%d", j == 0 ? "" : " ", p[j]);
-                    fprintf(solver->permoutfile, "\n");
+                    return true;
                 }
-
-                return true;
             }
         }
-    }
 
-    for(int g=0; g<unembeddable_check; g++)
-    {
-        int p[12]; // If an umembeddable subgraph is found, p will contain which rows of M correspond with the rows of the lex greatest representation of the unembeddable subgraph
-        int P[n];
-        for(int j=0; j<n; j++) P[j] = -1;
-
-        const double before = CaDiCaL::absolute_process_time();
-        bool ret = has_mus_subgraph(n, P, p, g);
-        const double after = CaDiCaL::absolute_process_time();
-        mustime += (after-before);
-
-        // If graph has minimal unembeddable subgraph (MUS)
-        if (ret) {
-            muscount++;
-            muscounts[g]++;
-            new_clauses.push_back(std::vector<int>());
-
-#ifdef VERBOSE
-            std::cout << "c Found minimal umbeddable subgraph #" << g << ": ";
-#endif
-
-            int c = 0;
-            for(int jj=0; jj<n; jj++) {
-                for(int ii=0; ii<jj; ii++) {
-                    if(assign[c]==l_True && P[jj] != -1 && P[ii] != -1)
-                        if((P[ii] < P[jj] && mus[g][P[ii] + P[jj]*(P[jj]-1)/2]) || (P[jj] < P[ii] && mus[g][P[jj] + P[ii]*(P[ii]-1)/2])) {
-                            new_clauses.back().push_back(-(c+1));
-#ifdef VERBOSE
-                            std::cout << c+1 << " ";
-#endif
-                        }
-                    c++;
-                }
-            }
-
-#ifdef VERBOSE
-            std::cout << std::endl;
-#endif
-            solver->add_trusted_clause(new_clauses.back());
-
-            if(musoutfile != NULL) {
-                //fprintf(musoutfile, "a ");
-                int c = 0;
-                for(int jj=0; jj<n; jj++) {
-                    for(int ii=0; ii<jj; ii++) {
-                        if(assign[c]==l_True && P[jj] != -1 && P[ii] != -1)
-                            if((P[ii] < P[jj] && mus[g][P[ii] + P[jj]*(P[jj]-1)/2]) || (P[jj] < P[ii] && mus[g][P[jj] + P[ii]*(P[ii]-1)/2]))
-                                fprintf(musoutfile, "-%d ", c+1);
-                        c++;
-                    }
-                }
-
-                fprintf(musoutfile, "0\n");
-                fflush(musoutfile);
-            }
-
-            if(solver->permoutfile != NULL) {
-                fprintf(solver->permoutfile, "Minimal unembeddable subgraph %d:", g);
-                int mii = 10;
-                if(g >= 2 && g < 7)
-                    mii = 11;
-                else if(g >= 7)
-                    mii = 12;
-                for(int ii=0; ii<mii; ii++) {
-                    fprintf(solver->permoutfile, "%s%d", ii == 0 ? "" : " ", p[ii]);
-                }
-                fprintf(solver->permoutfile, "\n");
-            }
-            return true;
-        }
+        // Increment the partial assignment count
+        partial_assignment_count++;
     }
 
     // No programmatic clause generated
@@ -455,99 +378,100 @@ int SymmetryBreaker::cb_add_reason_clause_lit (int plit) {
 // * (x,y) will be the indices of the first entry in the permutation of M demonstrating that the matrix is indeed lex-smaller than M
 // * i will be the maximum defined index defined in p
 bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseudo_test) {
-    int pl[k];  // Current possibilities for each vertex
-    int pn[k+1];  // Working possibilities array
-    int orbit_constraints[k+1];  // Store original constraints from remove_possibilities
+    int pl[k]; // pl[k] contains the current list of possibilities for kth vertex (encoded bitwise)
+    int pn[k+1]; // pn[k] contains the initial list of possibilities for kth vertex (encoded bitwise)
     
     // Initialize all possibilities
     for (int j = 0; j <= k; j++) {
         pn[j] = (1 << k) - 1;
-        orbit_constraints[j] = pn[j];  // Initialize constraints to all possible
     }
 
     // Only compute orbits and remove possibilities if k is greater than orbit_cutoff
-    if (k >= orbit_cutoff) {
-        // Compute orbits and apply initial constraints
+    if (k > orbit_cutoff) {
+        // Compute orbits
         std::vector<int> orbits = compute_and_print_orbits(k);
-        remove_possibilities(k, orbit_constraints, orbits);  // Store constraints in orbit_constraints
+        // Remove possibilities before starting
+        remove_possibilities(k, pn, orbits);
     }
 
-    // Initialize pl and pn with the constraints
     for (int j = 0; j <= k; j++) {
-        pl[j] = orbit_constraints[j];
-        pn[j] = orbit_constraints[j];
+        pl[j] = pn[j];
     }
-
     i = 0;
     int last_x = 0;
     int last_y = 0;
+
     int np = 1;
     int limit = INT32_MAX;
 
-    if(opt_pseudo_test && k >= 7) {
+    // If pseudo-test enabled then stop test if it is taking over 10 times longer than average
+    if(pseudo_enabled && opt_pseudo_test && k >= 7) {
         limit = 10*perm_cutoff[k-1];
     }
 
     while(np < limit) {
+        perms_tried_by_order[k-1]++;  // Increment counter for this order
+        
         // If no possibilities for ith vertex then backtrack
-        if(pl[i] == 0) {
-            // Backtrack to vertex that has at least two possibilities
-            while((pl[i] & (pl[i] - 1)) == 0) {
-                if(last_x > p[i]) {
-                    last_x = p[i];
-                    last_y = 0;
-                }
-                i--;
-                if(i == -1) {
-                    return true;
-                }
+        while (pl[i] == 0) {
+            i--;
+            if (i == -1) {
+#ifdef PERM_STATS
+                canon_np[k-1] += np;
+#endif
+                return true;
             }
-            pl[i] = pl[i] & ~(1 << p[i]);
+            // Reset possibilities for the next vertex
+            pl[i+1] = pn[i+1];
+            
+            // Reset last_x and last_y when backtracking
+            last_x = 0;
+            last_y = 0;
         }
 
-        p[i] = log2(pl[i] & -pl[i]);  // Get index of rightmost high bit
+        p[i] = __builtin_ctz(pl[i]); // Get index of rightmost high bit
+        pl[i] &= pl[i] - 1;  // Remove this possibility
         
-        // Update pn[i+1] while preserving orbit constraints
-        pn[i+1] = (pn[i] & ~(1 << p[i])) & orbit_constraints[i+1];
+        if (i < k - 1) {
+            pl[i+1] = pn[i+1] & ~(1 << p[i]); // Update possibilities for next vertex
+        }
 
         // If pseudo-test enabled then stop shortly after the first row is no longer fixed
         if(i == 0 && p[i] == 1 && opt_pseudo_test && k < n) {
             limit = np + 100;
         }
 
-        // Check if the entry on which to begin lex-checking needs to be updated
-        if(last_x > p[i]) {
-            last_x = p[i];
-            last_y = 0;
-        }
-        if(i == last_x) {
-            last_y = 0;
-        }
+        // Always start the lex comparison from the beginning for each new permutation
+        last_x = 0;
+        last_y = 0;
 
-        // Determine if the permuted matrix p(M) is lex-smaller than M
+        // Determine if the permuted matrix p(M) is lex-smaller/greater than M
         bool lex_result_unknown = false;
-        perm_total[k-1]++;  // increment the permutation count for this order
-
-        x = last_x == 0 ? 1 : last_x;
-        y = last_y;
+        x = 1;
+        y = 0;
         int j;
-        for(j=last_x*(last_x-1)/2+last_y; j<k*(k-1)/2; j++) {
+        for(j = 0; j < k*(k-1)/2; j++) {
             if(x > i) {
-                // Unknown if permutation produces a larger or smaller matrix
                 lex_result_unknown = true;
                 break;
             }
             const int px = MAX(p[x], p[y]);
             const int py = MIN(p[x], p[y]);
             const int pj = px*(px-1)/2 + py;
-            if((solver->lex_greatest ? assign[j] == l_True && assign[pj] == l_False 
-                                   : assign[j] == l_False && assign[pj] == l_True)) {
-                // Permutation produces a larger matrix; stop considering
-                break;
-            }
-            if((solver->lex_greatest ? assign[j] == l_False && assign[pj] == l_True 
-                                   : assign[j] == l_True && assign[pj] == l_False)) {
-                return false;
+            if(assign[j] != assign[pj]) {
+                if((!lex_greatest && assign[j] == l_False && assign[pj] == l_True) ||
+                   (lex_greatest && assign[j] == l_True && assign[pj] == l_False)) {
+                    // P(M) > M for lex-least or P(M) < M for lex-greatest
+                    total_larger_perms++;
+                    break;
+                }
+                if((!lex_greatest && assign[j] == l_True && assign[pj] == l_False) ||
+                   (lex_greatest && assign[j] == l_False && assign[pj] == l_True)) {
+                    // P(M) < M for lex-least or P(M) > M for lex-greatest
+                    total_smaller_perms++;
+                    generate_blocking_clause_smaller(k, p, x, y);
+                    return false;
+                }
             }
 
             y++;
@@ -560,80 +484,168 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
         last_y = y;
 
         if(lex_result_unknown) {
-            // Lex result is unknown; need to define p[i] for another i
             i++;
-            pl[i] = pn[i];
+            if (i < k) {
+                pl[i] = pn[i];
+                for (int j = 0; j < i; j++) {
+                    pl[i] &= ~(1 << p[j]);  // Remove already used vertices
+                }
+            }
         }
         else {
-            np++;  // Count this as a complete permutation check
-            // Remove p[i] as a possibility from the ith vertex
-            pl[i] = pl[i] & ~(1 << p[i]);
+            np++;
         }
     }
+
+    // Pseudo-test return: Assume matrix is canonical if a noncanonical permutation witness not yet found
+#ifdef PERM_STATS
+    canon_np[k-1] += np;
+#endif
     return true;
 }
 
-// Returns true when the k-vertex subgraph (with adjacency matrix M) contains the g-th minimal unembeddable graph
-// M is determined by the current assignment to the first k*(k-1)/2 variables
-// If an unembeddable subgraph is found in M, P is set to the mapping from the rows of M to the rows of the lex
-// greatest representation of the unembeddable adjacency matrix (and p is the inverse of P)
-bool SymmetryBreaker::has_mus_subgraph(int k, int* P, int* p, int g) {
-    int pl[12]; // pl[k] contains the current list of possibilities for kth vertex (encoded bitwise)
-    int pn[13]; // pn[k] contains the initial list of possibilities for kth vertex (encoded bitwise)
-    pl[0] = (1 << k) - 1;
-    pn[0] = (1 << k) - 1;
-    int i = 0;
+void SymmetryBreaker::generate_blocking_clause_smaller(int k, int p[], int x, int y) {
+    auto start = std::chrono::high_resolution_clock::now();
+    smaller_calls++;
 
-    while(1) {
-        // If no possibilities for ith vertex then backtrack
-        if(pl[i]==0) {
-            // Backtrack to vertex that has at least two possibilities
-            while((pl[i] & (pl[i] - 1)) == 0) {
-                i--;
-                if(i==-1) {
-                    // No permutations produce a matrix containing the gth submatrix
-                    return false;
-                }
-            }
-            // Remove p[i] as a possibility from the ith vertex
-            pl[i] = pl[i] & ~(1 << p[i]);
-        }
-
-        p[i] = log2(pl[i] & -pl[i]); // Get index of rightmost high bit
-        pn[i+1] = pn[i] & ~(1 << p[i]); // List of possibilities for (i+1)th vertex
-
-        // Determine if the permuted matrix p(M) is contains the gth submatrix
-        bool result_known = false;
-        for(int j=0; j<i; j++) {
-            if(!mus[g][i*(i-1)/2+j])
-                continue;
-            const int px = MAX(p[i], p[j]);
-            const int py = MIN(p[i], p[j]);
-            const int pj = px*(px-1)/2 + py;
-            if(assign[pj] == l_False) {
-                // Permutation sends a non-edge to a gth submatrix edge; stop considering
-                result_known = true;
+    std::vector<int> clause;
+    clause.reserve(3);
+    
+    // Adjust the clause generation based on lex_greatest
+    if (!lex_greatest) {
+        clause.push_back(-(x*(x-1)/2+y+1));
+        clause.push_back(p[x]*(p[x]-1)/2+p[y]+1);
+    } else {
+        clause.push_back(x*(x-1)/2+y+1);
+        clause.push_back(-(p[x]*(p[x]-1)/2+p[y]+1));
+    }
+    
+    for(int ii=0; ii < x+1; ii++) {
+        for(int jj=0; jj < ii; jj++) {
+            if(ii==x && jj==y) {
                 break;
             }
-        }
-
-        if(!result_known && ((i == 9 && g < 2) || (i == 10 && g < 7) || i == 11)) {
-            // The complete gth submatrix found in p(M)
-            for(int j=0; j<=i; j++) {
-                P[p[j]] = j;
+            const int pii = MAX(p[ii], p[jj]);
+            const int pjj = MIN(p[ii], p[jj]);
+            if(ii==pii && jj==pjj) {
+                continue;
+            } else if((!lex_greatest && assign[ii*(ii-1)/2+jj] == l_True) ||
+                     (lex_greatest && assign[ii*(ii-1)/2+jj] == l_False)) {
+                clause.push_back(-(ii*(ii-1)/2+jj+1));
+                goto add_clause;
+            } else if((!lex_greatest && assign[pii*(pii-1)/2+pjj] == l_False) ||
+                     (lex_greatest && assign[pii*(pii-1)/2+pjj] == l_True)) {
+                clause.push_back(pii*(pii-1)/2+pjj+1);
+                goto add_clause;
             }
-            return true;
-        }
-        if(!result_known) {
-            // Result is unknown; need to define p[i] for another i
-            i++;
-            pl[i] = pn[i];
-        }
-        else {
-            // Remove p[i] as a possibility from the ith vertex
-            pl[i] = pl[i] & ~(1 << p[i]);
         }
     }
+
+add_clause:
+    // Sort the clause to ensure consistent representation
+    std::sort(clause.begin(), clause.end());
+
+    // Create a string representation of the clause
+    std::string clause_str = std::to_string(clause[0]);
+    for (size_t i = 1; i < clause.size(); ++i) {
+        clause_str += ' ' + std::to_string(clause[i]);
+    }
+
+    // Check if this clause has already been generated
+    if (generated_clauses.insert(clause_str).second) {
+        // If it's a new clause, add it to the solver
+        solver->add_trusted_clause(clause);
+        learned_clauses_count++;
+        smaller_clauses_generated++;  // Increment the counter for actually generated clauses
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    smaller_time += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+}
+
+void SymmetryBreaker::print_adjacency_matrix() {
+    int count = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (i == j) {
+                std::cout << '0';
+            } else if (j > i) {
+                std::cout << (assign[count] == l_True ? '1' : (assign[count] == l_False ? '0' : '?'));
+                count++;
+            } else {
+                std::cout << (assign[i*(i-1)/2 + j] == l_True ? '1' : (assign[i*(i-1)/2 + j] == l_False ? '0' : '?'));
+            }
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+void SymmetryBreaker::print_matrix(int k, const int p[]) {
+    int p_copy[MAXORDER];
+    for (int i = 0; i < k; i++) {
+        p_copy[i] = p[i];
+    }
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < k; j++) {
+            if (i == j) {
+                std::cout << '0';
+            } else {
+                int x = MAX(p_copy[i], p_copy[j]);
+                int y = MIN(p_copy[i], p_copy[j]);
+                int idx = x * (x - 1) / 2 + y;
+                std::cout << (assign[idx] == l_True ? '1' : (assign[idx] == l_False ? '0' : '?'));
+            }
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+void SymmetryBreaker::print_stats() {
+    std::cout << "Total permutations P satisfying P(M) > M: " << total_larger_perms << std::endl;
+    std::cout << "Total permutations P satisfying P(M) < M: " << total_smaller_perms << std::endl;
+    std::cout << "Total permutations tried by order:" << std::endl;
+    for(int i = 0; i < n; i++) {
+        if(perms_tried_by_order[i] > 0) {
+            std::cout << "  Order " << i+1 << ": " << perms_tried_by_order[i] << std::endl;
+        }
+    }
+    std::cout << "generate_blocking_clause_smaller: " << smaller_calls << " calls, " 
+              << smaller_time << " microseconds total, " 
+              << (smaller_calls > 0 ? smaller_time / smaller_calls : 0) << " microseconds average per call\n";
+    
+    // Add nauty statistics
+    std::cout << "Nauty statistics:" << std::endl;
+    std::cout << "  Total calls to nauty: " << nauty_calls << std::endl;
+    std::cout << "  Total time in nauty: " << nauty_time << " seconds" << std::endl;
+    if (nauty_calls > 0) {
+        std::cout << "  Average time per nauty call: " << (nauty_time / nauty_calls) * 1000 << " milliseconds" << std::endl;
+    }
+}
+
+void SymmetryBreaker::print_permutation(int k, const int p[]) {
+    std::cout << "Permutation: ";
+    for (int i = 0; i < k; i++) {
+        std::cout << p[i] << " ";
+    }
+    std::cout << std::endl;
+}
+
+int SymmetryBreaker::get_unit_clause_literal(int k, int p[], int x, int y) {
+    (void)x; (void)y; // Parameters are intentionally unused
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < i; j++) {
+            if (assign[i*(i-1)/2 + j] != assign[p[i]*(p[i]-1)/2 + p[j]]) {
+                if (assign[i*(i-1)/2 + j] == l_False) {
+                    return i*(i-1)/2 + j + 1;
+                } else {
+                    return -(i*(i-1)/2 + j + 1);
+                }
+            }
+        }
+    }
+    return 0;  // No unit clause found
 }
 
 std::vector<int> SymmetryBreaker::compute_and_print_orbits(int k) {
@@ -688,65 +700,67 @@ std::vector<char> SymmetryBreaker::convert_assignment_to_graph6(int k) {
     return g6;
 }
 
+
 void SymmetryBreaker::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
-    if (k > 0 && k <= MAXORDER && orbits.size() == static_cast<size_t>(k)) {
-        // Find the largest orbit
-        int largest_orbit_size = 0;
-        int largest_orbit_id = -1;
-        int first_vertex_largest_orbit = -1;
-
-        for (int i = 0; i < k; i++) {
-            int orbit_size = 0;
-            for (int j = 0; j < k; j++) {
-                if (orbits[j] == orbits[i]) orbit_size++;
-            }
-            if (orbit_size > largest_orbit_size) {
-                largest_orbit_size = orbit_size;
-                largest_orbit_id = orbits[i];
-                first_vertex_largest_orbit = i;
-            }
-        }
-
-        if (largest_orbit_id != -1) {
-            // Process the largest orbit
-            for (int i = 0; i < k; i++) {
-                if (orbits[i] == largest_orbit_id) {
-                    for (int j = 0; j < k; j++) {
-                        if (i != j && orbits[j] == largest_orbit_id) {
-                            pn[i] &= ~(1 << j);
-                        }
-                    }
-                }
-            }
-
-            // std::cout << "Processing other orbits..." << std::endl;
-            // Process other orbits
-            for (int i = 0; i < k; i++) {
-                if (orbits[i] != largest_orbit_id) {
-                    // std::cout << "  Processing vertex " << i << " (orbit " << orbits[i] << ")" << std::endl;
-                    bool is_representative = true;
-                    for (int j = 0; j < i; j++) {
-                        if (orbits[j] == orbits[i]) {
-                            is_representative = false;
-                            // std::cout << "    Not a representative (same orbit as " << j << ")" << std::endl;
-                            break;
-                        }
-                    }
-                    if (!is_representative) {
-                        pn[first_vertex_largest_orbit] &= ~(1 << i);
-                    }
-                }
-            }
-        }
-    } else {
-        // std::cout << "Conditions not met. Skipping orbit processing." << std::endl;
+    if (k <= 2) return; // Early exit for small graphs where pruning has minimal impact
+    
+    // Pre-compute orbit statistics to determine if pruning is worthwhile
+    int orbit_count = 0;
+    for (int i = 0; i < k; i++) {
+        orbit_count = std::max(orbit_count, orbits[i] + 1);
     }
+    if (orbit_count == k) return; // No non-trivial orbits
     
-    // Log final pn values
-    // std::cout << "Final pn values:" << std::endl;
-    // for (int i = 0; i < k; i++) {
-    //     std::cout << "  pn[" << i << "] = " << std::bitset<32>(pn[i]) << std::endl;
-    // }
+    // Current implementation is good but could be optimized by:
+    // 1. Using bitset operations more extensively
+    // 2. Pre-computing orbit masks at initialization
+    // 3. Adding early exit conditions when no pruning is possible
     
-    // std::cout << "Exiting remove_possibilities" << std::endl;
+    if (k <= 0 || k > MAXORDER || orbits.size() != static_cast<size_t>(k)) {
+        return;
+    }
+
+    // Step 1: Create orbit masks for efficient operations
+    std::vector<int> orbit_masks(k, 0);
+    std::vector<int> orbit_mins(k, k);
+    
+    // Build orbit masks and find minimum vertices in one pass
+    for (int i = 0; i < k; i++) {
+        int orbit_id = orbits[i];
+        orbit_masks[orbit_id] |= (1 << i);
+        orbit_mins[orbit_id] = std::min(orbit_mins[orbit_id], i);
+    }
+
+    // Step 2: Apply restrictions based on orbit structure
+    for (int i = 0; i < k; i++) {
+        int orbit_id = orbits[i];
+        int min_vertex = orbit_mins[orbit_id];
+        
+        // Only restrict mappings for non-minimal vertices in their orbit
+        if (i > min_vertex) {
+            // Can't map to vertices lower than the orbit's minimum
+            int forbidden_mask = (1 << min_vertex) - 1;  // All bits < min_vertex
+            // Also can't map to vertices in same orbit that are lower than current vertex
+            forbidden_mask |= ((1 << i) - 1) & orbit_masks[orbit_id];
+            
+            pn[i] &= ~forbidden_mask;  // Remove forbidden mappings
+        }
+    }
+}
+
+void SymmetryBreaker::setOrbitCutoff(int cutoff) {
+    orbit_cutoff = cutoff;
+    
+    // Now print the parameter table after orbit_cutoff is set
+    std::cout << "\nc Parameter Table:" << std::endl;
+    std::cout << "c +-----------------+-------------+" << std::endl;
+    std::cout << "c | Parameter       | Value       |" << std::endl;
+    std::cout << "c +-----------------+-------------+" << std::endl;
+    std::cout << "c | Order           | " << std::setw(11) << n << " |" << std::endl;
+    std::cout << "c | Orbit cutoff    | " << std::setw(11) << orbit_cutoff << " |" << std::endl;
+    std::cout << "c | Pseudo check    | " << std::setw(11) << (solver->pseudocheck ? "enabled" : "disabled") << " |" << std::endl;
+    std::cout << "c | Lex mode        | " << std::setw(11) << (lex_greatest ? "greatest" : "least") << " |" << std::endl;
+    std::cout << "c | Edge variables  | " << std::setw(11) << (n*(n-1)/2) << " |" << std::endl;
+    std::cout << "c +-----------------+-------------+" << std::endl;
+    std::cout << std::endl;
 }

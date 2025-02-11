@@ -553,18 +553,14 @@ int App::main (int argc, char **argv) {
         if (solver->permoutfile == NULL)
           std::cout << "c could not open " << argv[i] << std::endl, exit(1);
       }
-    } else if (!strcmp (argv[i], "--no-pseudo-check")) {
-      solver->pseudocheck = false;
-    } else if (!strcmp (argv[i], "--pseudo-check")) {
-      solver->pseudocheck = true;
     } else if (!strcmp (argv[i], "--lex-greatest")) {
       solver->lex_greatest = true;
     } else if (!strcmp (argv[i], "--no-lex-greatest")) {
       solver->lex_greatest = false;
-    } else if (!strcmp (argv[i], "--no-minclause")) {
-      solver->minclause = false;
-    } else if (!strcmp (argv[i], "--minclause")) {
-      solver->minclause = true;
+    } else if (!strcmp (argv[i], "--no-pseudo-check")) {
+      solver->pseudocheck = false;
+    } else if (!strcmp (argv[i], "--pseudo-check")) {
+      solver->pseudocheck = true;
     }
 #ifndef __WIN32
     else if (!strcmp (argv[i], "-t")) {
