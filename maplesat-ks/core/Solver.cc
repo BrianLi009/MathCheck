@@ -712,11 +712,6 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
     }
 
     while (np < limit) {
-        // Safe increment with bounds check
-        if (k-1 >= 0 && k-1 < MAXORDER) {
-            perms_tried_by_order[k-1]++;
-        }
-        
         // Backtracking logic
         while (pl[i] == 0) {
             i--;
@@ -740,6 +735,7 @@ bool Solver::is_canonical(int k, int p[], int& x, int& y, int& i, bool opt_pseud
 
         // Lex comparison logic
         bool lex_result_unknown = false;
+        perms_tried_by_order[k-1]++;
         x = 1;
         y = 0;
         int j;
