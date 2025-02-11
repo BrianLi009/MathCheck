@@ -346,7 +346,7 @@ bool App::most_likely_existing_cnf_file (const char *path) {
 int App::main (int argc, char **argv) {
 
   int order = 0;
-  int unembeddable_check = 0;
+  int unembeddable_check = 13;  // Set default to 13 (maximum value)
 
   // Handle options which lead to immediate exit first.
 
