@@ -632,67 +632,36 @@ std::vector<char> Solver::convert_assignment_to_graph6(int k) {
 }
 
 // Add function to remove invalid permutation possibilities based on orbits
-void Solver::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
-    if (k > 0 && k <= MAXORDER && orbits.size() == static_cast<size_t>(k)) {
-        // Find the largest orbit
-        int largest_orbit_size = 0;
-        int largest_orbit_id = -1;
-        int first_vertex_largest_orbit = -1;
-
-        for (int i = 0; i < k; i++) {
-            int orbit_size = 0;
-            for (int j = 0; j < k; j++) {
-                if (orbits[j] == orbits[i]) orbit_size++;
-            }
-            if (orbit_size > largest_orbit_size) {
-                largest_orbit_size = orbit_size;
-                largest_orbit_id = orbits[i];
-                first_vertex_largest_orbit = i;
-            }
-        }
-
-        if (largest_orbit_id != -1) {
-            // Process the largest orbit
-            for (int i = 0; i < k; i++) {
-                if (orbits[i] == largest_orbit_id) {
-                    for (int j = 0; j < k; j++) {
-                        if (i != j && orbits[j] == largest_orbit_id) {
-                            pn[i] &= ~(1 << j);
-                        }
-                    }
-                }
-            }
-
-            // std::cout << "Processing other orbits..." << std::endl;
-            // Process other orbits
-            for (int i = 0; i < k; i++) {
-                if (orbits[i] != largest_orbit_id) {
-                    // std::cout << "  Processing vertex " << i << " (orbit " << orbits[i] << ")" << std::endl;
-                    bool is_representative = true;
-                    for (int j = 0; j < i; j++) {
-                        if (orbits[j] == orbits[i]) {
-                            is_representative = false;
-                            // std::cout << "    Not a representative (same orbit as " << j << ")" << std::endl;
-                            break;
-                        }
-                    }
-                    if (!is_representative) {
-                        pn[first_vertex_largest_orbit] &= ~(1 << i);
-                    }
-                }
-            }
-        }
-    } else {
-        // std::cout << "Conditions not met. Skipping orbit processing." << std::endl;
+void SymmetryBreaker::remove_possibilities(int k, int pn[], const std::vector<int>& orbits) {
+    if (k <= 0 || k > MAXORDER || orbits.size() != static_cast<size_t>(k)) {
+        return;
     }
-    
-    // Log final pn values
-    // std::cout << "Final pn values:" << std::endl;
-    // for (int i = 0; i < k; i++) {
-    //     std::cout << "  pn[" << i << "] = " << std::bitset<32>(pn[i]) << std::endl;
-    // }
-    
-    // std::cout << "Exiting remove_possibilities" << std::endl;
+
+    // Step 1: Create orbit masks for efficient operations
+    std::vector<int> orbit_masks(k, 0);
+    std::vector<int> orbit_key(k, k);  // k is invalid index
+    for (int i = 0; i < k; i++) {
+        int orbit_id = orbits[i];
+        orbit_masks[orbit_id] |= (1 << i);
+        if (lex_greatest) {
+            orbit_key[orbit_id] = std::max(orbit_key[orbit_id], i);  // Track max
+        } else {
+            orbit_key[orbit_id] = std::min(orbit_key[orbit_id], i);  // Existing min
+        }
+    }
+
+    // Step 2: Apply restrictions based on orbit structure
+    for (int i = 0; i < k; i++) {
+        int orbit_id = orbits[i];
+        int key_vertex = orbit_key[orbit_id];
+        
+        // Universal orbit pruning (works for both modes)
+        if (i > key_vertex) {
+            int forbidden_mask = (1 << key_vertex) - 1;
+            forbidden_mask |= ((1 << i) - 1) & orbit_masks[orbit_id];
+            pn[i] &= ~forbidden_mask;
+        }
+    }
 }
 
 // Modify the existing canonicity checking code to use orbit-based pruning
