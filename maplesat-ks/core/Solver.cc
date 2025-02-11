@@ -245,6 +245,8 @@ Solver::Solver() :
     // Add orbit cutoff initialization here
     if(opt_orbit > 0)
     {   orbit_cutoff = opt_orbit;
+    } else {
+        orbit_cutoff = opt_order;
     }
 
     // Initialize nauty options properly
@@ -258,8 +260,6 @@ Solver::Solver() :
     options.dispatch = &dispatch_graph;
     options.schreier = FALSE;
     options.cartesian = FALSE;
-    // Set orbit cutoff based on parameters
-    orbit_cutoff = (opt_orbit == -1) ? opt_order : opt_orbit;
     printf("c orbit cutoff: %d\n", orbit_cutoff);
 }
 
