@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <vector>
 #include <unordered_map>
+#include "unembeddable_graphs.h"
 
 FILE * canonicaloutfile = NULL;
 FILE * noncanonicaloutfile = NULL;
@@ -35,17 +36,25 @@ long noncanon_np[MAXORDER] = {};
 long perms_tried_by_order[MAXORDER] = {};
 bool lex_greatest = false;  // Default to lex-least checking
 
-SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int unembeddable_check) : solver(s) {
+// Add global variables
+long muscount = 0;
+long muscounts[13] = {};
+double mustime = 0;
+FILE * musoutfile = NULL;
+
+SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int uc) : solver(s) {
     if (order == 0) {
         std::cout << "c Need to provide order to use programmatic code" << std::endl;
         return;
     }
+    unembeddable_check = uc; 
+    std::cout << "c Checking for " << unembeddable_check << " unembeddable subgraphs" << std::endl;
+    n = order;
     
     // Initialize parameters from solver's settings
     lex_greatest = solver->lex_greatest;
     
     // Initialize everything first
-    n = order;
     num_edge_vars = n*(n-1)/2;
     assign = new int[num_edge_vars];
     fixed = new bool[num_edge_vars];
@@ -735,6 +744,67 @@ void SymmetryBreaker::setOrbitCutoff(int cutoff) {
     std::cout << "c | Pseudo check    | " << std::setw(11) << (solver->pseudocheck ? "enabled" : "disabled") << " |" << std::endl;
     std::cout << "c | Lex mode        | " << std::setw(11) << (lex_greatest ? "greatest" : "least") << " |" << std::endl;
     std::cout << "c | Edge variables  | " << std::setw(11) << (n*(n-1)/2) << " |" << std::endl;
+    std::cout << "c | Unembed. check  | " << std::setw(11) << (unembeddable_check > 0 ? "enabled" : "disabled") << " |" << std::endl;
     std::cout << "c +-----------------+-------------+" << std::endl;
     std::cout << std::endl;
+}
+
+// Add the has_mus_subgraph function
+bool SymmetryBreaker::has_mus_subgraph(int k, int* P, int* p, int g) {
+    int pl[12]; // pl[k] contains the current list of possibilities for kth vertex (encoded bitwise)
+    int pn[13]; // pn[k] contains the initial list of possibilities for kth vertex (encoded bitwise)
+    pl[0] = (1 << k) - 1;
+    pn[0] = (1 << k) - 1;
+    int i = 0;
+
+    while(1) {
+        // If no possibilities for ith vertex then backtrack
+        if(pl[i]==0) {
+            // Backtrack to vertex that has at least two possibilities
+            while((pl[i] & (pl[i] - 1)) == 0) {
+                i--;
+                if(i==-1) {
+                    // No permutations produce a matrix containing the gth submatrix
+                    return false;
+                }
+            }
+            // Remove p[i] as a possibility from the ith vertex
+            pl[i] = pl[i] & ~(1 << p[i]);
+        }
+
+        p[i] = log2(pl[i] & -pl[i]); // Get index of rightmost high bit
+        pn[i+1] = pn[i] & ~(1 << p[i]); // List of possibilities for (i+1)th vertex
+
+        // Determine if the permuted matrix p(M) is contains the gth submatrix
+        bool result_known = false;
+        for(int j=0; j<i; j++) {
+            if(!mus[g][i*(i-1)/2+j])
+                continue;
+            const int px = MAX(p[i], p[j]);
+            const int py = MIN(p[i], p[j]);
+            const int pj = px*(px-1)/2 + py;
+            if(assign[pj] == l_False) {
+                // Permutation sends a non-edge to a gth submatrix edge; stop considering
+                result_known = true;
+                break;
+            }
+        }
+
+        if(!result_known && ((i == 9 && g < 2) || (i == 10 && g < 7) || i == 11)) {
+            // The complete gth submatrix found in p(M)
+            for(int j=0; j<=i; j++) {
+                P[p[j]] = j;
+            }
+            return true;
+        }
+        if(!result_known) {
+            // Result is unknown; need to define p[i] for another i
+            i++;
+            pl[i] = pn[i];
+        }
+        else {
+            // Remove p[i] as a possibility from the ith vertex
+            pl[i] = pl[i] & ~(1 << p[i]);
+        }
+    }
 }
