@@ -246,7 +246,7 @@ Solver::Solver() :
     if(opt_orbit > 0)
     {   orbit_cutoff = opt_orbit;
     } else {
-        orbit_cutoff = opt_order;
+        orbit_cutoff = n;
     }
 
     // Initialize nauty options properly
