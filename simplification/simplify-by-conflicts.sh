@@ -49,7 +49,7 @@ f_base=$(basename "$f")
 cmd="./cadical-ks/build/cadical-ks"
 [ "$s" != "true" ] && cmd="$cmd $f_dir $f_dir.drat" || cmd="$cmd $f_dir"
 cmd="$cmd --order $o"
-[ "$unembeddable" = true ] && cmd="$cmd --unembeddable-check 13"
+#[ "$unembeddable" = true ] && cmd="$cmd --unembeddable-check 13"
 [ "$pseudo_check" = false ] && cmd="$cmd --no-pseudo-check"
 [ "$lex_order" = "greatest" ] && cmd="$cmd --lex-greatest"
 [ -n "$orbit_val" ] && cmd="$cmd --orbit $orbit_val"

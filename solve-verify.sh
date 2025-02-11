@@ -64,7 +64,7 @@ f=$2  # instance file name
 # Construct solver command based on options
 if [ "$solver" = "cadical" ]; then
 	cmd="./cadical-ks/build/cadical-ks $f $f.drat --no-binary --order $n"
-	[ "$unembeddable" = true ] && cmd="$cmd --unembeddable-check 13"
+	#[ "$unembeddable" = true ] && cmd="$cmd --unembeddable-check 13"
 	[ "$pseudo_check" = false ] && cmd="$cmd --no-pseudo-check"
 	[ "$lex_order" = "greatest" ] && cmd="$cmd --lex-greatest"
 	[ -n "$orbit_val" ] && cmd="$cmd --orbit $orbit_val"
@@ -73,7 +73,7 @@ if [ "$solver" = "cadical" ]; then
 	[ "$proof_size" = true ] && cmd="$cmd --proofsize 7168"
 else
 	cmd="./maplesat-ks/simp/maplesat_static $f $f.drat -order=$n -no-pre -minclause"
-	[ "$unembeddable" = true ] && cmd="$cmd -unembeddable-check=13"
+	#[ "$unembeddable" = true ] && cmd="$cmd -unembeddable-check=13"
 	[ "$pseudo_check" = false ] && cmd="$cmd -no-pseudo-test"
 	[ "$lex_order" = "greatest" ] && cmd="$cmd -lex-greatest"
 	[ -n "$orbit_val" ] && cmd="$cmd -orbit=$orbit_val"
