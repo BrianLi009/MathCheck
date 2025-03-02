@@ -11,13 +11,14 @@ Description:
     5. We also applied the cubic isomorphism blocking clauses
 
 Usage:
-    ./generate-instance.sh n c o [lex-greatest]
+    ./generate-instance.sh n c o [lex-option]
 
 Options:
     <n>: the order of the instance/number of vertices in the graph
     <c>: ratio of color-1 vertices to block
     <o>: definition used (1 or 2)
-    lex-greatest: (optional) use lex-greatest ordering instead of lex-smallest
+    lex-option: (optional) 'lex-greatest' to use lex-greatest ordering instead of lex-smallest,
+                or 'no-lex' to skip isomorphism blocking entirely
     
 " && exit
 
@@ -29,15 +30,20 @@ lex_opt="" #default to lex-smallest
 echo "Debug: Input parameters:"
 echo "n=$n, c=$c, o=$o, \$4=$4"
 
-# Check if fourth argument is lex-greatest
-if [ "$4" = "lex-greatest" ]; then
-    echo "Debug: Setting lex_opt to lex-greatest"
-    lex_opt="lex-greatest"
+# Check if fourth argument is a lex option
+if [ "$4" = "lex-greatest" ] || [ "$4" = "no-lex" ]; then
+    echo "Debug: Setting lex_opt to $4"
+    lex_opt="$4"
 fi
 
 base_name="constraints_${n}_${c}_${o}"
 file_name="$base_name"
-[ "$lex_opt" = "lex-greatest" ] && file_name="${base_name}_lex_greatest"
+
+if [ "$lex_opt" = "lex-greatest" ]; then
+    file_name="${base_name}_lex_greatest"
+elif [ "$lex_opt" = "no-lex" ]; then
+    file_name="${base_name}_no_lex"
+fi
 
 echo "Debug: base_name=$base_name"
 echo "Debug: file_name=$file_name"
