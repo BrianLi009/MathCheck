@@ -12,20 +12,24 @@ import subprocess
 import os
 import argparse
 
-def generate(n, block, lower_bound=None, upper_bound=None, nostatic=False, lex_greatest=False):
+def generate(n, block, lower_bound=None, upper_bound=None, lex_option="lex-least"):
     """
     n: size of the graph
     block: color ratio to block
     lower_bound: lower bound for triangle count
     upper_bound: upper bound for triangle count
-    nostatic: whether to disable isomorphism blocking
-    lex_greatest: whether to use lex-greatest ordering for isomorphism blocking
+    lex_option: "lex-least", "lex-greatest", or "no-lex" to control isomorphism blocking
     """
     cnf_file = "constraints_" + str(n) + "_" + str(block)
     if lower_bound and upper_bound:
         cnf_file += f"_{lower_bound}_{upper_bound}"
-    cnf_file += "_nostatic" if nostatic else "_2"
-    cnf_file += "_lex_greatest" if lex_greatest else ""
+    
+    if lex_option == "no-lex":
+        cnf_file += "_no_lex"
+    elif lex_option == "lex-greatest":
+        cnf_file += "_lex_greatest"
+    else:
+        cnf_file += "_2"  # Default suffix for definition 2
     
     if os.path.exists(cnf_file):
         print(f"File '{cnf_file}' already exists. Terminating...")
@@ -52,15 +56,16 @@ def generate(n, block, lower_bound=None, upper_bound=None, nostatic=False, lex_g
     clause_count += neighbor(n, edge_dict, cnf_file)
     print ("every vertex has a neightbor")
     
-    # Only call cubic if nostatic is False
-    if not nostatic:
-        cubic_impl = cubic_lex_greatest if lex_greatest else cubic
-        print(f"Using {'lex-greatest' if lex_greatest else 'lex-least'} ordering for isomorphism blocking")
+    # Only apply isomorphism blocking if not using no-lex
+    if lex_option != "no-lex":
+        cubic_impl = cubic_lex_greatest if lex_option == "lex-greatest" else cubic
+        print(f"Using {lex_option} ordering for isomorphism blocking")
         var_count, c_count = cubic_impl(n, count, cnf_file) #total number of variables
         clause_count += c_count
         print ("isomorphism blocking applied")
     else:
-        var_count = count  # If not calling cubic, use current count as var_count
+        var_count = count  # If not applying isomorphism blocking, use current count as var_count
+        print("Skipping isomorphism blocking (no-lex option)")
     
     # Convert triangle dictionary values to sorted list and apply constraints only if bounds are provided
     if lower_bound and upper_bound:
@@ -77,21 +82,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate constraints for graph problems.')
     parser.add_argument('n', type=int, help='Size of the graph')
     parser.add_argument('block', type=str, help='Block identifier')
+    parser.add_argument('lex_option', type=str, nargs='?', default="lex-least", 
+                      help='Isomorphism blocking option: "lex-least" (default), "lex-greatest", or "no-lex"')
     parser.add_argument('--lower', type=int, help='Lower bound for triangle count')
     parser.add_argument('--upper', type=int, help='Upper bound for triangle count')
-    parser.add_argument('--nostatic', action='store_true', 
-                      help='Disable isomorphism blocking (default: False)')
-    parser.add_argument('--lex-greatest', action='store_true',
-                      help='Use lex-greatest ordering for isomorphism blocking (default: False)')
     
     args = parser.parse_args()
     
-    # Validate argument combinations
-    if args.nostatic and args.lex_greatest:
-        parser.error("Cannot use --lex-greatest with --nostatic")
+    # Validate lex_option
+    if args.lex_option not in ["lex-least", "lex-greatest", "no-lex"]:
+        parser.error("lex_option must be one of: lex-least, lex-greatest, no-lex")
     
     # Validate bounds
     if (args.lower is None) != (args.upper is None):
         parser.error("Both lower and upper bounds must be provided together or omitted")
     
-    generate(args.n, args.block, args.lower, args.upper, args.nostatic, args.lex_greatest)
+    generate(args.n, args.block, args.lower, args.upper, args.lex_option)
