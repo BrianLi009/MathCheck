@@ -87,9 +87,9 @@ SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int unembeddabl
 SymmetryBreaker::~SymmetryBreaker () {
     if (n != 0) {
         solver->disconnect_external_propagator ();
-        delete [] assign;
         delete [] colsuntouched;
         delete [] fixed;
+        delete [] assign;
         printf("Number of solutions   : %ld\n", sol_count);
         printf("Canonical subgraphs   : %-12" PRIu64 "   (%.0f /sec)\n", (uint64_t)canon, canon/canontime);
         for(int i=2; i<n; i++) {
