@@ -207,136 +207,127 @@ bool SymmetryBreaker::cb_has_external_clause () {
 
         // Check if it's a full assignment or if it's time to perform a canonicity check
         if (i == n - 1 || partial_assignment_count % 1 == 0) {
-            // Check if current graph hash has been seen
-            if(canonical_hashes[i].find(hash)==canonical_hashes[i].end())
-            {
-                // Compute and print orbits only when we need to check canonicity
-                //compute_and_print_orbits(i + 1);
-
-                // Found a new subgraph of order i+1 to test for canonicity
-                // Uses a pseudo-check except when i+1 = n
-                const double before = CaDiCaL::absolute_process_time();
-                // Run canonicity check
-                int p[i+1]; // Permutation on i+1 vertices
-                int x, y;   // These will be the indices of first adjacency matrix entry that demonstrates noncanonicity (when such indices exist)
-                int mi;     // This will be the index of the maximum defined entry of p
-                bool ret = (hash == 0) ? true : is_canonical(i+1, p, x, y, mi, i < n-1);
+            // Compute and print orbits only when we need to check canonicity
+            const double before = CaDiCaL::absolute_process_time();
+            // Run canonicity check
+            int p[i+1];
+            int x, y;
+            int mi;
+            bool ret = (hash == 0) ? true : is_canonical(i+1, p, x, y, mi, i < n-1);
 #ifdef VVERBOSE
-                if(!ret) {
-                    printf("x: %d y: %d, mi: %d, ", x, y, mi);
-                    printf("p^(-1)(x): %d, p^(-1)(y): %d | ", p[x], p[y]);
-                    for(int j=0; j<i+1; j++) {
-                        if(j != p[j]) {
-                            printf("%d ", p[j]);
-                        } else printf("* ");
-                    }
-                    printf("\n");
+            if(!ret) {
+                printf("x: %d y: %d, mi: %d, ", x, y, mi);
+                printf("p^(-1)(x): %d, p^(-1)(y): %d | ", p[x], p[y]);
+                for(int j=0; j<i+1; j++) {
+                    if(j != p[j]) {
+                        printf("%d ", p[j]);
+                    } else printf("* ");
                 }
+                printf("\n");
+            }
 #endif
-                const double after = CaDiCaL::absolute_process_time();
+            const double after = CaDiCaL::absolute_process_time();
 
-                // If subgraph is canonical
-                if (ret) {
-                    canon++;
-                    canontime += (after-before);
-                    canonarr[i]++;
-                    canontimearr[i] += (after-before);
-                    canonical_hashes[i].insert(hash);
+            // If subgraph is canonical
+            if (ret) {
+                canon++;
+                canontime += (after-before);
+                canonarr[i]++;
+                canontimearr[i] += (after-before);
 
-                    //std::cout << "Partial assignment of size " << i+1 << " is canonical" << std::endl;
+                //std::cout << "Partial assignment of size " << i+1 << " is canonical" << std::endl;
 
-                    if(canonicaloutfile != NULL) {
-                        fprintf(canonicaloutfile, "a ");
-                        for(int j = 0; j < i*(i+1)/2; j++)
-                            fprintf(canonicaloutfile, "%s%d ", assign[j]==l_True ? "" : "-", j+1);
-                        fprintf(canonicaloutfile, "0\n");
-                        fflush(canonicaloutfile);
-                    }
+                if(canonicaloutfile != NULL) {
+                    fprintf(canonicaloutfile, "a ");
+                    for(int j = 0; j < i*(i+1)/2; j++)
+                        fprintf(canonicaloutfile, "%s%d ", assign[j]==l_True ? "" : "-", j+1);
+                    fprintf(canonicaloutfile, "0\n");
+                    fflush(canonicaloutfile);
+                }
 #ifdef VVERBOSE
-                    int count = 0;
-                    int A[n][n] = {};
+                int count = 0;
+                int A[n][n] = {};
+                for(int jj=0; jj<n; jj++) {
+                    for(int ii=0; ii<jj; ii++) {
+                        if(assign[count]==l_True) {
+                            A[ii][jj] = 1;
+                            A[jj][ii] = 1;
+                        }
+                        if(assign[count]==l_False) {
+                            A[ii][jj] = -1;
+                            A[jj][ii] = -1;
+                        }
+                        count++;
+                    }
+                }
+                for(int ii=0; ii<n; ii++) {
                     for(int jj=0; jj<n; jj++) {
-                        for(int ii=0; ii<jj; ii++) {
-                            if(assign[count]==l_True) {
-                                A[ii][jj] = 1;
-                                A[jj][ii] = 1;
-                            }
-                            if(assign[count]==l_False) {
-                                A[ii][jj] = -1;
-                                A[jj][ii] = -1;
-                            }
-                            count++;
-                        }
-                    }
-                    for(int ii=0; ii<n; ii++) {
-                        for(int jj=0; jj<n; jj++) {
-                            printf("%c", A[ii][jj] == 0 ? '?' : A[ii][jj] == -1 ? '0' : '1');
-                        }
-                        printf("\n");
+                        printf("%c", A[ii][jj] == 0 ? '?' : A[ii][jj] == -1 ? '0' : '1');
                     }
                     printf("\n");
-                    printf("a ");
-                    for (int i = 0; i<n*(n-1)/2; i++) {
-                        printf("%s%d ", assign[i] == l_True ? "" : "-", i+1);
-                    }
-                    printf("\n");
+                }
+                printf("\n");
+                printf("a ");
+                for (int i = 0; i<n*(n-1)/2; i++) {
+                    printf("%s%d ", assign[i] == l_True ? "" : "-", i+1);
+                }
+                printf("\n");
 #endif
-                }
-                // If subgraph is not canonical then block it
-                else {
-                    noncanon++;
-                    noncanontime += (after-before);
-                    noncanonarr[i]++;
-                    noncanontimearr[i] += (after-before);
-                    new_clauses.push_back(std::vector<int>());
+            }
+            // If subgraph is not canonical then block it
+            else {
+                noncanon++;
+                noncanontime += (after-before);
+                noncanonarr[i]++;
+                noncanontimearr[i] += (after-before);
+                new_clauses.push_back(std::vector<int>());
 
-                    //std::cout << "Partial assignment of size " << i+1 << " is not canonical" << std::endl;
+                //std::cout << "Partial assignment of size " << i+1 << " is not canonical" << std::endl;
 
-                    // Generate a blocking clause smaller than the naive blocking clause
-                    new_clauses.back().push_back(-(x*(x-1)/2+y+1));
-                    const int px = MAX(p[x], p[y]);
-                    const int py = MIN(p[x], p[y]);
-                    new_clauses.back().push_back(px*(px-1)/2+py+1);
-                    for(int ii=0; ii < x+1; ii++) {
-                        for(int jj=0; jj < ii; jj++) {
-                            if(ii==x && jj==y) {
-                                break;
-                            }
-                            const int pii = MAX(p[ii], p[jj]);
-                            const int pjj = MIN(p[ii], p[jj]);
-                            if(ii==pii && jj==pjj) {
-                                continue;
-                            } else if(assign[ii*(ii-1)/2+jj] == l_True) {
-                                new_clauses.back().push_back(-(ii*(ii-1)/2+jj+1));
-                            } else if (assign[pii*(pii-1)/2+pjj] == l_False) {
-                                new_clauses.back().push_back(pii*(pii-1)/2+pjj+1);
-                            }
+                // Generate a blocking clause smaller than the naive blocking clause
+                new_clauses.back().push_back(-(x*(x-1)/2+y+1));
+                const int px = MAX(p[x], p[y]);
+                const int py = MIN(p[x], p[y]);
+                new_clauses.back().push_back(px*(px-1)/2+py+1);
+                for(int ii=0; ii < x+1; ii++) {
+                    for(int jj=0; jj < ii; jj++) {
+                        if(ii==x && jj==y) {
+                            break;
+                        }
+                        const int pii = MAX(p[ii], p[jj]);
+                        const int pjj = MIN(p[ii], p[jj]);
+                        if(ii==pii && jj==pjj) {
+                            continue;
+                        } else if(assign[ii*(ii-1)/2+jj] == l_True) {
+                            new_clauses.back().push_back(-(ii*(ii-1)/2+jj+1));
+                        } else if (assign[pii*(pii-1)/2+pjj] == l_False) {
+                            new_clauses.back().push_back(pii*(pii-1)/2+pjj+1);
                         }
                     }
-                    // To generate the naive blocking clause:
-                    /*for(int j = 0; j < i*(i+1)/2; j++)
-                        new_clauses.back().push_back((j+1) * assign[j]==l_True ? -1 : 1);*/
-
-                    solver->add_trusted_clause(new_clauses.back());
-                    learned_clauses_count++;
-
-                    if(noncanonicaloutfile != NULL) {
-                        //fprintf(noncanonicaloutfile, "a ");
-                        const int size = new_clauses.back().size();
-                        for(int j = 0; j < size; j++)
-                            fprintf(noncanonicaloutfile, "%d ", new_clauses.back()[j]);
-                        fprintf(noncanonicaloutfile, "0\n");
-                        fflush(noncanonicaloutfile);
-                    }
-
-                    if(solver->permoutfile != NULL) {
-                        for(int j = 0; j <= mi; j++)
-                            fprintf(solver->permoutfile, "%s%d", j == 0 ? "" : " ", p[j]);
-                        fprintf(solver->permoutfile, "\n");
-                    }
-
-                    return true;
                 }
+                // To generate the naive blocking clause:
+                /*for(int j = 0; j < i*(i+1)/2; j++)
+                    new_clauses.back().push_back((j+1) * assign[j]==l_True ? -1 : 1);*/
+
+                solver->add_trusted_clause(new_clauses.back());
+                learned_clauses_count++;
+
+                if(noncanonicaloutfile != NULL) {
+                    //fprintf(noncanonicaloutfile, "a ");
+                    const int size = new_clauses.back().size();
+                    for(int j = 0; j < size; j++)
+                        fprintf(noncanonicaloutfile, "%d ", new_clauses.back()[j]);
+                    fprintf(noncanonicaloutfile, "0\n");
+                    fflush(noncanonicaloutfile);
+                }
+
+                if(solver->permoutfile != NULL) {
+                    for(int j = 0; j <= mi; j++)
+                        fprintf(solver->permoutfile, "%s%d", j == 0 ? "" : " ", p[j]);
+                    fprintf(solver->permoutfile, "\n");
+                }
+
+                return true;
             }
         }
 
