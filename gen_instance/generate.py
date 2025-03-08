@@ -6,13 +6,17 @@ from mindegree import mindegree
 from noncolorable import noncolorable
 from cubic import cubic
 from cubic_lex_greatest import cubic as cubic_lex_greatest
+from b_b_card import generate_edge_clauses
 import subprocess
 import os
+import argparse
 
-def generate(n, block, lex_option="lex-least"):
+def generate(n, block, lower_bound=None, upper_bound=None, lex_option="lex-least"):
     """
     n: size of the graph
     block: color ratio to block
+    lower_bound: lower bound for triangle count
+    upper_bound: upper bound for triangle count
     lex_option: "lex-least", "lex-greatest", or "no-lex" to control isomorphism blocking
     Given n, the function calls each individual constraint-generating function, then write them into a DIMACS file as output
     The variables are listed in the following order:
@@ -20,14 +24,16 @@ def generate(n, block, lex_option="lex-least"):
     triangles - n choose 3 variables
     extra variables from cubic
     """
-    base_name = f"constraints_{n}_{block}_1"
+    base_name = f"constraints_{n}_{block}"
+    if lower_bound and upper_bound:
+        base_name += f"_{lower_bound}_{upper_bound}"
     
     if lex_option == "lex-greatest":
         cnf_file = base_name + "_lex_greatest"
     elif lex_option == "no-lex":
         cnf_file = base_name + "_no_lex"
     else:  # lex-least is the default
-        cnf_file = base_name
+        cnf_file = base_name + "_1"
     
     if os.path.exists(cnf_file):
         print(f"File '{cnf_file}' already exists. Terminating...")
@@ -71,15 +77,34 @@ def generate(n, block, lex_option="lex-least"):
         print("Skipping isomorphism blocking (no-lex option)")
         var_count = count  # No additional variables added
     
+    # Add triangle count constraints if bounds are provided
+    if lower_bound and upper_bound:
+        tri_vars = [v for k, v in sorted(tri_dict.items())]
+        var_count_card, clause_count_card = generate_edge_clauses(tri_vars, int(lower_bound), int(upper_bound), var_count, cnf_file)
+        var_count = var_count_card
+        clause_count += clause_count_card
+        print("triangle count constraints applied")
+    
     firstline = 'p cnf ' + str(var_count) + ' ' + str(clause_count)
     subprocess.call(["./gen_instance/append.sh", cnf_file, cnf_file+"_new", firstline])
 
 if __name__ == "__main__":
-    lex_option = "lex-least"  # Default
-    if len(sys.argv) > 3:
-        if sys.argv[3] == "lex-greatest":
-            lex_option = "lex-greatest"
-        elif sys.argv[3] == "no-lex":
-            lex_option = "no-lex"
+    parser = argparse.ArgumentParser(description='Generate constraints for graph problems.')
+    parser.add_argument('n', type=int, help='Size of the graph')
+    parser.add_argument('block', type=str, help='Block identifier')
+    parser.add_argument('lex_option', type=str, nargs='?', default="lex-least", 
+                      help='Isomorphism blocking option: "lex-least" (default), "lex-greatest", or "no-lex"')
+    parser.add_argument('--lower', type=int, help='Lower bound for triangle count')
+    parser.add_argument('--upper', type=int, help='Upper bound for triangle count')
     
-    generate(int(sys.argv[1]), sys.argv[2], lex_option)
+    args = parser.parse_args()
+    
+    # Validate lex_option
+    if args.lex_option not in ["lex-least", "lex-greatest", "no-lex"]:
+        parser.error("lex_option must be one of: lex-least, lex-greatest, no-lex")
+    
+    # Validate bounds
+    if (args.lower is None) != (args.upper is None):
+        parser.error("Both lower and upper bounds must be provided together or omitted")
+    
+    generate(args.n, args.block, args.lower, args.upper, args.lex_option)
