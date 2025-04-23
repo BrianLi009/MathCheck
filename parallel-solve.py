@@ -74,6 +74,14 @@ def cube(original_file, cube, index, m, order, numMCTS, queue, cutoff='d', cutof
     print(f"Debug: Cube parameters - file:{original_file}, cube:{cube}, index:{index}, m:{m}, order:{order}, numMCTS:{numMCTS}, cutoff:{cutoff}, cutoffv:{cutoffv}, d:{d}", flush=True)
     print(f"Debug: Using solver options: '{solver_options_g}'", flush=True)
     
+    # Log the cube to the depth-specific file
+    cube_log_file = f"cubes_depth_{d}.txt"
+    with open(cube_log_file, "a") as log_file:
+        if cube != "N":
+            log_file.write(f"{cube}{index}\n")
+        else:
+            log_file.write(f"root_cube\n")
+    
     # Extract relevant options for simplify-by-conflicts.sh
     simplify_opts = []
     if solver_options_g:
@@ -216,6 +224,14 @@ def main(order, file_name_solve, m, cubing_mode="ams", numMCTS=2, cutoff='d', cu
     cutoffv = int(cutoffv)
     m = int(m)
 
+    # Create a directory for cube logs if it doesn't exist
+    os.makedirs("cube_logs", exist_ok=True)
+    
+    # Clear previous cube log files
+    for existing_file in os.listdir("cube_logs"):
+        if existing_file.startswith("cubes_depth_"):
+            os.remove(os.path.join("cube_logs", existing_file))
+    
     # Update global variables
     global queue, orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg, cubing_mode_g, solver_options_g
     orderg, numMCTSg, cutoffg, cutoffvg, dg, mg, solveaftercubeg, file_name_solveg = order, numMCTS, cutoff, cutoffv, d, m, solveaftercube, file_name_solve
