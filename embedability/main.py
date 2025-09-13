@@ -303,8 +303,36 @@ def maple_to_edges(input, v):
             actual_edges.append(edge_lst[int(i)-1])
     return actual_edges
 
-def main_single_graph(g, order, index, using_subgraph, normalize=False, output_unsat_f="output_unsat_f", output_sat_f="output_sat_f", verify=False):
-    """takes in graph in maplesat output format, order of the graph, count corresponds to the line
+def binary_to_edges(binary_string, v):
+    """Convert binary string to edge list for a graph of order v.
+    
+    Args:
+        binary_string: Binary string where each bit represents an edge variable
+        v: Number of vertices in the graph
+    
+    Returns:
+        List of edges as tuples (i, j) where i < j
+    """
+    # Generate all possible edges for a graph of order v
+    edge_lst = []
+    for j in range(0, v):
+        for i in range(0, j):
+            edge_lst.append((i, j))
+    
+    # Check if binary string has the expected length
+    expected_length = v * (v - 1) // 2
+    if len(binary_string) != expected_length:
+        raise ValueError(f"Binary string length {len(binary_string)} doesn't match expected length {expected_length} for graph of order {v}")
+    
+    actual_edges = []
+    for i, bit in enumerate(binary_string):
+        if bit == '1':
+            actual_edges.append(edge_lst[i])
+    
+    return actual_edges
+
+def main_single_graph(g, order, index, using_subgraph, normalize=False, output_unsat_f="output_unsat_f", output_sat_f="output_sat_f", verify=False, input_format="maple"):
+    """takes in graph in maplesat output format or binary format, order of the graph, count corresponds to the line
        number of the candidates, and index indicates which vector assignment we will be using. """
     """print ("original graph: " + str(g))
     print ("order of the graph: " + str(order))
@@ -312,7 +340,12 @@ def main_single_graph(g, order, index, using_subgraph, normalize=False, output_u
     print ("normalize: " + str(normalize))
     print ("verifying result: " + str(verify))"""
     order = int(order)
-    edge_lst = maple_to_edges(g, int(order))
+    
+    if input_format == "binary":
+        edge_lst = binary_to_edges(g, int(order))
+    else:  # default to maple format
+        edge_lst = maple_to_edges(g, int(order))
+    
     G = nx.Graph()
     G.add_edges_from(edge_lst)
     if using_subgraph:
@@ -350,14 +383,59 @@ def main_single_graph(g, order, index, using_subgraph, normalize=False, output_u
             index += 1
 
 
-def main(file_to_solve, order, index, using_subgraph, normalize=False, output_unsat_f="output_unsat_f", output_sat_f="output_sat_f", verify=True, start=None, end=None):
+def parse_binary_format(file_content):
+    """Parse binary format input and extract binary strings.
+    
+    Args:
+        file_content: List of lines from the input file
+    
+    Returns:
+        List of binary strings
+    """
+    binary_strings = []
+    for line in file_content:
+        line = line.strip()
+        if line.startswith("Solution: "):
+            binary_string = line[10:]  # Remove "Solution: " prefix
+            binary_strings.append(binary_string)
+    return binary_strings
+
+def main(file_to_solve, order, index, using_subgraph, normalize=False, output_unsat_f="output_unsat_f", output_sat_f="output_sat_f", verify=True, start=None, end=None, input_format="maple"):
     with open(file_to_solve) as f:
+        file_content = f.readlines()
+        
         if start.isdigit() and end.isdigit():
             print ("checking from graph " + str(start) + " to graph " + str(end))
-            f = f.readlines()[int(start) - 1:int(end)]
-        for line in f:
-            line = line.rstrip()
-            main_single_graph(line, order, index, using_subgraph, normalize, output_unsat_f, output_sat_f, verify)
+            file_content = file_content[int(start) - 1:int(end)]
+        
+        if input_format == "binary":
+            # Parse binary format
+            binary_strings = parse_binary_format(file_content)
+            for binary_string in binary_strings:
+                main_single_graph(binary_string, order, index, using_subgraph, normalize, output_unsat_f, output_sat_f, verify, input_format)
+        else:
+            # Parse maple format (original behavior)
+            for line in file_content:
+                line = line.rstrip()
+                main_single_graph(line, order, index, using_subgraph, normalize, output_unsat_f, output_sat_f, verify, input_format)
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]=="True", sys.argv[5]=="True", sys.argv[6], sys.argv[7], sys.argv[8]=="True", sys.argv[9], sys.argv[10])
+    # Parse command line arguments
+    if len(sys.argv) < 9:
+        print("Usage: python main.py <file_to_solve> <order> <index> <using_subgraph> <normalize> <output_unsat_f> <output_sat_f> <verify> [start] [end] [input_format]")
+        print("  input_format: 'maple' (default) or 'binary'")
+        sys.exit(1)
+    
+    file_to_solve = sys.argv[1]
+    order = sys.argv[2]
+    index = int(sys.argv[3])
+    using_subgraph = sys.argv[4] == "True"
+    normalize = sys.argv[5] == "True"
+    output_unsat_f = sys.argv[6]
+    output_sat_f = sys.argv[7]
+    verify = sys.argv[8] == "True"
+    start = sys.argv[9] if len(sys.argv) > 9 else None
+    end = sys.argv[10] if len(sys.argv) > 10 else None
+    input_format = sys.argv[11] if len(sys.argv) > 11 else "maple"
+    
+    main(file_to_solve, order, index, using_subgraph, normalize, output_unsat_f, output_sat_f, verify, start, end, input_format)
