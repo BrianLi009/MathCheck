@@ -347,6 +347,7 @@ int App::main (int argc, char **argv) {
 
   int order = 0;
   int unembeddable_check = 13;  // Set default to 13 (maximum value)
+  int partition_size = 0;  // Default 0 means no partition constraint
 
   // Handle options which lead to immediate exit first.
 
@@ -561,6 +562,17 @@ int App::main (int argc, char **argv) {
       solver->pseudocheck = false;
     } else if (!strcmp (argv[i], "--pseudo-check")) {
       solver->pseudocheck = true;
+    } else if (!strcmp (argv[i], "--partition")) {
+      if (++i == argc)
+        APPERR ("argument to '--partition' missing");
+      else if (partition_size != 0)
+        APPERR ("multiple argument '--partition %d' and '--partition %s'", partition_size, argv[i]);
+      else if (!parse_int_str (argv[i], partition_size))
+        APPERR ("invalid argument in '--partition %s'", argv[i]);
+      else if (partition_size < 0)
+        APPERR ("invalid partition size (must be non-negative)");
+      else
+        std::cout << "c partition size = " << partition_size << endl;
     }
 #ifndef __WIN32
     else if (!strcmp (argv[i], "-t")) {
@@ -936,6 +948,14 @@ int App::main (int argc, char **argv) {
     // Set orbit cutoff if specified
     if (orbit_cutoff >= 0) {
       se.setOrbitCutoff(orbit_cutoff);
+    }
+    
+    // Set partition size if specified
+    if (partition_size > 0) {
+      if (partition_size >= order) {
+        APPERR ("partition size (%d) must be less than graph order (%d)", partition_size, order);
+      }
+      se.setPartitionSize(partition_size);
     }
 
     max_var = solver->active ();

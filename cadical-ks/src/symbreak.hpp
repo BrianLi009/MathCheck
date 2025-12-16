@@ -48,6 +48,7 @@ class SymmetryBreaker : public CaDiCaL::ExternalPropagator {
 
     int orbit_cutoff = 0;  // Default value of 0 means no cutoff
     bool pseudo_enabled = true;  // Default value is true
+    int partition_size = 0;  // Number of vertices to keep fixed (0 = no partition constraint)
 
     // Add these members for nauty statistics
     long nauty_calls = 0;
@@ -80,6 +81,7 @@ public:
     void setOrbitCutoff(int cutoff);
     void setPseudoEnabled(bool enabled) { pseudo_enabled = enabled; }
     bool isPseudoEnabled() const { return pseudo_enabled; }
+    void setPartitionSize(int size) { partition_size = size; }
 
     int getN() const { return n; }
 

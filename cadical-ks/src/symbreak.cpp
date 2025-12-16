@@ -376,6 +376,13 @@ bool SymmetryBreaker::is_canonical(int k, int p[], int& x, int& y, int& i, bool 
     for (int j = 0; j <= k; j++) {
         pn[j] = (1 << k) - 1;
     }
+    
+    // Apply partition constraint: first partition_size vertices must map to themselves
+    if (partition_size > 0 && k > partition_size) {
+        for (int j = 0; j < partition_size; j++) {
+            pn[j] = (1 << j);  // Vertex j can only map to itself
+        }
+    }
 
     // Only compute orbits and remove possibilities if k is greater than orbit_cutoff
     if (k > orbit_cutoff) {
@@ -723,7 +730,9 @@ void SymmetryBreaker::remove_possibilities(int k, int pn[], const std::vector<in
     }
 
     // Step 2: Apply restrictions based on orbit structure
-    for (int i = 0; i < k; i++) {
+    // Start from partition_size to respect partition constraint
+    int start_idx = (partition_size > 0) ? partition_size : 0;
+    for (int i = start_idx; i < k; i++) {
         int orbit_id = orbits[i];
         int min_vertex = orbit_mins[orbit_id];
         
@@ -744,14 +753,15 @@ void SymmetryBreaker::setOrbitCutoff(int cutoff) {
     
     // Now print the parameter table after orbit_cutoff is set
     std::cout << "\nc Parameter Table:" << std::endl;
-    std::cout << "c +-----------------+-------------+" << std::endl;
-    std::cout << "c | Parameter       | Value       |" << std::endl;
-    std::cout << "c +-----------------+-------------+" << std::endl;
-    std::cout << "c | Order           | " << std::setw(11) << n << " |" << std::endl;
-    std::cout << "c | Orbit cutoff    | " << std::setw(11) << orbit_cutoff << " |" << std::endl;
-    std::cout << "c | Pseudo check    | " << std::setw(11) << (solver->pseudocheck ? "enabled" : "disabled") << " |" << std::endl;
-    std::cout << "c | Lex mode        | " << std::setw(11) << (lex_greatest ? "greatest" : "least") << " |" << std::endl;
-    std::cout << "c | Edge variables  | " << std::setw(11) << (n*(n-1)/2) << " |" << std::endl;
-    std::cout << "c +-----------------+-------------+" << std::endl;
+    std::cout << "c +------------------+-------------+" << std::endl;
+    std::cout << "c | Parameter        | Value       |" << std::endl;
+    std::cout << "c +------------------+-------------+" << std::endl;
+    std::cout << "c | Order            | " << std::setw(11) << n << " |" << std::endl;
+    std::cout << "c | Orbit cutoff     | " << std::setw(11) << orbit_cutoff << " |" << std::endl;
+    std::cout << "c | Partition size   | " << std::setw(11) << partition_size << " |" << std::endl;
+    std::cout << "c | Pseudo check     | " << std::setw(11) << (solver->pseudocheck ? "enabled" : "disabled") << " |" << std::endl;
+    std::cout << "c | Lex mode         | " << std::setw(11) << (lex_greatest ? "greatest" : "least") << " |" << std::endl;
+    std::cout << "c | Edge variables   | " << std::setw(11) << (n*(n-1)/2) << " |" << std::endl;
+    std::cout << "c +------------------+-------------+" << std::endl;
     std::cout << std::endl;
 }
