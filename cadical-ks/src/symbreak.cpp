@@ -206,7 +206,8 @@ bool SymmetryBreaker::cb_has_external_clause () {
         colsuntouched[i] = true;
 
         // Check if it's a full assignment or if it's time to perform a canonicity check
-        if (i == n - 1 || partial_assignment_count % 1 == 0) {
+        // Skip canonicity checking for vertices within the fixed partition
+        if ((i == n - 1 || partial_assignment_count % 1 == 0) && i >= partition_size) {
             // Compute and print orbits only when we need to check canonicity
             const double before = CaDiCaL::absolute_process_time();
             // Run canonicity check
@@ -294,6 +295,12 @@ bool SymmetryBreaker::cb_has_external_clause () {
                         if(ii==x && jj==y) {
                             break;
                         }
+                        
+                        // Skip edges entirely within the fixed partition
+                        if(partition_size > 0 && ii < partition_size && jj < partition_size) {
+                            continue;
+                        }
+                        
                         const int pii = MAX(p[ii], p[jj]);
                         const int pjj = MIN(p[ii], p[jj]);
                         if(ii==pii && jj==pjj) {
@@ -518,11 +525,19 @@ void SymmetryBreaker::generate_blocking_clause_smaller(int k, int p[], int x, in
         clause.push_back(-(p[x]*(p[x]-1)/2+p[y]+1));
     }
     
+    // When partition_size > 0, only include edges that involve at least one vertex >= partition_size
+    // This ensures we don't learn clauses about the fixed submatrix
     for(int ii=0; ii < x+1; ii++) {
         for(int jj=0; jj < ii; jj++) {
             if(ii==x && jj==y) {
                 break;
             }
+            
+            // Skip edges entirely within the fixed partition
+            if(partition_size > 0 && ii < partition_size && jj < partition_size) {
+                continue;
+            }
+            
             const int pii = MAX(p[ii], p[jj]);
             const int pjj = MIN(p[ii], p[jj]);
             if(ii==pii && jj==pjj) {
