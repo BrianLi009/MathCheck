@@ -43,6 +43,7 @@ SymmetryBreaker::SymmetryBreaker(CaDiCaL::Solver * s, int order, int unembeddabl
     
     // Initialize parameters from solver's settings
     lex_greatest = solver->lex_greatest;
+    pseudo_enabled = solver->pseudocheck;
     
     // Initialize everything first
     n = order;
